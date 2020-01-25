@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+
+<launch>
+  <node pkg="joy" output="screen" type="joy_node" name="joy_node" />
+  <node pkg="simulators" output="screen" type="simple_ha2d_simulator.py" name="simple_ha2d_simulator"/>
+</launch>

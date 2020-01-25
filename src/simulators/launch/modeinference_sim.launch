@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+
+<launch>
+  <node pkg="joy" output="screen" type="joy_node" name="joy_node" />
+  <node pkg="simulators" output="screen" type="mode_inference_simulator.py" name="mode_inference_simulator"/>
+</launch>
