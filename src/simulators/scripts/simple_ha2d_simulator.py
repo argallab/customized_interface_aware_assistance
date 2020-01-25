@@ -7,7 +7,7 @@ from sensor_msgs.msg import Joy
 from envs.simple_ha2d_env import SimpleHA2DEnv
 from std_msgs.msg import Float32MultiArray
 from std_msgs.msg import MultiArrayDimension
-from simulators.msg import CartVelCmd
+from teleop_nodes.msg import CartVelCmd
 from pyglet.window import key
 import numpy as np
 import os
@@ -20,7 +20,10 @@ class Simulator(object):
 		super(Simulator, self).__init__()
 		rospy.init_node("Simulator")
 		rospy.on_shutdown(self.shutdown_hook)
-		rospy.Subscriber('/joy', Joy, self.joy_callback)
+		# rospy.Subscriber('/joy', Joy, self.joy_callback)
+		rospy.Subscriber('/user_vel', CartVelCmd, self.joy_callback)
+		rospy.Subscriber('/autonomy_vel', CartVelCmd, self.autonomy_vel_callback)
+
 
 		self.trial_index = trial_index
 
@@ -55,41 +58,41 @@ class Simulator(object):
 			self.env_params['human_goal_positions'] = self.human_goal_positions
 			self.env_params['autonomy_goal_positions'] = self.autonomy_goal_positions
 
-		
+
 		self.env = SimpleHA2DEnv(self.env_params)
 		self.env.reset()
 		self.env.render()
 		self.dim = dim
 
-		self.user_vel = CartVelCmd()
-		_dim = [MultiArrayDimension()]
-		_dim[0].label = 'cartesian_velocity'
-		_dim[0].size = 2
-		_dim[0].stride = 2
-		self.user_vel.velocity.layout.dim = _dim
-		self.user_vel.velocity.data = np.zeros(self.dim)
-		self.user_vel.header.stamp = rospy.Time.now()
-		self.user_vel.header.frame_id = 'human_control'
+		# self.user_vel = CartVelCmd()
+		# _dim = [MultiArrayDimension()]
+		# _dim[0].label = 'cartesian_velocity'
+		# _dim[0].size = 2
+		# _dim[0].stride = 2
+		# self.user_vel.velocity.layout.dim = _dim
+		# self.user_vel.velocity.data = np.zeros(self.dim)
+		# self.user_vel.header.stamp = rospy.Time.now()
+		# self.user_vel.header.frame_id = 'human_control'
 
-		self.autonomy_vel = CartVelCmd()
-		_dim = [MultiArrayDimension()]
-		_dim[0].label = 'cartesian_velocity'
-		_dim[0].size = 2
-		_dim[0].stride = 2
-		self.autonomy_vel.velocity.layout.dim = _dim
-		self.autonomy_vel.velocity.data = np.zeros(self.dim)
-		self.autonomy_vel.header.stamp = rospy.Time.now()
-		self.autonomy_vel.header.frame_id = 'autonomy_control'
+		# self.autonomy_vel = CartVelCmd()
+		# _dim = [MultiArrayDimension()]
+		# _dim[0].label = 'cartesian_velocity'
+		# _dim[0].size = 2
+		# _dim[0].stride = 2
+		# self.autonomy_vel.velocity.layout.dim = _dim
+		# self.autonomy_vel.velocity.data = np.zeros(self.dim)
+		# self.autonomy_vel.header.stamp = rospy.Time.now()
+		# self.autonomy_vel.header.frame_id = 'autonomy_control'
 
 		self.input_action = {}
-		self.input_action['human'] = self.user_vel
-		self.input_action['autonomy'] = self.autonomy_vel
+		self.input_action['human'] = CartVelCmd()
+		self.input_action['autonomy'] = CartVelCmd()
 
-		if rospy.has_param('max_cart_vel'):
-			self._max_cart_vel = np.array(rospy.get_param('max_cart_vel'))
-		else:
-			self._max_cart_vel = 10*np.ones(self.dim)
-			rospy.logwarn('No rosparam for max_cart_vel found...Defaulting to max linear velocity of 50 cm/s and max rotational velocity of 50 degrees/s')
+		# if rospy.has_param('max_cart_vel'):
+		# 	self._max_cart_vel = np.array(rospy.get_param('max_cart_vel'))
+		# else:
+		# 	self._max_cart_vel = 10*np.ones(self.dim)
+		# 	rospy.logwarn('No rosparam for max_cart_vel found...Defaulting to max linear velocity of 50 cm/s and max rotational velocity of 50 degrees/s')
 
 		r = rospy.Rate(100)
 		self.trial_start_time = time.time()
@@ -103,14 +106,17 @@ class Simulator(object):
 
 
 	def joy_callback(self, msg):
-		_axes = np.array(msg.axes)
-		for i in range(self.dim):
-			self.user_vel.velocity.data[i] = 0.0
+		# _axes = np.array(msg.axes)
+		# for i in range(self.dim):
+		# 	self.user_vel.velocity.data[i] = 0.0
+		#
+		# self.user_vel.velocity.data[0] = -_axes[0] * self._max_cart_vel[0]
+		# self.user_vel.velocity.data[1] = _axes[1] * self._max_cart_vel[1]
+		# self.user_vel.header.stamp = rospy.Time.now()
+		self.input_action['human'] = msg
 
-		self.user_vel.velocity.data[0] = -_axes[0] * self._max_cart_vel[0]
-		self.user_vel.velocity.data[1] = _axes[1] * self._max_cart_vel[1]
-		self.user_vel.header.stamp = rospy.Time.now()
-		self.input_action['human'] = self.user_vel
+	def autonomy_vel_callback(self, msg):
+		pass
 
 	def shutdown_hook(self):
 		pass
