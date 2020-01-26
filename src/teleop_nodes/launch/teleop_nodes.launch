@@ -14,6 +14,8 @@
 	<arg name="DISP_PORT" default="/dev/mode_display_arduino" />
 	<arg name="CHIN_PORT" default="/dev/chin_switch_arduino" />
 
+	<rosparam param="snp_velocity_scale">15</rosparam>
+	<rosparam param="joy_velocity_scale">10</rosparam>
 	<!-- JOY NODES -->
 	<!-- PS3 Joystick -->
 	<group if="$(arg PS3)">
@@ -38,7 +40,8 @@
 	<!-- Sip and PUff -->
 	<group if="$(arg SNP)">
 		<node pkg="joy" type="joy_node" name="joy_node_snp">
-			<param name="dev" value="/dev/sip_and_puff"/>
+			<!-- <param name="dev" value="/dev/sip_and_puff"/> -->
+			<param name="dev" value="/dev/input/js0"/>
 			<remap from="joy" to="joy_sip_puff"/>
 		</node>
 		<node pkg="teleop_nodes" type="sip_and_puff_node.py" name="sip_and_puff_node" output="screen">

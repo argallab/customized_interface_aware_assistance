@@ -29,6 +29,7 @@ class JoystickInput(ControlInput):
     self.gripper_vel_limit = 3000
     self.waiting_for_release = False
     self.modeSwitchCount = 0
+    self.velocity_scale = rospy.get_param("/joy_velocity_scale") #currently scalar. Could be vector for individual dimension scale
 
     if self.robot_dim == 6:
         self.switcher = {
@@ -49,7 +50,7 @@ class JoystickInput(ControlInput):
     if rospy.has_param('max_cart_vel'):
       self._max_cart_vel = np.array(rospy.get_param('max_cart_vel'))
     else:
-      self._max_cart_vel = 10*np.ones(self.robot_dim + self.finger_dim)
+      self._max_cart_vel = self.velocity_scale*np.ones(self.robot_dim + self.finger_dim)
       if self.finger_dim > 0:
           for j in range(finger_dim):
               self._max_cart_vel[self.robot_dim + j] = self.gripper_vel_limit
@@ -194,6 +195,7 @@ class JoystickInput(ControlInput):
 
 if __name__ == '__main__':
   rospy.init_node('joystick_node', anonymous=True)
+  # (TODO) get robot dim and finger dim from param server
   joy = JoystickInput(robot_dim = 3, finger_dim = 0)
   joy.startSend('user_vel')
   rospy.Subscriber('joy', Joy, joy.receive)

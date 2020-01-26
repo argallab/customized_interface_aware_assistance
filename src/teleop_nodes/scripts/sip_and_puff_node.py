@@ -30,6 +30,9 @@ class SNPInput(ControlInput):
         self.effective_finger_dim = 1
     else:
         self.effective_finger_dim = 0
+
+    self.velocity_scale = rospy.get_param("/snp_velocity_scale") #currently scalar. Could be vector for individual dimension scale
+
     self.modeswitch_msg = ModeSwitch()
     self.mode_msg = Int16()
     self.old_msg = Joy()
@@ -57,6 +60,20 @@ class SNPInput(ControlInput):
     self._LOWER_SIP_LIMIT = 0.002 # necessity of lower limit is debatable
     self._UPPER_PUFF_LIMIT = -0.5
     self._LOWER_PUFF_LIMIT = -0.002
+
+    # (TODO) incorporate the low and high limits in withinLimits function
+    # self._HARD_SIP_HIGHER_LIMIT = 0.8
+    # self._HARD_SIP_LOWER_LIMIT = 0.5
+    # self._SOFT_SIP_HIGHER_LIMIT = 0.3
+    # self._SOFT_SIP_LOWER_LIMIT = 0.002
+    #
+    # #Note that for puff the actual values are negative. The "lower" and "hhigher" make sense only if absolutely are considered
+    # self._SOFT_PUFF_LOWER_LIMIT = -0.002
+    # self._SOFT_PUFF_HIGHER_LIMIT = -0.3
+    # self._HARD_SIP_LOWER_LIMIT = -0.5
+    # self._HARD_SIP_HIGHER_LIMIT = -0.8
+
+
     # latch limit governs the threshold for direction and main mode switches
     self._LATCH_LIMIT = 0.5
     self._lock_input = False
@@ -66,9 +83,11 @@ class SNPInput(ControlInput):
     self._lin_vel_multiplier = 3 #2 # 10 cm/s
     self._ang_vel_multiplier = 5 #3.5 # 20 cm/s
     # Velocity multiplier
-    self._vel_multiplier = np.ones(9)*1
-    self._vel_multiplier[0:2] = 3
-    self._vel_multiplier[3:5] = 5
+    self._vel_multiplier = self.velocity_scale*np.ones(self.robot_dim + self.finger_dim)*1
+
+    # TODO fix scaling to depend on the robot dimension
+    # self._vel_multiplier[0:2] = 3
+    # self._vel_multiplier[3:5] = 5
 
     # load velocity limits to be sent to hand nodes
     self._max_cart_vel = np.ones(self.robot_dim + self.finger_dim)*0.3
@@ -193,7 +212,7 @@ class SNPInput(ControlInput):
 
   def handle_velocities(self, msg):
     if self._mode == self.robot_dim:
-        for i in range(self.robot_dim, self.robot_dim + self.finger_dim):
+        for i in range(self.robot_dim, self.robot_dim + self.finger_dim): #for fingers
             self._cart_vel[i] = self._max_cart_vel[i] * msg.axes[0]
     else:
         self._cart_vel[self._mode] = self._max_cart_vel[self._mode] * msg.axes[0] * self._vel_multiplier[self._mode]
@@ -274,7 +293,7 @@ class SNPInput(ControlInput):
 
 if __name__ == '__main__':
   rospy.init_node('sip_puff_node', anonymous=True)
-  snp = SNPInput()
+  snp = SNPInput(robot_dim = 3, finger_dim = 0)
   snp.startSend('/user_vel')
   rospy.Subscriber('joy_sip_puff', Joy, snp.receive)
   rospy.Subscriber('/chin_button', Bool, snp.button_cb)
