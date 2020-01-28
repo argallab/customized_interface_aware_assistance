@@ -42,7 +42,7 @@ class SNPInput(ControlInput):
     self.modepub = rospy.Publisher("/mi/current_mode", Int16, queue_size=1)
 
     # Services
-    rospy.Service('/teleop_node/set_mode', SetMode, self.set_mode)
+    # rospy.Service('/teleop_node/set_mode', SetMode, self.set_mode)
 
     # Initialize
     self.gripper_vel_limit = 2000
@@ -215,7 +215,7 @@ class SNPInput(ControlInput):
         for i in range(self.robot_dim, self.robot_dim + self.finger_dim): #for fingers
             self._cart_vel[i] = self._max_cart_vel[i] * msg.axes[0]
     else:
-        self._cart_vel[self._mode] = self._max_cart_vel[self._mode] * msg.axes[0] * self._vel_multiplier[self._mode]
+        self._cart_vel[self._mode] = -self._max_cart_vel[self._mode] * msg.axes[0] * self._vel_multiplier[self._mode]
 
 #######################################################################################
 #                                 MAIN FUNCTIONS                                      #
@@ -249,15 +249,17 @@ class SNPInput(ControlInput):
 
     # Ignore the leadup to powerful blow that leads to mode switch (ONLY FOR SIP-PUFF SYSTEM, otherwise delete)
     elif self._ignore_input_counter < self._num_inputs_to_ignore: # seems like thread issue if the number to ignore is too high
-      self._ignore_input_counter +=1
+        self._ignore_input_counter +=1
 
     # If hard puff or sip (i.e. steep angle), means mode switch, so lock to wait for user to stop blowing
     elif abs((msg.axes[0] - self.old_msg.axes[0])/(msg.header.stamp - self.old_msg.header.stamp).to_sec()) >= 5:
-      self._lock_input is True
+      self._lock_input = True
 
     # If mode was not switched previously and buildup to switch is not ignored, then move the robot arm
     else:
+      print (self._lock_input)
       self.move_robot_arm(msg)
+
 
     self.old_msg = msg
     self.handle_threading()

@@ -46,6 +46,11 @@ class Simulator(object):
 			self.env_params['goal_orientation'] = 0.0
 			self.env_params['r_to_g_relative_orientation'] = RGOrient.TOP_LEFT
 			self.env_params['start_direction'] = StartDirection.Y
+			self.env_params['start_mode'] = 'x'
+
+		# rospy.loginfo("Waiting for teleop_nodes ")
+		# rospy.wait_for_service("/teleop_node/set_mode")
+		# rospy.loginfo("teleop_node node found! ")
 
 		self.env = ModeInferenceEnv(self.env_params)
 		self.env.reset()
