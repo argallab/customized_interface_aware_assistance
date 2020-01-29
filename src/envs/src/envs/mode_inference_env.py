@@ -2,7 +2,7 @@ from Box2D import (b2EdgeShape, b2FixtureDef, b2PolygonShape, b2Random, b2Circle
 import Box2D
 from backends.rendering import Viewer, Transform
 from utils import RobotSE2, FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS, SCALE, VIEWPORT_W, VIEWPORT_H
-from utils import PI, ROBOT_COLOR_WHEN_MOVING, ROBOT_COLOR_WHEN_COMMAND_REQUIRED, ROBOT_RADIUS, GOAL_RADIUS
+from utils import PI, ROBOT_COLOR_WHEN_MOVING, ROBOT_COLOR_WHEN_COMMAND_REQUIRED, ROBOT_RADIUS, GOAL_RADIUS, TURN_LOCATION_COLOR
 from utils import WP_RADIUS, INFLATION_FACTOR, PATH_HALF_WIDTH
 from utils import RGOrient, StartDirection
 import csv
@@ -30,6 +30,8 @@ class ModeInferenceEnv(object):
         assert 'goal_orientation' in self.env_params
         assert 'r_to_g_relative_orientation' in self.env_params
         assert 'start_direction' in self.env_params
+        assert 'start_mode' in self.env_params
+        assert 'location_of_turn' in self.env_params
 
 
         self.num_turns = None
@@ -42,20 +44,15 @@ class ModeInferenceEnv(object):
         self.goal_orientation = None
         self.r_to_g_relative_orientation = None
         self.start_direction = None
+        self.start_mode = None
+        self.location_of_turn = None
 
-
-    def render(self, mode='human'):
-        if self.viewer is None:
-            self.viewer = Viewer(VIEWPORT_W, VIEWPORT_H)
-            self.viewer.set_bounds(0, VIEWPORT_W/SCALE, 0, VIEWPORT_H/SCALE)
-            self.viewer.window.set_location(650, 300)
-
-        #render the goal position
+    def _render_goal(self):
         t = Transform(translation=(self.goal_position[0],self.goal_position[1]))
         self.viewer.draw_circle(GOAL_RADIUS/SCALE, 30, True, color=(0.53, 1.0, 0.42)).add_attr(t)
         self.viewer.draw_line(self.goal_position, (self.goal_position[0] + (GOAL_RADIUS/SCALE)*math.cos(self.goal_orientation), self.goal_position[1] + (GOAL_RADIUS/SCALE)*math.sin(self.goal_orientation)) )
 
-        #render bodies
+    def _render_bodies(self):
         for r in [self.robot]:
             if isinstance(r, RobotSE2):
                 robot = r.robot
@@ -77,22 +74,46 @@ class ModeInferenceEnv(object):
                     path.append(path[0])
                     self.viewer.draw_polyline(path, color=(1.0, 0.0, 0.0), linewidth=2)
 
-        #draw robot direction indicator after the robot has been drawn.
+
+    def _render_robot_direction_indicators(self):
         ep_markers = self.robot.get_direction_marker_end_points()
         self.viewer.draw_line(ep_markers[0], ep_markers[1])
 
+    def _render_waypoints(self):
         #render the waypoints
         for i in range(len(self.waypoints)):
             t =  Transform(translation=(self.waypoints[i][0], self.waypoints[i][1]))
             self.viewer.draw_circle(WP_RADIUS/SCALE, 30, True, color=(0,0,0)).add_attr(t)
 
-        # for i in range(1, len(self.waypoints)):
-        #     self.viewer.draw_line(tuple(self.waypoints[i-1]), tuple(self.waypoints[i]))
-
-        #render path
+    def _render_path(self):
         for i in range(1, len(self.path_points)):
             self.viewer.draw_line(tuple(self.path_points[i-1][0]), tuple(self.path_points[i][0])) #draw left edge
             self.viewer.draw_line(tuple(self.path_points[i-1][1]), tuple(self.path_points[i][1])) #draw right edge
+
+    def _render_turn_location(self):
+        location_of_turn_waypoint = self.waypoints[self.location_of_turn]
+        t =  Transform(translation=(location_of_turn_waypoint[0], location_of_turn_waypoint[1]))
+        self.viewer.draw_circle(4*WP_RADIUS/SCALE, 4, True, color=TURN_LOCATION_COLOR).add_attr(t) # TODO Look into how to properly render a box instead of a circle with 4 points!
+
+
+    def render(self, mode='human'):
+        if self.viewer is None:
+            self.viewer = Viewer(VIEWPORT_W, VIEWPORT_H)
+            self.viewer.set_bounds(0, VIEWPORT_W/SCALE, 0, VIEWPORT_H/SCALE)
+            self.viewer.window.set_location(650, 300)
+
+        #render location for turning
+        self._render_turn_location()
+        #render the goal position
+        self._render_goal()
+        #render bodies
+        self._render_bodies()
+        #draw robot direction indicator after the robot has been drawn.
+        self._render_robot_direction_indicators()
+        #render waypoints
+        self._render_waypoints()
+        #render path
+        self._render_path()
 
         return self.viewer.render(False)
 
@@ -117,6 +138,8 @@ class ModeInferenceEnv(object):
         self.goal_orientation = self.env_params['goal_orientation']
         self.r_to_g_relative_orientation = self.env_params['r_to_g_relative_orientation']
         self.start_direction = self.env_params['start_direction']
+        self.start_mode = self.env_params['start_mode']
+        self.location_of_turn = self.env_params['location_of_turn'] #corresponds to the index in self.waypoints list
 
         self.robot = RobotSE2(self.world, position=self.robot_position, orientation=self.robot_orientation, robot_color=ROBOT_COLOR_WHEN_COMMAND_REQUIRED, radius=ROBOT_RADIUS/SCALE)
         self._generate_way_points()

@@ -43,8 +43,9 @@ class JoystickInput(ControlInput):
             2: {"0":12, "1":13},
             3: {"0":123}
         }
-    self._paradigm = '0'
+    self._paradigm = 1
     self._mode_key = self.switcher.get(self._paradigm, "nothing")
+    self._mode_switching_map = 1
 
     # load velocity limits
     if rospy.has_param('max_cart_vel'):
@@ -188,9 +189,10 @@ class JoystickInput(ControlInput):
       return self.switcher.get(self._paradigm, "nothing")
 
   def reconfigure_cb(self, config, level):
-    self._paradigm = config.joystick_paradigm #1D, 2D or 3D
-    self._mode_switching_map = config.joystick_mode_switch #cyclical or direct switch
-    self._mode_key = self.get_mode_switch_paradigm()
+    # self._paradigm = config.joystick_paradigm #1D, 2D or 3D
+    # self._mode_switching_map = config.joystick_mode_switch #cyclical or direct switch
+    # self._mode_key = self.get_mode_switch_paradigm()
+    # (TODO) fix issues with defaults not loading properly.
     return config
 
 if __name__ == '__main__':

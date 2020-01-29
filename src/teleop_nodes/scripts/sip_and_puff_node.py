@@ -41,8 +41,7 @@ class SNPInput(ControlInput):
     self.mode_switch_pub = rospy.Publisher('mode_switches', ModeSwitch, queue_size=1)
     self.modepub = rospy.Publisher("/mi/current_mode", Int16, queue_size=1)
 
-    # Services
-    # rospy.Service('/teleop_node/set_mode', SetMode, self.set_mode)
+
 
     # Initialize
     self.gripper_vel_limit = 2000
@@ -110,6 +109,8 @@ class SNPInput(ControlInput):
     self.send_msg.velocity.data = np.zeros_like(self._cart_vel)
     self.send_msg.header.stamp = rospy.Time.now()
     self.send_msg.header.frame_id = 'snp'
+    # Services
+    rospy.Service('/teleop_node/set_mode', SetMode, self.set_mode)
 
     self.waiting_for_release = False
     self.lock.acquire()

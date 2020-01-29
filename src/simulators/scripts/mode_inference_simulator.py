@@ -8,11 +8,12 @@ from envs.mode_inference_env import ModeInferenceEnv
 from std_msgs.msg import Float32MultiArray
 from std_msgs.msg import MultiArrayDimension
 from teleop_nodes.msg import CartVelCmd
+from teleop_nodes.srv import SetMode, SetModeRequest, SetModeResponse
 from pyglet.window import key
 import numpy as np
 import pickle
 import os
-from utils import Robot2D, FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS, SCALE, VIEWPORT_W, VIEWPORT_H
+from utils import Robot2D, FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS, SCALE, VIEWPORT_W, VIEWPORT_H, SE2_MODES
 from utils import ROBOT_RADIUS, GOAL_RADIUS, GOAL_SHAPES, GOAL_COLORS, PI, HUMAN_ROBOT_COLOR, AUTONOMY_ROBOT_COLOR, TRIANGLE_L
 from utils import RGOrient, StartDirection
 
@@ -46,12 +47,21 @@ class Simulator(object):
 			self.env_params['goal_orientation'] = 0.0
 			self.env_params['r_to_g_relative_orientation'] = RGOrient.TOP_LEFT
 			self.env_params['start_direction'] = StartDirection.Y
-			self.env_params['start_mode'] = 'x'
+			self.env_params['start_mode'] = 't'
+			self.env_params['location_of_turn'] = 1
 
-		# rospy.loginfo("Waiting for teleop_nodes ")
-		# rospy.wait_for_service("/teleop_node/set_mode")
-		# rospy.loginfo("teleop_node node found! ")
+		rospy.loginfo("Waiting for teleop_node ")
+		rospy.wait_for_service("/teleop_node/set_mode")
+		rospy.loginfo("teleop_node node service found! ")
 
+
+		#set starting mode for the trial
+		self.set_mode_srv = rospy.ServiceProxy('/teleop_node/set_mode', SetMode)
+		self.set_mode_request = SetModeRequest()
+		self.set_mode_request.mode_index = SE2_MODES[self.env_params['start_mode']]
+
+		status = self.set_mode_srv(self.set_mode_request)
+		
 		self.env = ModeInferenceEnv(self.env_params)
 		self.env.reset()
 		self.env.render()
