@@ -1,3 +1,4 @@
+# sip and puff pressure thresholds to destinguish hard/soft sips or puffs, and transition bands
 sip_and_puff_thresholds:
   lower_sip_limit: 0.002
   lower_puff_limit: -0.002

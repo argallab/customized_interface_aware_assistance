@@ -16,6 +16,7 @@
 
 	<rosparam param="snp_velocity_scale">20</rosparam>
 	<rosparam param="joy_velocity_scale">10</rosparam>
+
 	<!-- JOY NODES -->
 	<!-- PS3 Joystick -->
 	<group if="$(arg PS3)">
@@ -39,15 +40,18 @@
 
 	<!-- Sip and PUff -->
 	<group if="$(arg SNP)">
+		<rosparam command="load" file="$(find teleop_nodes)/config/sip_and_puff_mapping.yaml" />
+		<rosparam command="load" file="$(find teleop_nodes)/config/velocity_limits.yaml" />
 		<node pkg="joy" type="joy_node" name="joy_node_snp">
 			<!-- <param name="dev" value="/dev/sip_and_puff"/> -->
 			<param name="dev" value="/dev/input/js0"/>
-			<remap from="joy" to="joy_sip_puff"/>
+			<!-- <remap from="joy" to="joy_sip_puff"/> -->
 		</node>
+		<node pkg="teleop_nodes" type="sip_puff_mapping.py" name="sip_puff_mapping"/>
 		<node pkg="teleop_nodes" type="sip_and_puff_node.py" name="sip_and_puff_node" output="screen">
-			<param name="snp_paradigm" value="$(find teleop_nodes)/cfg/SipPuffModeSwitchParadigm.cfg"/>
+			<param name="snp_paradigm" value="$(find teleop_nodes)/cfg/SipPuffModeSwitchParadigm.cfg"/>			
 		</node>
-		<node pkg="rosserial_python" name="chin_button_arduino" type="serial_node.py" args="$(arg CHIN_PORT)" />
+		<node pkg="rosserial_python" name="chin_button_arduino" type="serial_node.py" args="$(arg CHIN_PORT)"/>
 	</group>
 
 	<!-- Mouse -->
@@ -78,7 +82,6 @@
 	<!-- <group unless="$(arg blending)">
 		<node pkg="teleop_nodes" output="screen" type="uservel_to_cartesianvel.py" name="uservel_to_cartesianvel"/>
 	</group> -->
-
 
 
 	<!-- Mode Display -->

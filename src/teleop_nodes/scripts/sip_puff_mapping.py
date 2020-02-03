@@ -52,10 +52,11 @@ class SNPMapping(object):
 
 
   # #######################################################################################
-  #                           Check Sip and Puff Limits                           #
+  #                           Check Sip and Puff Limits                                   #
   #######################################################################################
   # checks whether within limits, otherwise air velocity in dead zone (essentailly zero)
   # written this way to make debugging easier if needed
+  # labels hard and soft sips and puffs, buffers out 
   def checkLimits(self, airVelocity):
     
     if (self.lower_puff_limit < airVelocity < self.lower_sip_limit):
@@ -81,9 +82,9 @@ class SNPMapping(object):
     return 0
 
   #######################################################################################
-  #                                 MAIN FUNCTIONS                                      #
+  #                                Raw Joy Callback                                     #
   #######################################################################################
-  # the main function, labels hard and soft sips and puffs, buffers out
+  # recieves raw input, checks for buildup and 
 
   def joy_callback(self, msg):
     # prevent robot arm moving after done blowing, zero out velocities

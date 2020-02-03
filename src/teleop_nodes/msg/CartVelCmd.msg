@@ -1,2 +1,3 @@
 Header header
 std_msgs/Float32MultiArray velocity
+int16 mode
