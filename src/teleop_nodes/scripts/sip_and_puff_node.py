@@ -118,7 +118,7 @@ class SNPInput(ControlInput):
 
   # checks whether to switch mode, and changes x-->y-->z-->roll-->pitch-->yaw-->gripper
   def switchMode(self, msg):
-    switch = False      
+    switch = False   
     # Paradigm 1: One-way mode switching
     ####################################
     if self.mode_switch_paradigm == 1: 
@@ -199,9 +199,8 @@ class SNPInput(ControlInput):
     # ####################################
     # TO DO: May need to zero out velocities during mode switching
     if self.motion_paradigm == 2: 
-      print self._mode
       if self._latch_lock: 
-        if not msg.buttons[1] and not msg.buttons[2]: 
+        if msg.buttons[1]==0 and msg.buttons[2]==0 and msg.buttons[0]==0 and msg.buttons[3]==0: 
           self._latch_lock = 0
       elif msg.buttons[1]: # soft puff (+ve motion)
         if self._negative_latch: # stop reverse latch
@@ -245,7 +244,8 @@ class SNPInput(ControlInput):
 
   # determines whether mode switch should happen, if not, moves robot arm based on mode
   def handle_paradigms(self, msg):
-    self.switchMode(msg)
+    if self._positive_latch == 0 and self._negative_latch == 0:  
+      self.switchMode(msg)
     self.handle_velocities(msg)
 
     # send the velocities to robot
@@ -303,3 +303,4 @@ if __name__ == '__main__':
   rospy.init_node('sip_puff_node', anonymous=True)
   snp = SNPInput(robot_dim = 3, finger_dim = 0)    
   rospy.spin()
+0
