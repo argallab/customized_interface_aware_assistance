@@ -35,6 +35,11 @@ class ModeInferenceEnv(object):
 
 
         self.num_turns = None
+        self.num_locations = None
+        self.STATES = None
+        self.LOCATIONS = None
+        self.ORIENTATIONS = None
+        self.DIMENSIONS = None
         self.robot = None
         self.waypoints = None
         self.path_points = None
@@ -46,6 +51,11 @@ class ModeInferenceEnv(object):
         self.start_direction = None
         self.start_mode = None
         self.location_of_turn = None
+
+    def _transform_continuous_state_to_discrete_state(self):
+        pass
+
+
 
     def _render_goal(self):
         t = Transform(translation=(self.goal_position[0],self.goal_position[1]))
@@ -63,7 +73,10 @@ class ModeInferenceEnv(object):
                 if type(f.shape) is b2CircleShape:
                     t = Transform(translation = trans.position)
                     if isinstance(r, RobotSE2):
-                        self.viewer.draw_circle(f.shape.radius, 30, color=r.robot_color, filled=True).add_attr(t)
+                        if abs(np.linalg.norm(robot.linearVelocity)) > 0:
+                            self.viewer.draw_circle(f.shape.radius, 30, color=r.robot_color, filled=True).add_attr(t)
+                        else:
+                            self.viewer.draw_circle(f.shape.radius, 30, color=ROBOT_COLOR_WHEN_MOVING, filled=True).add_attr(t)
                     else:
                         self.viewer.draw_circle(f.shape.radius, 30, color=(1.0, 1.0, 1.0), filled=True).add_attr(t)
                 elif type(f.shape) is b2EdgeShape:
@@ -73,7 +86,6 @@ class ModeInferenceEnv(object):
                     self.viewer.draw_polygon(path, color=(1.0, 0.0, 0.0))
                     path.append(path[0])
                     self.viewer.draw_polyline(path, color=(1.0, 0.0, 0.0), linewidth=2)
-
 
     def _render_robot_direction_indicators(self):
         ep_markers = self.robot.get_direction_marker_end_points()
@@ -94,7 +106,6 @@ class ModeInferenceEnv(object):
         location_of_turn_waypoint = self.waypoints[self.location_of_turn]
         t =  Transform(translation=(location_of_turn_waypoint[0], location_of_turn_waypoint[1]))
         self.viewer.draw_circle(4*WP_RADIUS/SCALE, 4, True, color=TURN_LOCATION_COLOR).add_attr(t) # TODO Look into how to properly render a box instead of a circle with 4 points!
-
 
     def render(self, mode='human'):
         if self.viewer is None:
@@ -117,7 +128,6 @@ class ModeInferenceEnv(object):
 
         return self.viewer.render(False)
 
-
     def _destroy(self):
         if self.robot is None: return
         self.world.DestroyBody(self.robot.robot)
@@ -129,8 +139,10 @@ class ModeInferenceEnv(object):
 
         self.num_turns = self.env_params['num_turns']
         assert self.num_turns > 0
-        self.waypoints = np.zeros((self.num_turns + 2, 2))
-        self.path_points = np.zeros((self.num_turns + 2, 2, 2))
+        self.num_locations = self.num_turns + 2 #num turns + start + end point
+        # self.STATES = [s for s in itertools.product(self.LOCATIONS, self.ORIENTATIONS, self.DIMENSIONS)]
+        self.waypoints = np.zeros((self.num_locations, 2))
+        self.path_points = np.zeros((self.num_locations, 2, 2))
 
         self.robot_position = self.env_params['robot_position']
         self.robot_orientation = self.env_params['robot_orientation']
