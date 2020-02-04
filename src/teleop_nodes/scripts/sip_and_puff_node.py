@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import rospy
 import numpy as np
+import threading
 from control_input import ControlInput
 from sensor_msgs.msg import Joy
 from std_msgs.msg import Bool
@@ -11,6 +12,7 @@ from std_msgs.msg import Int16
 from dynamic_reconfigure.server import Server
 from teleop_nodes.cfg import SipPuffModeSwitchParadigmConfig
 from teleop_nodes.srv import SetMode, SetModeRequest, SetModeResponse
+from std_srvs.srv import SetBool, SetBoolResponse
 npa = np.array
 
 
@@ -65,7 +67,7 @@ class SNPInput(ControlInput):
     self.send_msg.velocity.data = np.zeros_like(self._cart_vel)
     self.send_msg.header.stamp = rospy.Time.now()
     self.send_msg.header.frame_id = 'snp'
-    self.send_msg.mode = self._mode
+    # self.send_msg.mode = self._mode
    
     self.publish_mode()
 
@@ -82,6 +84,7 @@ class SNPInput(ControlInput):
   def initialize_services(self): 
     mode_paradigm_srv = Server(SipPuffModeSwitchParadigmConfig, self.reconfigure_cb)
     rospy.Service('/teleop_node/set_mode', SetMode, self.set_mode)
+    rospy.Service('/teleop_node/stop_latch', SetBool, self.stop_latch)
 
   #######################################################################################
   #                           FUNCTIONS FOR SWITCHING MODES                             #
@@ -94,18 +97,23 @@ class SNPInput(ControlInput):
     print "Current mode is ", self._mode
     status = SetModeResponse()
     self.publish_mode()
+    self.modeswitch_msg.header.frame_id = 'service'
+    self.publish_modeswitch()
     status = True
     return status
 
+  # To do: remove this, maybe have arduino listen to the other message and just add one to it
   def publish_mode(self):
     self.modepub.publish(self._mode+1) # +1 for arduino
 
+  # publishes mode and updates parameter server
   def publish_modeswitch(self):
     self._mode_switch_count = self._mode_switch_count+1
     self.modeswitch_msg.header.stamp = rospy.Time.now()
     self.modeswitch_msg.mode = self._mode
     self.modeswitch_msg.num_switches = self._mode_switch_count
     self.mode_switch_pub.publish(self.modeswitch_msg)
+    rospy.set_param('mode',self._mode)
     print "Num of mode switches %d" % self._mode_switch_count
 
   # checks whether to switch mode, and changes x-->y-->z-->roll-->pitch-->yaw-->gripper
@@ -141,6 +149,7 @@ class SNPInput(ControlInput):
 
     if switch: 
       print "************MODE IS NOW ", self._mode, " *******************"
+      self.modeswitch_msg.header.frame_id = 'user'
       self.publish_modeswitch()
       self.publish_mode()
       
@@ -153,6 +162,9 @@ class SNPInput(ControlInput):
     for i in range(0,self.robot_dim + self.finger_dim):
         self._cart_vel[i] = 0
         # print 'zero'
+  
+  def one_mode_zero_vel(self, mode): 
+    self._cart_vel[mode] = 0
 
   def check_latch_time(self): 
     if (rospy.get_time() - self._latch_start_time) > self._latch_command_duration:
@@ -160,21 +172,25 @@ class SNPInput(ControlInput):
       self._latch_lock = 0 
       self.zero_vel()
 
+  def stop_latch(self, booler): 
+    self._latch_lock = 0 
+    self.zero_vel()
+    status = SetBoolResponse()
+    return status
+  
   def handle_velocities(self, msg):
     # # Paradigm 1: Timed-latch
     # ####################################
     if self.motion_paradigm == 1: 
-      self.check_latch_time() # TO DO: Start another thread for checking time
+      # self.check_latch_time() 
       if not self._latch_lock:         
         if msg.buttons[1]: # soft puff (+ve motion)
           # latch forward
-          print 'latch forward'
           self._cart_vel[self._mode] = self._max_cart_vel[self._mode] * self._vel_multiplier[self._mode]   
           self._latch_start_time = rospy.get_time()
           self._latch_lock = 1       
         elif msg.buttons[2]: # soft sip (-ve motion)
           # latch reverse
-          print 'latch reverse'
           self._cart_vel[self._mode] = -self._max_cart_vel[self._mode] * self._vel_multiplier[self._mode]
           self._latch_start_time = rospy.get_time()
           self._latch_lock = 1
@@ -183,6 +199,7 @@ class SNPInput(ControlInput):
     # ####################################
     # TO DO: May need to zero out velocities during mode switching
     if self.motion_paradigm == 2: 
+      print self._mode
       if self._latch_lock: 
         if not msg.buttons[1] and not msg.buttons[2]: 
           self._latch_lock = 0
@@ -204,6 +221,7 @@ class SNPInput(ControlInput):
           self._cart_vel[self._mode] = -self._max_cart_vel[self._mode] * self._vel_multiplier[self._mode]
           self._negative_latch = 1 
           self._latch_lock = 1
+      # this zeros out when mode switching is happening. If you want to turn and move, remove this
 
     # Paradigm 3: Constant velocity
     ####################################
@@ -233,7 +251,7 @@ class SNPInput(ControlInput):
     # send the velocities to robot
     self.send_msg.velocity.data = self._cart_vel
     self.send_msg.header.stamp = rospy.Time.now()
-    self.send_msg.mode = self._mode
+    # self.send_msg.mode = self._mode
     # print 'msg', self.send_msg.mode, 'mode:', self._mode
   
 #######################################################################################
@@ -247,6 +265,10 @@ class SNPInput(ControlInput):
     finally:
       self.lock.release()
 
+  def latch_timing_threader(self): 
+    while True: 
+      self.check_latch_time
+
   # the main function, determines velocities to send to robot
   def receive(self, msg):
     self.handle_paradigms(msg)
@@ -259,12 +281,18 @@ class SNPInput(ControlInput):
     try:
       self.data = CartVelCmd()
     finally:
-      self.lock.release()
+      self.lock.release()  
 
   # Mode switching rosparam
   def reconfigure_cb(self, config, level):
     self.mode_switch_paradigm = config.snp_mode_switch_paradigm
     self.motion_paradigm = config.snp_motion_paradigm
+    t = threading.Thread(target=self.latch_timing_threader)
+    if self.motion_paradigm == 1:       
+      t.daemon = True
+      t.start()
+    else: 
+      t.daemon = False
     self._positive_latch = 0 
     self._negative_latch = 0 
     self._latch_lock = 0
