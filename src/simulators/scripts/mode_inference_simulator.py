@@ -13,10 +13,10 @@ from pyglet.window import key
 import numpy as np
 import pickle
 import os
-from utils import Robot2D, FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS, SCALE, VIEWPORT_W, VIEWPORT_H, SE2_MODES
+from utils import Robot2D, FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS, SCALE, VIEWPORT_W, VIEWPORT_H, DIM_TO_MODE_INDEX
 from utils import ROBOT_RADIUS, GOAL_RADIUS, GOAL_SHAPES, GOAL_COLORS, PI, HUMAN_ROBOT_COLOR, AUTONOMY_ROBOT_COLOR, TRIANGLE_L
 from utils import RGOrient, StartDirection
-
+from IPython import embed
 class Simulator(object):
 	def __init__(self, dim=3, trial_index = 0, trial_info_dir_path=None):
 		#TODO pass args as a dict
@@ -24,9 +24,25 @@ class Simulator(object):
 		rospy.init_node("Simulator")
 		rospy.on_shutdown(self.shutdown_hook)
 		# rospy.Subscriber('/joy', Joy, self.joy_callback)
+		self.dim = dim
+		user_vel = CartVelCmd()
+		_dim = [MultiArrayDimension()]
+		_dim[0].label = 'cartesian_velocity'
+		_dim[0].size = dim
+		_dim[0].stride = dim
+		user_vel.velocity.layout.dim = _dim
+		user_vel.velocity.data = np.zeros(self.dim)
+		user_vel.header.stamp = rospy.Time.now()
+		user_vel.header.frame_id = 'human_control'
+
+
+		self.input_action = {}
+		self.input_action['human'] = user_vel
+
 		rospy.Subscriber('/user_vel', CartVelCmd, self.joy_callback)
 		self.trial_index = trial_index
-		self.dim = dim
+
+		# self.input_action_initialized = False
 
 		self.env_params = None
 		self.trial_info_dir_path = trial_info_dir_path
@@ -44,11 +60,13 @@ class Simulator(object):
 			self.env_params['robot_position'] = ((3*VIEWPORT_W)/4/SCALE, (VIEWPORT_H)/4/SCALE)
 			self.env_params['goal_position'] = (VIEWPORT_W/4/SCALE, (3*VIEWPORT_H)/4/SCALE)
 			self.env_params['robot_orientation'] = 0.0
-			self.env_params['goal_orientation'] = 0.0
+			self.env_params['goal_orientation'] = PI/2
 			self.env_params['r_to_g_relative_orientation'] = RGOrient.TOP_LEFT
 			self.env_params['start_direction'] = StartDirection.Y
 			self.env_params['start_mode'] = 't'
 			self.env_params['location_of_turn'] = 1
+
+		print self.env_params['start_mode']
 
 		rospy.loginfo("Waiting for teleop_node ")
 		rospy.wait_for_service("/teleop_node/set_mode")
@@ -58,27 +76,13 @@ class Simulator(object):
 		#set starting mode for the trial
 		self.set_mode_srv = rospy.ServiceProxy('/teleop_node/set_mode', SetMode)
 		self.set_mode_request = SetModeRequest()
-		self.set_mode_request.mode_index = SE2_MODES[self.env_params['start_mode']]
+		self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params['start_mode']]
 
 		status = self.set_mode_srv(self.set_mode_request)
-		
+
 		self.env = ModeInferenceEnv(self.env_params)
 		self.env.reset()
 		self.env.render()
-
-		user_vel = CartVelCmd()
-		_dim = [MultiArrayDimension()]
-		_dim[0].label = 'cartesian_velocity'
-		_dim[0].size = dim
-		_dim[0].stride = dim
-		user_vel.velocity.layout.dim = _dim
-		user_vel.velocity.data = np.zeros(self.dim)
-		user_vel.header.stamp = rospy.Time.now()
-		user_vel.header.frame_id = 'human_control'
-
-		self.input_action = {}
-		self.input_action['human'] = user_vel
-
 
 		r = rospy.Rate(100)
 		self.trial_start_time = time.time()
@@ -91,6 +95,7 @@ class Simulator(object):
 		isStart = True
 
 	def joy_callback(self, msg):
+		
 		self.input_action['human'] = msg
 
 	def shutdown_hook(self):

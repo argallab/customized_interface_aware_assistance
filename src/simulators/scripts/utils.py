@@ -22,14 +22,21 @@ TRIANGLE_L = 6
 GOAL_COLORS = {'circle': (1.0, 0.0, 0.0), 'triangle': (0.0, 1.0, 0.0), 'rect': (0.0, 0.0, 1.0)}
 GOAL_SHAPES = {0:'circle', 1:'triangle', 2:'rect'}
 
-ROBOT_COLOR_WHEN_MOVING = (0.0, 0.0, 0.0)
+ROBOT_COLOR_WHEN_MOVING = (1.0, 105.0/255, 80/255.0)
 ROBOT_COLOR_WHEN_COMMAND_REQUIRED = (1.0, 0.0, 0.0)
 WP_RADIUS = 4
 INFLATION_FACTOR = 1.2
 
 PATH_HALF_WIDTH = INFLATION_FACTOR * ROBOT_RADIUS
 
-SE2_MODES = {'x': 0, 'y':1, 't': 2}
+DIM_TO_MODE_INDEX = {'x': 0, 'y':1, 't': 2}
+MODE_INDEX_TO_DIM = {v:k for k,v in DIM_TO_MODE_INDEX.items()}
+
+class PositionOnLine(Enum):
+    START = 0
+    BETWEEN = 1
+    END = 2
+    NOT_ON_LINE = 3
 
 class StartDirection(Enum):
     X = 0
@@ -58,8 +65,21 @@ class RobotSE2(object):
     def set_robot_color(self, robot_color):
         self.robot_color = robot_color
 
+    #GETTERS
     def get_direction_marker_end_points(self):
         return (self.robot.position[0], self.robot.position[1]), (self.robot.position[0] + self.radius*math.cos(self.robot.angle), self.robot.position[1] + self.radius*math.sin(self.robot.angle))
+
+    def get_position(self):
+        return self.robot.position
+
+    def get_angle(self):
+        return self.robot.angle
+
+    def set_position(self, position):
+        self.robot.position = position
+
+    def set_orientation(self, orientation):
+        self.robot.angle = orientation
 
 class Goal(object):
     """docstring forGoal."""

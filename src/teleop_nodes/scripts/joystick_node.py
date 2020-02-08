@@ -96,6 +96,7 @@ class JoystickInput(ControlInput):
 
   def publish_mode(self):
     self.modepub.publish(self._mode_key[str(self._mode)])
+    rospy.set_param('mode', self._mode_key[str(self._mode)] - 1) #-1 to account for zero indexing
     print "Current Mode", self._mode_key[str(self._mode)]
 
   def publish_modeswitch(self):
