@@ -387,16 +387,17 @@ class ModeInferenceEnv(object):
     def step(self, input_action):
         assert 'human' in input_action.keys()
 
-        current_discrete_position, snap_or_not = self._transform_continuous_position_to_discrete_position() #transform the continuous robot position to a discrete state representation. Easier for computing the optimal action etc
-        if snap_or_not:
+        #TODO maybe change local variables into global variables
+        current_discrete_position, should_snap = self._transform_continuous_position_to_discrete_position() #transform the continuous robot position to a discrete state representation. Easier for computing the optimal action etc
+        if should_snap:
             #if the robot is very close to the 'next' corner, then artificially snap the position of the robot to that corner. So that the linear motion along the segment is properly completed
             self.robot.set_position(self.LOCATIONS_TO_WAYPOINTS_DICT[current_discrete_position]) #directly set the position of the robot
-            current_discrete_position, snap_or_not = self._transform_continuous_position_to_discrete_position() #recompute the discrete position
+            current_discrete_position, should_snap = self._transform_continuous_position_to_discrete_position() #recompute the discrete position
 
-        current_discrete_orientation, snap_or_not = self._transform_continuous_orientation_to_discrete_orientation() #compute discrete orientation state from continuous orientation of the robot
-        if snap_or_not:
-            self.robot.set_orientation(current_discrete_orientation) #is snap is true then force orientation to be that of the target
-            current_discrete_orientation, snap_or_not = self._transform_continuous_orientation_to_discrete_orientation()
+        current_discrete_orientation, should_snap = self._transform_continuous_orientation_to_discrete_orientation() #compute discrete orientation state from continuous orientation of the robot
+        if should_snap:
+            self.robot.set_orientation(current_discrete_orientation) #if snap is true then force orientation to be that of the target orientation
+            current_discrete_orientation, should_snap = self._transform_continuous_orientation_to_discrete_orientation() #recompute the discrete orientation
 
         #restrict the nonzero components of the velocity only to the allowed modes.
         current_mode_index = rospy.get_param('mode') #0,1,2 #get current mode index
@@ -404,7 +405,7 @@ class ModeInferenceEnv(object):
         self.current_discrete_state = (current_discrete_position, current_discrete_orientation, current_mode) #update the current discrete state.
         current_allowed_mode = self._retrieve_current_allowed_mode() #x,y,t #for the given location, retrieve what is the allowed mode of motion.
         current_allowed_mode_index = DIM_TO_MODE_INDEX[current_allowed_mode] #0,1,2 #get the mode index of the allowed mode of motion
-        user_vel = np.array([input_action['human'].velocity.data[0], input_action['human'].velocity.data[1], -input_action['human'].velocity.data[2]]) #numpyify the velocity data
+        user_vel = np.array([input_action['human'].velocity.data[0], input_action['human'].velocity.data[1], -input_action['human'].velocity.data[2]]) #numpyify the velocity data. note the negative sign on the 3rd component.To account for proper counterclockwise motion
         user_vel[np.setdiff1d(self.DIMENSION_INDICES, current_allowed_mode_index)] = 0.0 #zero out all velocities except the ones for the allowed mode
 
         #check if the direction of user_vel is correct as well. For each location in the allowed mode/dimension there is proper direction in which the velocity should be.
