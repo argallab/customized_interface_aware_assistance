@@ -3,8 +3,8 @@ import Box2D
 from backends.rendering import Viewer, Transform
 from utils import RobotSE2, FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS, SCALE, VIEWPORT_W, VIEWPORT_H
 from utils import PI, ROBOT_RADIUS, GOAL_RADIUS, MODE_DISPLAY_RADIUS
-from utils import ROBOT_COLOR_WHEN_MOVING, ROBOT_COLOR_WHEN_COMMAND_REQUIRED, ACTIVE_MODE_COLOR, TURN_LOCATION_COLOR
-from utils import MODE_CIRCLE_DISPLAY_START_POSITION_S, MODE_CIRCLE_DISPLAY_X_OFFSET_S
+from utils import ROBOT_COLOR_WHEN_MOVING, ROBOT_COLOR_WHEN_COMMAND_REQUIRED, ACTIVE_MODE_COLOR, NONACTIVE_MODE_COLOR, TURN_LOCATION_COLOR, MODE_DISPLAY_TEXT_COLOR, MODE_DISPLAY_TEXT_FONTSIZE
+from utils import MODE_DISPLAY_CIRCLE_START_POSITION_S, MODE_DISPLAY_CIRCLE_X_OFFSET_S, MODE_DISPLAY_TEXT_START_POSITION, MODE_DISPLAY_TEXT_X_OFFSET
 from utils import WP_RADIUS, INFLATION_FACTOR, PATH_HALF_WIDTH, MODE_INDEX_TO_DIM, DIM_TO_MODE_INDEX
 from utils import RGOrient, StartDirection, PositionOnLine
 from utils import get_sign_of_number
@@ -15,7 +15,6 @@ import collections
 import itertools
 import rospy
 import pyglet
-from pyglet import gl
 
 class ModeInferenceEnv(object):
     metadata = {
@@ -251,16 +250,19 @@ class ModeInferenceEnv(object):
 
     def _render_mode_display(self):
         for i, d in enumerate(self.DIMENSIONS):
-            t = Transform(translation=(MODE_CIRCLE_DISPLAY_START_POSITION_S[0] + i*MODE_CIRCLE_DISPLAY_X_OFFSET_S, MODE_CIRCLE_DISPLAY_START_POSITION_S[1]))
+            t = Transform(translation=(MODE_DISPLAY_CIRCLE_START_POSITION_S[0] + i*MODE_DISPLAY_CIRCLE_X_OFFSET_S, MODE_DISPLAY_CIRCLE_START_POSITION_S[1]))
             if d == self.current_mode:
                 self.viewer.draw_circle(MODE_DISPLAY_RADIUS/SCALE, 30, True, color=ACTIVE_MODE_COLOR).add_attr(t)
             else:
-                self.viewer.draw_circle(MODE_DISPLAY_RADIUS/SCALE, 30, True, color=(0.8,0.8,0.8)).add_attr(t)
+                self.viewer.draw_circle(MODE_DISPLAY_RADIUS/SCALE, 30, True, color=NONACTIVE_MODE_COLOR).add_attr(t)
 
     def _render_mode_display_text(self):
-        self.viewer.draw_text("X", x=MODE_CIRCLE_DISPLAY_START_POSITION_S[0]*SCALE, y=MODE_CIRCLE_DISPLAY_START_POSITION_S[1]*SCALE - 1.5*MODE_DISPLAY_RADIUS, font_size=14, color=(0,0,0,255))
-        self.viewer.draw_text("Y", x=(MODE_CIRCLE_DISPLAY_START_POSITION_S[0] + MODE_CIRCLE_DISPLAY_X_OFFSET_S)*SCALE, y=MODE_CIRCLE_DISPLAY_START_POSITION_S[1]*SCALE - 1.5*MODE_DISPLAY_RADIUS, font_size=14, color=(0,0,0,255))
-        self.viewer.draw_text("T", x=(MODE_CIRCLE_DISPLAY_START_POSITION_S[0] + 2*MODE_CIRCLE_DISPLAY_X_OFFSET_S)*SCALE, y=MODE_CIRCLE_DISPLAY_START_POSITION_S[1]*SCALE - 1.5*MODE_DISPLAY_RADIUS, font_size=14, color=(0,0,0,255))
+        '''
+        Note that the coordinates of the text should in real pixels. Which is why here there is a multiplicative factor of SCALE.
+        '''
+        self.viewer.draw_text("X", x=MODE_DISPLAY_TEXT_START_POSITION[0], y=MODE_DISPLAY_TEXT_START_POSITION[1], font_size=MODE_DISPLAY_TEXT_FONTSIZE, color=MODE_DISPLAY_TEXT_COLOR)
+        self.viewer.draw_text("Y", x=MODE_DISPLAY_TEXT_START_POSITION[0] + MODE_DISPLAY_TEXT_X_OFFSET, y=MODE_DISPLAY_TEXT_START_POSITION[1], font_size=MODE_DISPLAY_TEXT_FONTSIZE, color=MODE_DISPLAY_TEXT_COLOR)
+        self.viewer.draw_text("T", x=MODE_DISPLAY_TEXT_START_POSITION[0] + 2*MODE_DISPLAY_TEXT_X_OFFSET, y=MODE_DISPLAY_TEXT_START_POSITION[1], font_size=MODE_DISPLAY_TEXT_FONTSIZE, color=MODE_DISPLAY_TEXT_COLOR)
 
     def render(self, mode='human'):
         if self.viewer is None:
@@ -280,7 +282,7 @@ class ModeInferenceEnv(object):
         self._render_waypoints()
         #render path
         self._render_path()
-        #render virtual mode display and text
+        #render virtual mode display
         self._render_mode_display()
         #render dimension text
         self._render_mode_display_text()
