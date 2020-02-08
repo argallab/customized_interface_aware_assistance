@@ -2,9 +2,12 @@ from Box2D import (b2EdgeShape, b2FixtureDef, b2PolygonShape, b2Random, b2Circle
 import Box2D
 from backends.rendering import Viewer, Transform
 from utils import RobotSE2, FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS, SCALE, VIEWPORT_W, VIEWPORT_H
-from utils import PI, ROBOT_COLOR_WHEN_MOVING, ROBOT_COLOR_WHEN_COMMAND_REQUIRED, ROBOT_RADIUS, GOAL_RADIUS, TURN_LOCATION_COLOR
+from utils import PI, ROBOT_RADIUS, GOAL_RADIUS, MODE_DISPLAY_RADIUS
+from utils import ROBOT_COLOR_WHEN_MOVING, ROBOT_COLOR_WHEN_COMMAND_REQUIRED, ACTIVE_MODE_COLOR, TURN_LOCATION_COLOR
+from utils import MODE_CIRCLE_DISPLAY_START_POSITION, MODE_CIRCLE_DISPLAY_X_OFFSET
 from utils import WP_RADIUS, INFLATION_FACTOR, PATH_HALF_WIDTH, MODE_INDEX_TO_DIM, DIM_TO_MODE_INDEX
 from utils import RGOrient, StartDirection, PositionOnLine
+from utils import get_sign_of_number
 import csv
 import math
 import numpy as np
@@ -244,6 +247,14 @@ class ModeInferenceEnv(object):
         t =  Transform(translation=(location_of_turn_waypoint[0], location_of_turn_waypoint[1]))
         self.viewer.draw_circle(4*WP_RADIUS/SCALE, 4, True, color=TURN_LOCATION_COLOR).add_attr(t) # TODO Look into how to properly render a box instead of a circle with 4 points!
 
+    def _render_mode_display(self):
+        for i, d in enumerate(self.DIMENSIONS):
+            t = Transform(translation=(MODE_CIRCLE_DISPLAY_START_POSITION[0] + i*MODE_CIRCLE_DISPLAY_X_OFFSET, MODE_CIRCLE_DISPLAY_START_POSITION[1]))
+            if d == self.current_mode:
+                self.viewer.draw_circle(MODE_DISPLAY_RADIUS/SCALE, 30, True, color=ACTIVE_MODE_COLOR).add_attr(t)
+            else:
+                self.viewer.draw_circle(MODE_DISPLAY_RADIUS/SCALE, 30, True, color=(0.8,0.8,0.8)).add_attr(t)
+
     def render(self, mode='human'):
         if self.viewer is None:
             self.viewer = Viewer(VIEWPORT_W, VIEWPORT_H)
@@ -262,6 +273,9 @@ class ModeInferenceEnv(object):
         self._render_waypoints()
         #render path
         self._render_path()
+
+        #render virtual mode display.
+        self._render_mode_display()
 
         return self.viewer.render(False)
 
@@ -318,17 +332,6 @@ class ModeInferenceEnv(object):
 
         # embed(banner1='check waypoints')
 
-    #utility functions TODO  to be moved to utils function
-    def _get_sign_of_number(self, x):
-        '''
-        Utility function for getting the sign of a scalar. +1 for positive, -1 for negative
-        TODO - move to utils.py
-        '''
-        if int(x>=0):
-            return 1.0
-        else:
-            return -1.0
-
     #Environment destructor and reset
     def _destroy(self):
         if self.robot is None: return
@@ -360,7 +363,8 @@ class ModeInferenceEnv(object):
         self.waypoints = np.zeros((self.num_locations, 2))
         self.path_points = np.zeros((self.num_locations, 2, 2)) #to draw the outline of the path
         self.current_discrete_state = (self.LOCATIONS[0], self.ORIENTATIONS[0], self.start_mode) #init current discrete state
-
+        self.current_mode_index = DIM_TO_MODE_INDEX[self.start_mode]
+        self.current_mode = self.start_mode
         #create and initialize the dictionary which contains info regarding which modes/dimension allow motion for each location
         self.MODES_MOTION_ALLOWED = collections.OrderedDict()
         self._init_modes_in_which_motion_allowed_dict()
@@ -400,9 +404,9 @@ class ModeInferenceEnv(object):
             current_discrete_orientation, should_snap = self._transform_continuous_orientation_to_discrete_orientation() #recompute the discrete orientation
 
         #restrict the nonzero components of the velocity only to the allowed modes.
-        current_mode_index = rospy.get_param('mode') #0,1,2 #get current mode index
-        current_mode =  MODE_INDEX_TO_DIM[current_mode_index] #x,y,t, #get current mode
-        self.current_discrete_state = (current_discrete_position, current_discrete_orientation, current_mode) #update the current discrete state.
+        self.current_mode_index = rospy.get_param('mode') #0,1,2 #get current mode index
+        self.current_mode =  MODE_INDEX_TO_DIM[self.current_mode_index] #x,y,t, #get current mode
+        self.current_discrete_state = (current_discrete_position, current_discrete_orientation, self.current_mode) #update the current discrete state.
         current_allowed_mode = self._retrieve_current_allowed_mode() #x,y,t #for the given location, retrieve what is the allowed mode of motion.
         current_allowed_mode_index = DIM_TO_MODE_INDEX[current_allowed_mode] #0,1,2 #get the mode index of the allowed mode of motion
         user_vel = np.array([input_action['human'].velocity.data[0], input_action['human'].velocity.data[1], -input_action['human'].velocity.data[2]]) #numpyify the velocity data. note the negative sign on the 3rd component.To account for proper counterclockwise motion
@@ -410,7 +414,7 @@ class ModeInferenceEnv(object):
 
         #check if the direction of user_vel is correct as well. For each location in the allowed mode/dimension there is proper direction in which the velocity should be.
         current_allowed_direction_of_motion_in_allowed_mode = self._retrieve_allowed_direction_motion_in_allowed_mode()
-        if self._get_sign_of_number(user_vel[current_allowed_mode_index]) != current_allowed_direction_of_motion_in_allowed_mode: #check if the direction velocity component in the allowed mode matches the allowed direction of motion in the allowed mode
+        if get_sign_of_number(user_vel[current_allowed_mode_index]) != current_allowed_direction_of_motion_in_allowed_mode: #check if the direction velocity component in the allowed mode matches the allowed direction of motion in the allowed mode
             user_vel[current_allowed_mode_index] = 0.0 #if not, zero the velocity out
 
         print self.current_discrete_state, current_allowed_mode, user_vel

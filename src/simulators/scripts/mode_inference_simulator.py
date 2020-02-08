@@ -95,7 +95,6 @@ class Simulator(object):
 		isStart = True
 
 	def joy_callback(self, msg):
-		
 		self.input_action['human'] = msg
 
 	def shutdown_hook(self):

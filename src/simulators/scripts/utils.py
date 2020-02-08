@@ -12,26 +12,39 @@ VIEWPORT_W = 600
 PI = math.pi
 VIEWPORT_H = 400
 
+#COLORS
 HUMAN_ROBOT_COLOR = (0.0, 0.0, 0.0)
 AUTONOMY_ROBOT_COLOR = (0.5, 0.5, 0.5)
 TURN_LOCATION_COLOR = (173/255.0, 216/255.0, 230/255.0)
+ACTIVE_MODE_COLOR = (0, 1.0, 0.0)
+ROBOT_COLOR_WHEN_MOVING = (1.0, 105.0/255, 80/255.0)
+ROBOT_COLOR_WHEN_COMMAND_REQUIRED = (1.0, 0.0, 0.0)
 
+#GEOMETRY
+MODE_DISPLAY_RADIUS = 15
 ROBOT_RADIUS = 10
 GOAL_RADIUS = 10
 TRIANGLE_L = 6
 GOAL_COLORS = {'circle': (1.0, 0.0, 0.0), 'triangle': (0.0, 1.0, 0.0), 'rect': (0.0, 0.0, 1.0)}
 GOAL_SHAPES = {0:'circle', 1:'triangle', 2:'rect'}
-
-ROBOT_COLOR_WHEN_MOVING = (1.0, 105.0/255, 80/255.0)
-ROBOT_COLOR_WHEN_COMMAND_REQUIRED = (1.0, 0.0, 0.0)
 WP_RADIUS = 4
 INFLATION_FACTOR = 1.2
-
 PATH_HALF_WIDTH = INFLATION_FACTOR * ROBOT_RADIUS
 
+VIEWPORT_WS = VIEWPORT_W/SCALE
+VIEWPORT_HS = VIEWPORT_H/SCALE
+ROBOT_RADIUS_S = ROBOT_RADIUS/SCALE
+GOAL_RADIUS_S = GOAL_RADIUS/SCALE
+
+
+MODE_CIRCLE_DISPLAY_START_POSITION = [(3*VIEWPORT_WS)/4 +ROBOT_RADIUS_S, VIEWPORT_HS - 2*ROBOT_RADIUS_S]
+MODE_CIRCLE_DISPLAY_X_OFFSET = 4*ROBOT_RADIUS_S
+
+#DICTIONARIES
 DIM_TO_MODE_INDEX = {'x': 0, 'y':1, 't': 2}
 MODE_INDEX_TO_DIM = {v:k for k,v in DIM_TO_MODE_INDEX.items()}
 
+#Enum defintions
 class PositionOnLine(Enum):
     START = 0
     BETWEEN = 1
@@ -50,6 +63,19 @@ class RGOrient(Enum):
     BOTTOM_LEFT = 2
     BOTTOM_RIGHT = 3
 
+#utility functions
+
+def get_sign_of_number(x):
+    '''
+    Utility function for getting the sign of a scalar. +1 for positive, -1 for negative
+    '''
+    if int(x>=0):
+        return 1.0
+    else:
+        return -1.0
+
+
+#class definitions
 class Robot2D(object):
     def __init__(self, world, position, robot_color=(1.0, 0.0, 0.0), radius=3, type='kinematic'):
         self.robot = world.CreateKinematicBody(position=position,shapes=[b2CircleShape(pos=position, radius=radius)])
