@@ -1,6 +1,7 @@
 from Box2D import b2CircleShape, b2EdgeShape
 import math
 from enum import Enum
+import collections
 
 #TODO move defines to a separate file
 FPS = 100

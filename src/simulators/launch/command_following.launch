@@ -12,10 +12,9 @@
 	<arg name="blending" default="false" doc="Set to true if there is not control blending."/>
   <arg name="PS3" default="false" doc="Set to false if don't want to use ps3 controller."/>
 
-  <!-- <node pkg="simulators" output="screen" type="command_following_simulation.py" name="command_following_simulation"/> -->
-    <node pkg="simulators" output="screen" type="command_following.py" name="command_following_simulation" args="$(arg duration) $(arg iteration)"/>
+  <node pkg="simulators" output="screen" type="command_following_simulation.py" name="command_following_simulation" args="$(arg duration) $(arg iteration)"/>
 
-    <node pkg="general_purpose" output="screen" type="keyboard_input_to_topic" name="keyboard_input_to_topic"/>
+  <node pkg="general_purpose" output="screen" type="keyboard_input_to_topic" name="keyboard_input_to_topic"/>
 
 
 <!--   <include file="$(find teleop_nodes)/launch/teleop_nodes.launch">
