@@ -61,6 +61,7 @@ class ModeInferenceEnv(object):
         self.start_direction = None
         self.start_mode = None
         self.location_of_turn = None
+        #TODO (deepak.gopinath) Create rospy Service for returning the optimal action for a given state. To be used by the inference node. Create the proper srv message as well
 
 
     def _check_continuous_position_on_line_joining_waypoints(self, start_position, end_position, current_position):
@@ -507,6 +508,7 @@ class ModeInferenceEnv(object):
             user_vel[current_allowed_mode_index] = 0.0 #if not, zero the velocity out
 
         print self.current_discrete_state, current_allowed_mode, user_vel
+        #TODO (deepak-gopinath) update rosparamserver with the current_discrete_state
         self.robot.robot.linearVelocity = b2Vec2(user_vel[0], user_vel[1]) #update robot velocity
         self.robot.robot.angularVelocity = user_vel[2]
         self.world.Step(1.0/FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS) #call box2D step function
