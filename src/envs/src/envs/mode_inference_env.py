@@ -8,13 +8,13 @@ from utils import MODE_DISPLAY_CIRCLE_START_POSITION_S, MODE_DISPLAY_CIRCLE_X_OF
 from utils import WP_RADIUS, INFLATION_FACTOR, PATH_HALF_WIDTH, MODE_INDEX_TO_DIM, DIM_TO_MODE_INDEX
 from utils import RGOrient, StartDirection, PositionOnLine
 from utils import get_sign_of_number
+from utils import LOW_LEVEL_COMMANDS, HIGH_LEVEL_ACTIONS, TRUE_ACTION_TO_COMMAND, TRUE_COMMAND_TO_ACTION, MODE_SWITCH_TRANSITION, TRANSITION_FOR_ACTION
 import csv
 import math
 import numpy as np
 import collections
 import itertools
 import rospy
-import pyglet
 
 class ModeInferenceEnv(object):
     metadata = {
@@ -60,6 +60,7 @@ class ModeInferenceEnv(object):
         self.start_direction = None
         self.start_mode = None
         self.location_of_turn = None
+        #TODO (deepak.gopinath) Create rospy Service for returning the optimal action for a given state. To be used by the inference node. Create the proper srv message as well
 
 
     def _check_continuous_position_on_line_joining_waypoints(self, start_position, end_position, current_position):
@@ -196,6 +197,72 @@ class ModeInferenceEnv(object):
                 self.ALLOWED_DIRECTIONS_OF_MOTION[loc_p].append(1.0) #append direction indicator for rotation. counterclockwise is 1.0
 
         self.ALLOWED_DIRECTIONS_OF_MOTION[self.LOCATIONS[-1]] = [self.ALLOWED_DIRECTIONS_OF_MOTION[self.LOCATIONS[-2]][0]] #copy the direction of the linear dimension of the second last waypoint.
+
+    def _create_state_transition_model(self):
+        for s in self.STATES:
+            self.STATE_TRANSITION_MODEL[s] = collections.OrderedDict()
+            for u in LOW_LEVEL_COMMANDS:
+                self.STATE_TRANSITION_MODEL[s][u] = None
+
+    def _init_state_transition_model(self):
+        rgc = self.r_to_g_relative_orientation
+        for s in self.STATE_TRANSITION_MODEL.keys():#for all states in the world
+            for u in self.STATE_TRANSITION_MODEL[s].keys():#for all available low-level commands
+                if u == 'hp' or u == 'hs':
+                    self.STATE_TRANSITION_MODEL[s][u] = (s[0], s[1], MODE_SWITCH_TRANSITION[s[2]][u]) #generate new state
+                if u == 'sp' or u == 'ss': #if sp or ss, this will result in motion if the mode associated with s an allowed mode for motion
+                    allowed_modes_for_motion = self.MODES_MOTION_ALLOWED[s[0]] #retrieve all the modes in which motion is allowed for this state. (note that, for the location in which turning happens there will be two modes in which motion is allowed)
+                    self.STATE_TRANSITION_MODEL[s][u] = (s[0], s[1], s[2]) #by default store the same state as next state. Because if no motion happens, the resultant state is also the same state
+                    for m in allowed_modes_for_motion:
+                        if m == s[2]: #make sure that the allowed mode matches the mode in the state s. If it doesn't no motion will happen
+    						if m != 't': #allowed motion mode is a linear mode, x or y.
+    							if TRANSITION_FOR_ACTION[rgc][u][m] == 'next':
+    								new_loc_next = self.LOCATIONS[min(self.LOCATIONS.index(s[0]) + 1, len(self.LOCATIONS)-1 )]
+    								self.STATE_TRANSITION_MODEL[s][u] = (new_loc_next, s[1], s[2])
+    							elif TRANSITION_FOR_ACTION[rgc][u][m] == 'prev':
+    								new_loc_prev = self.LOCATIONS[max(self.LOCATIONS.index(s[0]) - 1, 0 )]
+    								self.STATE_TRANSITION_MODEL[s][u] = (new_loc_prev, s[1], s[2])
+    						elif m == 't':# if allowed mode is rotation mode, rotate the angle properly.
+    							new_theta = s[1]
+    							if TRANSITION_FOR_ACTION[rgc][u][m] == 'next' and s[1] == 0:
+    								new_theta = min(PI/2, s[1] + PI/2) #max angle allowed is PI/2
+    							elif TRANSITION_FOR_ACTION[rgc][u][m] == 'prev' and s[1] == PI/2:
+    								new_theta = max(0, s[1] - PI/2) #min angle allowed is 0.0
+
+    							self.STATE_TRANSITION_MODEL[s][u] = (s[0], new_theta, s[2])
+
+    def _create_optimal_next_state_dict(self):
+        for s in self.STATES:
+    		if self.LOCATIONS.index(s[0]) < self.location_of_turn or self.LOCATIONS.index(s[0]) > self.location_of_turn: #deal with locations before and after the turn location separately as they consist of ONLY linear motion.
+    			if s[2] not in self.MODES_MOTION_ALLOWED[s[0]]: #if not in the proper mode, switch to the mode
+    				if len(self.MODES_MOTION_ALLOWED[s[0]]) == 1:
+    					self.OPTIMAL_NEXT_STATE_DICT[s] = (s[0],s[1],self.MODES_MOTION_ALLOWED[s[0]][0])
+    			else: #if already in proper mode, them move!
+    				self.OPTIMAL_NEXT_STATE_DICT[s] = (self.LOCATIONS[min(self.LOCATIONS.index(s[0]) + 1, self.num_locations)], s[1], s[2])
+    		elif self.LOCATIONS.index(s[0]) == self.location_of_turn: #at the location of turning, gotta deal with both turning and then moving in the allowed linear mode, IN THAT ORDER
+    			if s[2] != 't': #in a linear mode
+    				if s[1] == 0: #haven't turned, is not in 't'. Therefore switch to 't'. Because gotta turn first
+    					self.OPTIMAL_NEXT_STATE_DICT[s] = (s[0], s[1], 't')
+    				else: #have already turned. now need to move to the next location in the allowed linear mode
+    					if s[2] == self.MODES_MOTION_ALLOWED[s[0]][0]: #check if the linear mode is an allowed motion mode. If so, move
+    						self.OPTIMAL_NEXT_STATE_DICT[s] = (self.LOCATIONS[min(self.LOCATIONS.index(s[0]) + 1, self.num_locations)], s[1], s[2])
+    					else:# if it is not the allowed motion mode, switch to the allowed motion 'linear mode'.
+    						self.OPTIMAL_NEXT_STATE_DICT[s] = (s[0], s[1], self.MODES_MOTION_ALLOWED[s[0]][0])
+    			else:
+    				#already in turning mode
+    				if s[1] != PI/2: #if not turned yet, go ahead and turn
+    					self.OPTIMAL_NEXT_STATE_DICT[s] = (s[0], s[1] + PI/2, s[2])
+    				else: #if already turned
+    					if s[2] == self.MODES_MOTION_ALLOWED[s[0]][0]: #check if the linear mode is an allowed motion mode. If so, move
+    						self.OPTIMAL_NEXT_STATE_DICT[s] = (self.LOCATIONS[min(self.LOCATIONS.index(s[0]) + 1, self.num_locations)], s[1], s[2])
+    					else:# if it is not the allowed motion mode, switch to the allowed motion 'linear mode'.
+    						self.OPTIMAL_NEXT_STATE_DICT[s] = (s[0], s[1], self.MODES_MOTION_ALLOWED[s[0]][0])
+
+    def _generate_optimal_control_dict(self):
+    	for s in self.OPTIMAL_NEXT_STATE_DICT:
+    		sp = self.OPTIMAL_NEXT_STATE_DICT[s]
+    		self.OPTIMAL_ACTION_DICT[s] = [k for k,v in self.STATE_TRANSITION_MODEL[s].items() if v == sp]
+    		self.OPTIMAL_ACTION_DICT[s] = TRUE_COMMAND_TO_ACTION[self.OPTIMAL_ACTION_DICT[s][0]]
 
     #RENDER FUNCTIONS
     def _render_goal(self):
@@ -386,6 +453,17 @@ class ModeInferenceEnv(object):
         self._generate_way_points()
         self._generate_path()
 
+        #create STATE_TRANSITION_MODEL
+        self.STATE_TRANSITION_MODEL = collections.OrderedDict()
+        self._create_state_transition_model()
+        self._init_state_transition_model()
+
+        #create optimal next state and optimal next action dict
+        self.OPTIMAL_NEXT_STATE_DICT = collections.OrderedDict()
+        self.OPTIMAL_ACTION_DICT = collections.OrderedDict()
+        self._create_optimal_next_state_dict()
+        self._generate_optimal_control_dict()
+
         #create bidrectional mapping between discrete location ids and the waypoints
         self.LOCATIONS_TO_WAYPOINTS_DICT = collections.OrderedDict()
         for i in range(len(self.LOCATIONS)):
@@ -429,6 +507,7 @@ class ModeInferenceEnv(object):
             user_vel[current_allowed_mode_index] = 0.0 #if not, zero the velocity out
 
         print self.current_discrete_state, current_allowed_mode, user_vel
+        #TODO (deepak-gopinath) update rosparamserver with the current_discrete_state
         self.robot.robot.linearVelocity = b2Vec2(user_vel[0], user_vel[1]) #update robot velocity
         self.robot.robot.angularVelocity = user_vel[2]
         self.world.Step(1.0/FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS) #call box2D step function

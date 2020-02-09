@@ -62,6 +62,25 @@ MODE_INDEX_TO_DIM = {v:k for k,v in DIM_TO_MODE_INDEX.items()}
 # LISTS
 LOW_LEVEL_CONTROL_COMMANDS = ['Hard Puff', 'Hard Sip', 'Soft Puff', 'Soft Sip']
 EXPERIMENT_START_COUNTDOWN = ['Get Ready!','3', '2', '1']
+#low level commands issued by the snp interface. hp = hard puff, hs= hard sip, sp = soft puff, ss = soft sip. Also the domain for ui and um
+LOW_LEVEL_COMMANDS = ['hp', 'hs', 'sp', 'ss']
+#high level actions, move_p = move in positive direction, move_n = move in negative direction, mode_r = switch mode to right, mode_l = switch mode to left. positive and negative is conditioned on mode
+HIGH_LEVEL_ACTIONS = ['move_p', 'move_n', 'mode_r', 'mode_l']
+#true mapping of a to u
+TRUE_ACTION_TO_COMMAND = collections.OrderedDict({'move_p': 'sp', 'move_n':'ss', 'mode_r':'hp', 'mode_l': 'hs'})
+#true inverse mapping of u to a
+TRUE_COMMAND_TO_ACTION = collections.OrderedDict({v:k for k, v in TRUE_ACTION_TO_COMMAND.items()})
+#transition function for mode switches.
+MODE_SWITCH_TRANSITION = {'x': {'hp': 'y', 'hs': 't', 'sp': 'x', 'ss': 'x'},
+						  'y': {'hp': 't', 'hs': 'x', 'sp': 'y', 'ss': 'y'},
+						  't': {'hp': 'x', 'hs': 'y', 'sp': 't', 'ss': 't'}}
+#Depending on the configuration of the initial robot position and goal position, the motion commands will result in either moving towards the
+#next location or the previous location
+TRANSITION_FOR_ACTION =   {'tr': {'sp': {'x': 'next', 'y': 'next', 't': 'next'}, 'ss': {'x': 'prev', 'y': 'prev', 't': 'prev'}},
+    					   'tl': {'sp': {'x': 'prev', 'y': 'next', 't': 'next'}, 'ss': {'x': 'next', 'y': 'prev', 't': 'prev'}},
+    					   'br': {'sp': {'x': 'next', 'y': 'prev', 't': 'next'}, 'ss': {'x': 'prev', 'y': 'next', 't': 'prev'}},
+    					   'bl': {'sp': {'x': 'prev', 'y': 'prev', 't': 'next'}, 'ss': {'x': 'next', 'y': 'next', 't': 'prev'}}
+    						}
 
 #Enum defintions
 class PositionOnLine(Enum):
@@ -73,6 +92,7 @@ class PositionOnLine(Enum):
 class StartDirection(Enum):
     X = 0
     Y = 1
+    
 class RGOrient(Enum):
     '''
     Relative position of the goal with respect to the robot. This information is used for constructing properly shared paths in ModeInferenceEnv
