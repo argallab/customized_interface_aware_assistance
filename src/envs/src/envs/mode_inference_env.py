@@ -205,6 +205,7 @@ class ModeInferenceEnv(object):
                 self.STATE_TRANSITION_MODEL[s][u] = None
 
     def _init_state_transition_model(self):
+        rgc = self.r_to_g_relative_orientation
         for s in self.STATE_TRANSITION_MODEL.keys():#for all states in the world
             for u in self.STATE_TRANSITION_MODEL[s].keys():#for all available low-level commands
                 if u == 'hp' or u == 'hs':
@@ -229,6 +230,40 @@ class ModeInferenceEnv(object):
     								new_theta = max(0, s[1] - PI/2) #min angle allowed is 0.0
 
     							self.STATE_TRANSITION_MODEL[s][u] = (s[0], new_theta, s[2])
+
+    def _create_optimal_next_state_dict(self):
+        for s in self.STATES:
+    		if self.LOCATIONS.index(s[0]) < self.location_of_turn or self.LOCATIONS.index(s[0]) > self.location_of_turn: #deal with locations before and after the turn location separately as they consist of ONLY linear motion.
+    			if s[2] not in self.MODES_MOTION_ALLOWED[s[0]]: #if not in the proper mode, switch to the mode
+    				if len(self.MODES_MOTION_ALLOWED[s[0]]) == 1:
+    					self.OPTIMAL_NEXT_STATE_DICT[s] = (s[0],s[1],self.MODES_MOTION_ALLOWED[s[0]][0])
+    			else: #if already in proper mode, them move!
+    				self.OPTIMAL_NEXT_STATE_DICT[s] = (self.LOCATIONS[min(self.LOCATIONS.index(s[0]) + 1, self.num_locations)], s[1], s[2])
+    		elif self.LOCATIONS.index(s[0]) == self.location_of_turn: #at the location of turning, gotta deal with both turning and then moving in the allowed linear mode, IN THAT ORDER
+    			if s[2] != 't': #in a linear mode
+    				if s[1] == 0: #haven't turned, is not in 't'. Therefore switch to 't'. Because gotta turn first
+    					self.OPTIMAL_NEXT_STATE_DICT[s] = (s[0], s[1], 't')
+    				else: #have already turned. now need to move to the next location in the allowed linear mode
+    					if s[2] == self.MODES_MOTION_ALLOWED[s[0]][0]: #check if the linear mode is an allowed motion mode. If so, move
+    						self.OPTIMAL_NEXT_STATE_DICT[s] = (self.LOCATIONS[min(self.LOCATIONS.index(s[0]) + 1, self.num_locations)], s[1], s[2])
+    					else:# if it is not the allowed motion mode, switch to the allowed motion 'linear mode'.
+    						self.OPTIMAL_NEXT_STATE_DICT[s] = (s[0], s[1], self.MODES_MOTION_ALLOWED[s[0]][0])
+    			else:
+    				#already in turning mode
+    				if s[1] != PI/2: #if not turned yet, go ahead and turn
+    					self.OPTIMAL_NEXT_STATE_DICT[s] = (s[0], s[1] + PI/2, s[2])
+    				else: #if already turned
+    					if s[2] == self.MODES_MOTION_ALLOWED[s[0]][0]: #check if the linear mode is an allowed motion mode. If so, move
+    						self.OPTIMAL_NEXT_STATE_DICT[s] = (self.LOCATIONS[min(self.LOCATIONS.index(s[0]) + 1, self.num_locations)], s[1], s[2])
+    					else:# if it is not the allowed motion mode, switch to the allowed motion 'linear mode'.
+    						self.OPTIMAL_NEXT_STATE_DICT[s] = (s[0], s[1], self.MODES_MOTION_ALLOWED[s[0]][0])
+
+    def _generate_optimal_control_dict(self):
+    	for s in self.OPTIMAL_NEXT_STATE_DICT:
+    		sp = self.OPTIMAL_NEXT_STATE_DICT[s]
+    		self.OPTIMAL_ACTION_DICT[s] = [k for k,v in self.STATE_TRANSITION_MODEL[s].items() if v == sp]
+    		self.OPTIMAL_ACTION_DICT[s] = TRUE_COMMAND_TO_ACTION[self.OPTIMAL_ACTION_DICT[s][0]]
+
     #RENDER FUNCTIONS
     def _render_goal(self):
         t = Transform(translation=(self.goal_position[0],self.goal_position[1]))
@@ -422,6 +457,12 @@ class ModeInferenceEnv(object):
         self.STATE_TRANSITION_MODEL = collections.OrderedDict()
         self._create_state_transition_model()
         self._init_state_transition_model()
+
+        #create optimal next state and optimal next action dict
+        self.OPTIMAL_NEXT_STATE_DICT = collections.OrderedDict()
+        self.OPTIMAL_ACTION_DICT = collections.OrderedDict()
+        self._create_optimal_next_state_dict()
+        self._generate_optimal_control_dict()
 
         #create bidrectional mapping between discrete location ids and the waypoints
         self.LOCATIONS_TO_WAYPOINTS_DICT = collections.OrderedDict()
