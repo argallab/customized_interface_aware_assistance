@@ -36,6 +36,7 @@ class Viewer(object):
         self.window.on_close = self.window_closed_by_user
         self.isopen = True
         self.geoms = []
+        self.text_labels = []
         self.onetime_geoms = []
         self.transform = Transform()
 
@@ -56,6 +57,9 @@ class Viewer(object):
             translation=(-left*scalex, -bottom*scaley),
             scale=(scalex, scaley))
 
+    def add_text_onetime(self, text_label):
+        self.text_labels.append(text_label)
+
     def add_geom(self, geom):
         self.geoms.append(geom)
 
@@ -63,10 +67,10 @@ class Viewer(object):
         self.onetime_geoms.append(geom)
 
     def render(self, return_rgb_array=False):
-        glClearColor(1,1,1,1)
-        self.window.clear()
         self.window.switch_to()
         self.window.dispatch_events()
+        self.window.clear()
+        glClearColor(1,1,1,1)
         self.transform.enable()
         for geom in self.geoms:
             geom.render()
@@ -74,6 +78,8 @@ class Viewer(object):
             geom.render()
         self.transform.disable()
         arr = None
+        for label in self.text_labels:
+            label.draw()
         if return_rgb_array:
             buffer = pyglet.image.get_buffer_manager().get_color_buffer()
             image_data = buffer.get_image_data()
@@ -88,6 +94,7 @@ class Viewer(object):
             arr = arr[::-1,:,0:3]
         self.window.flip()
         self.onetime_geoms = []
+        self.text_labels = []
         return arr if return_rgb_array else self.isopen
 
     # Convenience
@@ -114,6 +121,13 @@ class Viewer(object):
         _add_attrs(geom, attrs)
         self.add_onetime(geom)
         return geom
+
+    def draw_text(self, text, x, y, font_size=20, color=(0,0,0,255)):
+        label = pyglet.text.Label(text, font_size=font_size,
+                                  x=x, y=y, anchor_x='center', anchor_y='top',
+                                  color=color)
+        self.add_text_onetime(label)
+        return label
 
     def get_array(self):
         self.window.flip()
