@@ -512,6 +512,7 @@ class ModeInferenceEnv(object):
 
         print self.current_discrete_state, current_allowed_mode, user_vel
         #TODO (deepak-gopinath) update rosparamserver with the current_discrete_state
+        rospy.set_param('current_discrete_state', self.current_discrete_state)
         self.robot.robot.linearVelocity = b2Vec2(user_vel[0], user_vel[1]) #update robot velocity
         self.robot.robot.angularVelocity = user_vel[2]
         self.world.Step(1.0/FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS) #call box2D step function
