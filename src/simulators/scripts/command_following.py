@@ -8,6 +8,7 @@ import rospy
 import time
 from sensor_msgs.msg import Joy
 from std_msgs.msg import String
+from simulators.msg import Command
 from envs.text_window_env import TextWindowEnv
 from utils import LOW_LEVEL_CONTROL_COMMANDS, EXPERIMENT_START_COUNTDOWN
 import pyglet
@@ -17,16 +18,17 @@ from random import randrange
 class CommandFollowing(object):    
     def __init__(self, duration=1.0, iterations=1):
             
+        # initialization 
         rospy.init_node("command_following")	
         self.initialize_subscribers()
+        self.initialize_publishers()
 
         self.duration = float(duration) # duration command text is displayed on screen
         self.iterations = int(iterations) # number of iterations each command is to be displayed on screen 
 
-        self.isStart = False # boolean experiment start 
+        self.command_msg = Command()
 
         self.env_params = None
-
         self.env_params = dict()
         self.env_params['text'] = 'Command Following'
         
@@ -36,6 +38,15 @@ class CommandFollowing(object):
 
     def initialize_subscribers(self): 
         rospy.Subscriber('/keyboard_entry', String, self.keyboard_callback)
+
+    def initialize_publishers(self): 
+        # for ros bag purposes (not being used for any code logic)
+        self.command_pub = rospy.Publisher('command_prompt', Command, queue_size=1)
+
+    def publish_command(self, msg): 
+        self.command_msg.header.stamp = rospy.Time.now()
+        self.command_msg.command = msg
+        self.command_pub.publish(self.command_msg)
 
     # start experiment
     def keyboard_callback(self, msg): 
@@ -52,17 +63,17 @@ class CommandFollowing(object):
             commands = LOW_LEVEL_CONTROL_COMMANDS[:]
             for j in range(len(commands)): 
                 rand_index = randrange(len(commands))
-                self.call_render(LOW_LEVEL_CONTROL_COMMANDS[rand_index], self.duration)
+                self.publish_command(LOW_LEVEL_CONTROL_COMMANDS[rand_index])
+                self.call_render(LOW_LEVEL_CONTROL_COMMANDS[rand_index], self.duration) 
                 commands.pop(rand_index)
         self.call_render('ALL DONE :D', self.duration)
-
+        
     # set new text message and render            
     def call_render(self, msg, duration): 
             self.env_params['text'] = msg
             self.env.reset()
             self.env.render()
             rospy.sleep(duration)
-
 
     def shutdown_hook(self):
         pass
