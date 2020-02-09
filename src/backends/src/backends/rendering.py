@@ -122,10 +122,12 @@ class Viewer(object):
         self.add_onetime(geom)
         return geom
 
-    def draw_text(self, text, x, y, font_size=20, color=(0,0,0,255)):
-        label = pyglet.text.Label(text, font_size=font_size,
-                                  x=x, y=y, anchor_x='center', anchor_y='top',
-                                  color=color)
+    def draw_text(self, text, x, y, color=(0,0,0,255), font_size=20, font_name='Arial', anchor_x='center', anchor_y = 'center', bold=False):
+        label = pyglet.text.Label(text, x=x, y=y, 
+                                  font_size=font_size, font_name=font_name,
+                                  anchor_x=anchor_x, anchor_y=anchor_y,
+                                  color=color, bold=bold
+                                  )
         self.add_text_onetime(label)
         return label
 
