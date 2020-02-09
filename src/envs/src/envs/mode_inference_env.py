@@ -15,7 +15,6 @@ import numpy as np
 import collections
 import itertools
 import rospy
-import pyglet
 
 class ModeInferenceEnv(object):
     metadata = {
