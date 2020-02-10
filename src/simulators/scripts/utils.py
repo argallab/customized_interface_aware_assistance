@@ -80,12 +80,6 @@ MODE_SWITCH_TRANSITION = {'x': {'hp': 'y', 'hs': 't', 'sp': 'x', 'ss': 'x'},
 						  't': {'hp': 'x', 'hs': 'y', 'sp': 't', 'ss': 't'}}
 #Depending on the configuration of the initial robot position and goal position, the motion commands will result in either moving towards the
 #next location or the previous location
-TRANSITION_FOR_ACTION =   {'tr': {'sp': {'x': 'next', 'y': 'next', 't': 'next'}, 'ss': {'x': 'prev', 'y': 'prev', 't': 'prev'}},
-    					   'tl': {'sp': {'x': 'prev', 'y': 'next', 't': 'next'}, 'ss': {'x': 'next', 'y': 'prev', 't': 'prev'}},
-    					   'br': {'sp': {'x': 'next', 'y': 'prev', 't': 'next'}, 'ss': {'x': 'prev', 'y': 'next', 't': 'prev'}},
-    					   'bl': {'sp': {'x': 'prev', 'y': 'prev', 't': 'next'}, 'ss': {'x': 'next', 'y': 'next', 't': 'prev'}}
-    						}
-
 #Enum defintions
 class PositionOnLine(Enum):
     START = 0
@@ -96,7 +90,7 @@ class PositionOnLine(Enum):
 class StartDirection(Enum):
     X = 0
     Y = 1
-    
+
 class RGOrient(Enum):
     '''
     Relative position of the goal with respect to the robot. This information is used for constructing properly shared paths in ModeInferenceEnv
@@ -105,6 +99,14 @@ class RGOrient(Enum):
     TOP_LEFT = 1
     BOTTOM_LEFT = 2
     BOTTOM_RIGHT = 3
+
+
+TRANSITION_FOR_ACTION =   { RGOrient.TOP_RIGHT: {'sp': {'x': 'next', 'y': 'next', 't': 'next'}, 'ss': {'x': 'prev', 'y': 'prev', 't': 'prev'}},
+    					   RGOrient.TOP_LEFT: {'sp': {'x': 'prev', 'y': 'next', 't': 'next'}, 'ss': {'x': 'next', 'y': 'prev', 't': 'prev'}},
+    					   RGOrient.BOTTOM_RIGHT: {'sp': {'x': 'next', 'y': 'prev', 't': 'next'}, 'ss': {'x': 'prev', 'y': 'next', 't': 'prev'}},
+    					   RGOrient.BOTTOM_LEFT: {'sp': {'x': 'prev', 'y': 'prev', 't': 'next'}, 'ss': {'x': 'next', 'y': 'next', 't': 'prev'}}
+    						}
+
 
 #utility functions
 
