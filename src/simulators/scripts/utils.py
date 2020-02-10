@@ -64,23 +64,27 @@ MODE_INDEX_TO_DIM = {v:k for k,v in DIM_TO_MODE_INDEX.items()}
 
 
 # LISTS
-LOW_LEVEL_CONTROL_COMMANDS = ['Hard Puff', 'Hard Sip', 'Soft Puff', 'Soft Sip']
+LOW_LEVEL_COMMANDS = ['Hard Puff', 'Hard Sip', 'Soft Puff', 'Soft Sip']
 EXPERIMENT_START_COUNTDOWN = ['Get Ready!','3', '2', '1']
 #low level commands issued by the snp interface. hp = hard puff, hs= hard sip, sp = soft puff, ss = soft sip. Also the domain for ui and um
-LOW_LEVEL_COMMANDS = ['hp', 'hs', 'sp', 'ss']
+# LOW_LEVEL_COMMANDS = ['hp', 'hs', 'sp', 'ss']
 #high level actions, move_p = move in positive direction, move_n = move in negative direction, mode_r = switch mode to right, mode_l = switch mode to left. positive and negative is conditioned on mode
 HIGH_LEVEL_ACTIONS = ['move_p', 'move_n', 'mode_r', 'mode_l']
 #true mapping of a to u
-TRUE_ACTION_TO_COMMAND = collections.OrderedDict({'move_p': 'sp', 'move_n':'ss', 'mode_r':'hp', 'mode_l': 'hs'})
+TRUE_ACTION_TO_COMMAND = collections.OrderedDict({'move_p': 'Soft Puff', 'move_n':'Soft Sip', 'mode_r':'Hard Puff', 'mode_l': 'Hard Sip'})
 #true inverse mapping of u to a
 TRUE_COMMAND_TO_ACTION = collections.OrderedDict({v:k for k, v in TRUE_ACTION_TO_COMMAND.items()})
 #transition function for mode switches.
-MODE_SWITCH_TRANSITION = {'x': {'hp': 'y', 'hs': 't', 'sp': 'x', 'ss': 'x'},
-						  'y': {'hp': 't', 'hs': 'x', 'sp': 'y', 'ss': 'y'},
-						  't': {'hp': 'x', 'hs': 'y', 'sp': 't', 'ss': 't'}}
+MODE_SWITCH_TRANSITION = {'x': {'Hard Puff': 'y', 'Hard Sip': 't', 'Soft Puff': 'x', 'Soft Sip': 'x'},
+						  'y': {'Hard Puff': 't', 'Hard Sip': 'x', 'Soft Puff': 'y', 'Soft Sip': 'y'},
+						  't': {'Hard Puff': 'x', 'Hard Sip': 'y', 'Soft Puff': 't', 'Soft Sip': 't'}}
 #Depending on the configuration of the initial robot position and goal position, the motion commands will result in either moving towards the
 #next location or the previous location
 #Enum defintions
+class AssistanceType(Enum):
+    Filter = 0
+    Corrective = 1
+
 class PositionOnLine(Enum):
     START = 0
     BETWEEN = 1
@@ -101,10 +105,10 @@ class RGOrient(Enum):
     BOTTOM_RIGHT = 3
 
 
-TRANSITION_FOR_ACTION =   { RGOrient.TOP_RIGHT: {'sp': {'x': 'next', 'y': 'next', 't': 'next'}, 'ss': {'x': 'prev', 'y': 'prev', 't': 'prev'}},
-    					   RGOrient.TOP_LEFT: {'sp': {'x': 'prev', 'y': 'next', 't': 'next'}, 'ss': {'x': 'next', 'y': 'prev', 't': 'prev'}},
-    					   RGOrient.BOTTOM_RIGHT: {'sp': {'x': 'next', 'y': 'prev', 't': 'next'}, 'ss': {'x': 'prev', 'y': 'next', 't': 'prev'}},
-    					   RGOrient.BOTTOM_LEFT: {'sp': {'x': 'prev', 'y': 'prev', 't': 'next'}, 'ss': {'x': 'next', 'y': 'next', 't': 'prev'}}
+TRANSITION_FOR_ACTION =   { RGOrient.TOP_RIGHT:   {'Soft Puff': {'x': 'next', 'y': 'next', 't': 'next'}, 'Soft Sip': {'x': 'prev', 'y': 'prev', 't': 'prev'}},
+    					   RGOrient.TOP_LEFT:     {'Soft Puff': {'x': 'prev', 'y': 'next', 't': 'next'}, 'Soft Sip': {'x': 'next', 'y': 'prev', 't': 'prev'}},
+    					   RGOrient.BOTTOM_RIGHT: {'Soft Puff': {'x': 'next', 'y': 'prev', 't': 'next'}, 'Soft Sip': {'x': 'prev', 'y': 'next', 't': 'prev'}},
+    					   RGOrient.BOTTOM_LEFT:  {'Soft Puff': {'x': 'prev', 'y': 'prev', 't': 'next'}, 'Soft Sip': {'x': 'next', 'y': 'next', 't': 'prev'}}
     						}
 
 

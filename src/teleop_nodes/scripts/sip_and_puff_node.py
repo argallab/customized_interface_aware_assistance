@@ -31,12 +31,12 @@ class SNPInput(ControlInput):
     # Initialize
     self.modeswitch_msg = ModeSwitch()
     self.mode_msg = Int16()
-    self._mode = 0 
+    self._mode = 0
     self._mode_switch_count = 0
     self._switch_direction = 1
     self._button_latch_time = 0.8
-    self._positive_latch = 0 
-    self._negative_latch = 0 
+    self._positive_latch = 0
+    self._negative_latch = 0
     self._latch_lock = 0
     self._latch_start_time = rospy.get_time()
     self._latch_command_duration = 0.5 #seconds
@@ -48,7 +48,7 @@ class SNPInput(ControlInput):
         self.effective_finger_dim = 0
     self.velocity_scale = rospy.get_param("/snp_velocity_scale") #currently scalar. Could be vector for individual dimension scale
     self.gripper_vel_limit = rospy.get_param("/jaco_velocity_limits/gripper_vel_limit")
-    self._vel_multiplier = self.velocity_scale*np.ones(self.robot_dim + self.finger_dim)*1    
+    self._vel_multiplier = self.velocity_scale*np.ones(self.robot_dim + self.finger_dim)*1
     self._max_cart_vel = np.ones(self.robot_dim + self.finger_dim)*rospy.get_param("/jaco_velocity_limits/max_cart_vel_mulitplier")
     if self.finger_dim > 0:
         for j in range(finger_dim):
@@ -68,20 +68,20 @@ class SNPInput(ControlInput):
     self.send_msg.header.stamp = rospy.Time.now()
     self.send_msg.header.frame_id = 'snp'
     # self.send_msg.mode = self._mode
-   
+
     self.publish_mode()
 
 
-  def initialize_subscribers(self): 
+  def initialize_subscribers(self):
     rospy.Subscriber('/joy_sip_puff', Joy, self.receive)
     rospy.Subscriber('/chin_button', Bool, self.switchMode) # only for chin button mode switching
 
-  def initialize_publishers(self): 
-    self.startSend('/user_vel')  
+  def initialize_publishers(self):
+    self.startSend('/user_vel')
     self.mode_switch_pub = rospy.Publisher('/mode_switches', ModeSwitch, queue_size=1)
     self.modepub = rospy.Publisher("/mi/current_mode", Int16, queue_size=1)
 
-  def initialize_services(self): 
+  def initialize_services(self):
     mode_paradigm_srv = Server(SipPuffModeSwitchParadigmConfig, self.reconfigure_cb)
     rospy.Service('/teleop_node/set_mode', SetMode, self.set_mode)
     rospy.Service('/teleop_node/stop_latch', SetBool, self.stop_latch)
@@ -118,21 +118,21 @@ class SNPInput(ControlInput):
 
   # checks whether to switch mode, and changes x-->y-->z-->roll-->pitch-->yaw-->gripper
   def switchMode(self, msg):
-    switch = False   
+    switch = False
     # Paradigm 1: One-way mode switching
     ####################################
-    if self.mode_switch_paradigm == 1: 
-      if msg.buttons[0] or msg.buttons[3]: 
+    if self.mode_switch_paradigm == 1:
+      if msg.buttons[0] or msg.buttons[3]:
         self._mode = (self._mode + 1) % self.robot_dim + self.effective_finger_dim
         switch = True
 
     # Paradigm 2: Two-way mode switching
     ####################################
-    elif self.mode_switch_paradigm == 2: 
-      if msg.buttons[0]: 
+    elif self.mode_switch_paradigm == 2:
+      if msg.buttons[0]:
         self._mode = (self._mode + 1) % self.robot_dim + self.effective_finger_dim
         switch = True
-      elif msg.buttons[3]: 
+      elif msg.buttons[3]:
         self._mode = (self._mode - 1) % self.robot_dim + self.effective_finger_dim
         switch = True
 
@@ -147,13 +147,13 @@ class SNPInput(ControlInput):
         self._switch_direction *= -1
         print "Changed direction "
 
-    if switch: 
+    if switch:
       print "************MODE IS NOW ", self._mode, " *******************"
       self.modeswitch_msg.header.frame_id = 'user'
       self.publish_modeswitch()
       self.publish_mode()
-      
-        
+
+
 
   #######################################################################################
   #                           FUNCTIONS FOR SETTING VELOCITIES                          #
@@ -162,33 +162,33 @@ class SNPInput(ControlInput):
     for i in range(0,self.robot_dim + self.finger_dim):
         self._cart_vel[i] = 0
         # print 'zero'
-  
-  def one_mode_zero_vel(self, mode): 
+
+  def one_mode_zero_vel(self, mode):
     self._cart_vel[mode] = 0
 
-  def check_latch_time(self): 
+  def check_latch_time(self):
     if (rospy.get_time() - self._latch_start_time) > self._latch_command_duration:
       print "vel check"
-      self._latch_lock = 0 
+      self._latch_lock = 0
       self.zero_vel()
 
-  def stop_latch(self, booler): 
-    self._latch_lock = 0 
+  def stop_latch(self, booler):
+    self._latch_lock = 0
     self.zero_vel()
     status = SetBoolResponse()
     return status
-  
+
   def handle_velocities(self, msg):
     # # Paradigm 1: Timed-latch
     # ####################################
-    if self.motion_paradigm == 1: 
-      # self.check_latch_time() 
-      if not self._latch_lock:         
+    if self.motion_paradigm == 1:
+      # self.check_latch_time()
+      if not self._latch_lock:
         if msg.buttons[1]: # soft puff (+ve motion)
           # latch forward
-          self._cart_vel[self._mode] = self._max_cart_vel[self._mode] * self._vel_multiplier[self._mode]   
+          self._cart_vel[self._mode] = self._max_cart_vel[self._mode] * self._vel_multiplier[self._mode]
           self._latch_start_time = rospy.get_time()
-          self._latch_lock = 1       
+          self._latch_lock = 1
         elif msg.buttons[2]: # soft sip (-ve motion)
           # latch reverse
           self._cart_vel[self._mode] = -self._max_cart_vel[self._mode] * self._vel_multiplier[self._mode]
@@ -198,18 +198,18 @@ class SNPInput(ControlInput):
     # # Paradigm 2: Self-stop latch
     # ####################################
     # TO DO: May need to zero out velocities during mode switching
-    if self.motion_paradigm == 2: 
-      if self._latch_lock: 
-        if msg.buttons[1]==0 and msg.buttons[2]==0 and msg.buttons[0]==0 and msg.buttons[3]==0: 
+    if self.motion_paradigm == 2:
+      if self._latch_lock:
+        if msg.buttons[1]==0 and msg.buttons[2]==0 and msg.buttons[0]==0 and msg.buttons[3]==0:
           self._latch_lock = 0
       elif msg.buttons[1]: # soft puff (+ve motion)
         if self._negative_latch: # stop reverse latch
           self.zero_vel()
-          self._negative_latch = 0 
+          self._negative_latch = 0
           self._latch_lock = 1
         else: # latch forward
           self._cart_vel[self._mode] = self._max_cart_vel[self._mode] * self._vel_multiplier[self._mode]
-          self._positive_latch = 1 
+          self._positive_latch = 1
           self._latch_lock = 1
       elif msg.buttons[2]: # soft sip (-ve motion)
         if self._positive_latch: # stop forward latch
@@ -218,24 +218,24 @@ class SNPInput(ControlInput):
           self._latch_lock = 1
         else: # latch reverse
           self._cart_vel[self._mode] = -self._max_cart_vel[self._mode] * self._vel_multiplier[self._mode]
-          self._negative_latch = 1 
+          self._negative_latch = 1
           self._latch_lock = 1
       # this zeros out when mode switching is happening. If you want to turn and move, remove this
 
     # Paradigm 3: Constant velocity
     ####################################
-    if self.motion_paradigm == 3: 
-      if msg.buttons[1] : 
+    if self.motion_paradigm == 3:
+      if msg.buttons[1] :
         self._cart_vel[self._mode] = self._max_cart_vel[self._mode] * self._vel_multiplier[self._mode]
-      elif msg.buttons[2]: 
+      elif msg.buttons[2]:
         self._cart_vel[self._mode] = -self._max_cart_vel[self._mode] * self._vel_multiplier[self._mode]
-      else: 
+      else:
         self.zero_vel()
-        
+
     # Paradigm 4: Proportional velocity
     ####################################
-    if self.motion_paradigm == 4: 
-      if msg.buttons[1] or msg.buttons[2]: 
+    if self.motion_paradigm == 4:
+      if msg.buttons[1] or msg.buttons[2]:
         self._cart_vel[self._mode] = -self._max_cart_vel[self._mode] * msg.axes[0] * self._vel_multiplier[self._mode]
       else:
         self.zero_vel()
@@ -244,7 +244,7 @@ class SNPInput(ControlInput):
 
   # determines whether mode switch should happen, if not, moves robot arm based on mode
   def handle_paradigms(self, msg):
-    if self._positive_latch == 0 and self._negative_latch == 0:  
+    if self._positive_latch == 0 and self._negative_latch == 0:
       self.switchMode(msg)
     self.handle_velocities(msg)
 
@@ -253,7 +253,7 @@ class SNPInput(ControlInput):
     self.send_msg.header.stamp = rospy.Time.now()
     # self.send_msg.mode = self._mode
     # print 'msg', self.send_msg.mode, 'mode:', self._mode
-  
+
 #######################################################################################
 #                                 MAIN FUNCTIONS                                      #
 #######################################################################################
@@ -265,8 +265,8 @@ class SNPInput(ControlInput):
     finally:
       self.lock.release()
 
-  def latch_timing_threader(self): 
-    while True: 
+  def latch_timing_threader(self):
+    while True:
       self.check_latch_time
 
   # the main function, determines velocities to send to robot
@@ -281,26 +281,26 @@ class SNPInput(ControlInput):
     try:
       self.data = CartVelCmd()
     finally:
-      self.lock.release()  
+      self.lock.release()
 
   # Mode switching rosparam
   def reconfigure_cb(self, config, level):
     self.mode_switch_paradigm = config.snp_mode_switch_paradigm
     self.motion_paradigm = config.snp_motion_paradigm
     t = threading.Thread(target=self.latch_timing_threader)
-    if self.motion_paradigm == 1:       
+    if self.motion_paradigm == 1:
       t.daemon = True
       t.start()
-    else: 
+    else:
       t.daemon = False
-    self._positive_latch = 0 
-    self._negative_latch = 0 
+    self._positive_latch = 0
+    self._negative_latch = 0
     self._latch_lock = 0
     print "mode switch paradigm", self.mode_switch_paradigm, "motion paradigm", self.motion_paradigm
     return config
 
 if __name__ == '__main__':
   rospy.init_node('sip_puff_node', anonymous=True)
-  snp = SNPInput(robot_dim = 3, finger_dim = 0)    
+  snp = SNPInput(robot_dim = 3, finger_dim = 0)
   rospy.spin()
 0

@@ -17,6 +17,7 @@ from utils import Robot2D, FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS, SCALE,
 from utils import ROBOT_RADIUS, GOAL_RADIUS, GOAL_SHAPES, GOAL_COLORS, PI, HUMAN_ROBOT_COLOR, AUTONOMY_ROBOT_COLOR, TRIANGLE_L
 from utils import RGOrient, StartDirection
 from IPython import embed
+
 class Simulator(object):
 	def __init__(self, dim=3, trial_index = 0, trial_info_dir_path=None):
 		#TODO pass args as a dict

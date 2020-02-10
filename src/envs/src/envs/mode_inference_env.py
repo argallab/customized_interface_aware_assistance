@@ -67,7 +67,7 @@ class ModeInferenceEnv(object):
         response = OptimalActionResponse()
         current_discrete_state = rospy.get_param('current_discrete_state', ['p0', 0, 't'])
         current_discrete_state = tuple(current_discrete_state)
-        if current_discrete_state[0] != self.LOCATIONS[-1]
+        if current_discrete_state[0] != self.LOCATIONS[-1]:
             assert self.OPTIMAL_ACTION_DICT is not None and current_discrete_state in self.OPTIMAL_ACTION_DICT
             response.optimal_high_level_action =  self.OPTIMAL_ACTION_DICT[current_discrete_state]
             response.status = True
@@ -207,7 +207,7 @@ class ModeInferenceEnv(object):
             sign_of_motion = np.sign(diff_vector[motion_dimension_index])[0] #determine the sign of the vector (that is if it is y, should the robot be moving up or down?)
             self.ALLOWED_DIRECTIONS_OF_MOTION[loc_p] = [sign_of_motion]
             if i == self.location_of_turn:
-                self.ALLOWED_DIRECTIONS_OF_MOTION[loc_p].append(1.0) #append direction indicator for rotation. counterclockwise is 1.0
+                self.ALLOWED_DIRECTIONS_OF_MOTION[loc_p].append(-1.0) #append direction indicator for rotation. counterclockwise is 1.0
 
         self.ALLOWED_DIRECTIONS_OF_MOTION[self.LOCATIONS[-1]] = [self.ALLOWED_DIRECTIONS_OF_MOTION[self.LOCATIONS[-2]][0]] #copy the direction of the linear dimension of the second last waypoint.
 
@@ -221,9 +221,9 @@ class ModeInferenceEnv(object):
         rgc = self.r_to_g_relative_orientation
         for s in self.STATE_TRANSITION_MODEL.keys():#for all states in the world
             for u in self.STATE_TRANSITION_MODEL[s].keys():#for all available low-level commands
-                if u == 'hp' or u == 'hs':
+                if u == 'Hard Puff' or u == 'Hard Sip':
                     self.STATE_TRANSITION_MODEL[s][u] = (s[0], s[1], MODE_SWITCH_TRANSITION[s[2]][u]) #generate new state
-                if u == 'sp' or u == 'ss': #if sp or ss, this will result in motion if the mode associated with s an allowed mode for motion
+                if u == 'Soft Puff' or u == 'Soft Sip': #if sp or ss, this will result in motion if the mode associated with s an allowed mode for motion
                     allowed_modes_for_motion = self.MODES_MOTION_ALLOWED[s[0]] #retrieve all the modes in which motion is allowed for this state. (note that, for the location in which turning happens there will be two modes in which motion is allowed)
                     self.STATE_TRANSITION_MODEL[s][u] = (s[0], s[1], s[2]) #by default store the same state as next state. Because if no motion happens, the resultant state is also the same state
                     for m in allowed_modes_for_motion:
@@ -247,8 +247,7 @@ class ModeInferenceEnv(object):
     def _create_optimal_next_state_dict(self):
 
         for s in self.STATES:
-            print s
-            if s[0] == self.LOCATIONS[-1]: #no next state for the last location
+            if s[0] == self.LOCATIONS[-1]:
                 continue
             if self.LOCATIONS.index(s[0]) < self.location_of_turn or self.LOCATIONS.index(s[0]) > self.location_of_turn:
                 if s[2] not in self.MODES_MOTION_ALLOWED[s[0]]:
@@ -516,7 +515,7 @@ class ModeInferenceEnv(object):
         self.current_discrete_state = (current_discrete_position, current_discrete_orientation, self.current_mode) #update the current discrete state.
         current_allowed_mode = self._retrieve_current_allowed_mode() #x,y,t #for the given location, retrieve what is the allowed mode of motion.
         current_allowed_mode_index = DIM_TO_MODE_INDEX[current_allowed_mode] #0,1,2 #get the mode index of the allowed mode of motion
-        user_vel = np.array([input_action['human'].velocity.data[0], input_action['human'].velocity.data[1], -input_action['human'].velocity.data[2]]) #numpyify the velocity data. note the negative sign on the 3rd component.To account for proper counterclockwise motion
+        user_vel = np.array([input_action['human'].velocity.data[0], input_action['human'].velocity.data[1], input_action['human'].velocity.data[2]]) #numpyify the velocity data. note the negative sign on the 3rd component.To account for proper counterclockwise motion
         user_vel[np.setdiff1d(self.DIMENSION_INDICES, current_allowed_mode_index)] = 0.0 #zero out all velocities except the ones for the allowed mode
 
         #check if the direction of user_vel is correct as well. For each location in the allowed mode/dimension there is proper direction in which the velocity should be.
@@ -527,5 +526,5 @@ class ModeInferenceEnv(object):
         # print self.current_discrete_state, current_allowed_mode, user_vel
         rospy.set_param('current_discrete_state', self.current_discrete_state)
         self.robot.robot.linearVelocity = b2Vec2(user_vel[0], user_vel[1]) #update robot velocity
-        self.robot.robot.angularVelocity = user_vel[2]
+        self.robot.robot.angularVelocity = -user_vel[2]
         self.world.Step(1.0/FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS) #call box2D step function

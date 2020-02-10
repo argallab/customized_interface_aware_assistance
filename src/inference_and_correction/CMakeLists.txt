@@ -58,8 +58,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate services in the 'srv' folder
 # add_service_files(
 #   FILES
-#   Service1.srv
-#   Service2.srv
+#   InferCorrect.srv
 # )
 
 ## Generate actions in the 'action' folder
@@ -72,7 +71,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
-#   std_msgs
+# 	std_msgs
 # )
 
 ################################################
@@ -107,7 +106,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES inference_and_correction
-#  CATKIN_DEPENDS envs message_generation rospy std_msgs teleop_nodes
+# CATKIN_DEPENDS envs message_runtime rospy std_msgs teleop_nodes
 #  DEPENDS system_lib
 )
 
