@@ -28,13 +28,12 @@ class CommandFollowing(object):
 
         self.command_msg = Command()
 
-        self.env_params = None
-        self.env_params = dict()
-        self.env_params['text'] = ''
+        env_params = dict()
+        env_params['text'] = ''
         
-        self.env = TextWindowEnv(self.env_params)
+        self.env = TextWindowEnv(env_params)
         self.env.reset()
-        self.env.render()
+        # self.env.render()
 
 
     def initialize_subscribers(self): 
@@ -57,17 +56,17 @@ class CommandFollowing(object):
                 self.call_render(EXPERIMENT_START_COUNTDOWN[i], self.duration)
             self.command_following()
 
-
     # randomize commands and display for desired duration and iterations
     def command_following(self): 
         for i in range(self.iterations): 
             commands = LOW_LEVEL_CONTROL_COMMANDS[:]
             for j in range(len(commands)): 
                 rand_index = randrange(len(commands))
-                self.publish_command(LOW_LEVEL_CONTROL_COMMANDS[rand_index])
-                self.call_render(LOW_LEVEL_CONTROL_COMMANDS[rand_index], self.duration) 
+                self.publish_command(commands[rand_index])
+                self.call_render(commands[rand_index], self.duration) 
                 commands.pop(rand_index)
-        self.call_render('ALL DONE :D', self.duration)
+        self.call_render('ALL DONE! :D', self.duration)
+        self.env.viewer.close()
         
     # set new text message and render            
     def call_render(self, msg, duration): 

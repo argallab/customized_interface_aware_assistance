@@ -2,7 +2,7 @@
 
 <launch>
   <arg name="duration" default="1.0" doc="Duration to show each command"/>
-  <arg name="iteration" default="2" doc="Number of times to display each command"/>
+  <arg name="iteration" default="1" doc="Number of times to display each command"/>
 
   <arg name="JOY" default="false" doc="Set to true if using 3-axis joystick to control arm."/>
   <arg name="HA" default="false" doc="Set to true if using sip/puff to control arm."/>

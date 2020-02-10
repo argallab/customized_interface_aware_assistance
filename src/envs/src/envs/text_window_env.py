@@ -3,8 +3,11 @@
 from backends.rendering import Viewer
 from utils import SCALE, VIEWPORT_W, VIEWPORT_H
 from utils import COMMAND_TEXT_COLOR, COMMAND_DISPLAY_POSITION, COMMAND_DISPLAY_FONTSIZE 
+from utils import TIMER_DISPLAY_POSITION, TIMER_DISPLAY_FONTSIZE, TIMER_COLOR_NEUTRAL
 
 import pyglet
+import time 
+from pyglet import clock
 
 class TextWindowEnv(object):
 
@@ -16,15 +19,12 @@ class TextWindowEnv(object):
 
         assert 'text' in self.env_params
  
-#         self.x = self.width//2
-#         self.y = self.height//2 
         self.text = '' 
-#         self.font_name = 'Arial'
-#         self.font_size = 36
-#         self.anchor_x = 'center'
-#         self.anchor_y = 'center'
-#         self.color = (250, 100, 100, 250)
         self.bold = True
+
+        # self.timer = Timer()
+        self.timer_sec = 0
+        self.timer_msec = 60
 
 
     def _render_text(self):
@@ -37,10 +37,9 @@ class TextWindowEnv(object):
             self.viewer.window.set_location(650, 300)
 
         self._render_text()
-
+        self.start_counter()
         return self.viewer.render(False)
 
-    
     def reset(self): 
         # (mahdieh to do) Definitely better ways of doing this...
         if 'x' in self.env_params.keys(): 
@@ -62,4 +61,24 @@ class TextWindowEnv(object):
         if 'bold' in self.env_params.keys(): 
             self.bold = self.env_params['bold']
 
+# class Timer(object): 
+#     def __init__(self):
+        
+        # self.timer_sec = 0
+        # self.timer_msec = 60
 
+    def start_counter(self): 
+        while timer != self.timer_sec: 
+            self.timer_text = str(self.timer_sec)+':'+str(self.timer_msec)
+            self.viewer.draw_text(self.timer_text, x=TIMER_DISPLAY_POSITION[0], y=TIMER_DISPLAY_POSITION[1], font_size=TIMER_DISPLAY_FONTSIZE, color=TIMER_COLOR_NEUTRAL, bold=True)
+            time.sleep(1)
+            timer += 1
+            self.viewer.render(False)
+
+    def start_countdown(self): 
+        while self.timer_msec != 0: 
+            self.timer_text = str(self.timer_sec)+':'+str(self.timer_msec)
+            self.viewer.draw_text(self.timer_text, x=TIMER_DISPLAY_POSITION[0], y=TIMER_DISPLAY_POSITION[1], font_size=TIMER_DISPLAY_FONTSIZE, color=TIMER_COLOR_NEUTRAL, bold=True)
+            time.sleep(1)
+            self.timer_msec -= 1
+            self.viewer.render(False)
