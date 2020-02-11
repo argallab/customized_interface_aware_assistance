@@ -87,14 +87,6 @@ class SNPMapping(object):
   # recieves raw input, checks for buildup and 
 
   def joy_callback(self, msg):
-    # prevent robot arm moving after done blowing, zero out velocities
-    if msg.buttons[0] is 0 and msg.buttons[1] is 0: # the last input in each blow is 0 for buttons
-      self._ignore_input_counter = 0 # the constraints get
-      self.send_msg.header.frame_id = "input stopped"
-      self.send_msg.buttons = np.zeros(4) 
-      if self._lock_input is True:
-        self._lock_input = False
-
     # Ignore the leadup to powerful blow that leads to mode switch (ONLY FOR SIP-PUFF SYSTEM, otherwise delete)
     if self._ignore_input_counter < self._num_inputs_to_ignore: # seems like thread issue if the number to ignore is too high
         self._ignore_input_counter +=1
@@ -109,6 +101,15 @@ class SNPMapping(object):
       # else: 
       self.checkLimits(msg.axes[1])           
       self.pub.publish(self.send_msg)
+
+    # prevent robot arm moving after done blowing, zero out velocities
+    if msg.buttons[0] is 0 and msg.buttons[1] is 0: # the last input in each blow is 0 for buttons
+      self._ignore_input_counter = 0 # the constraints get
+      self.send_msg.header.frame_id = "input stopped"
+      self.send_msg.buttons = np.zeros(4) 
+      self.pub.publish(self.send_msg)
+      if self._lock_input is True:
+        self._lock_input = False
     
     self.old_msg = msg
 
