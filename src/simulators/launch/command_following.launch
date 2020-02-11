@@ -16,8 +16,7 @@
 
   <node pkg="general_purpose" output="screen" type="keyboard_input_to_topic" name="keyboard_input_to_topic"/>
 
-
-<!--   <include file="$(find teleop_nodes)/launch/teleop_nodes.launch">
+  <include file="$(find teleop_nodes)/launch/teleop_nodes.launch">
     <arg name="JOY" value="$(arg JOY)"/>
     <arg name="HA" value="$(arg HA)"/>
     <arg name="SNP" value="$(arg SNP)"/>
@@ -27,5 +26,5 @@
     <arg name="JOINT" value="$(arg JOINT)"/>
   </include>
 
- -->
+
 </launch>
