@@ -1,6 +1,9 @@
 <?xml version="1.0"?>
 
 <launch>
+
+  <arg name="save" default="false" doc="Set to true if you wanted save bag file of trial"/>
+
   <arg name="duration" default="1.0" doc="Duration to show each command"/>
   <arg name="iteration" default="1" doc="Number of times to display each command"/>
 
@@ -14,6 +17,7 @@
 
   <node pkg="simulators" output="screen" type="command_following_simulation.py" name="command_following_simulation" args="$(arg duration) $(arg iteration)"/>
 
+  <!-- keyboard node for experiment supervisor -->
   <node pkg="general_purpose" output="screen" type="keyboard_input_to_topic" name="keyboard_input_to_topic"/>
 
   <include file="$(find teleop_nodes)/launch/teleop_nodes.launch">
@@ -25,6 +29,15 @@
     <arg name="PS3" value="$(arg PS3)"/>
     <arg name="JOINT" value="$(arg JOINT)"/>
   </include>
+
+  <!-- record bags -->
+  <!-- bag file name parameters -->
+  <arg name="id" default="test" doc="trial identifier string"/>
+  <group if="$(arg save)">
+    <include file="$(find simulators)/launch/record.launch">
+      <arg name="bag_prefix" value="$(arg id)_command_issuing"/>
+    </include>    
+  </group>
 
 
 </launch>
