@@ -47,7 +47,7 @@
 			<param name="dev" value="/dev/input/js0"/>
 			<!-- <remap from="joy" to="joy_sip_puff"/> -->
 		</node>
-		<node pkg="teleop_nodes" type="sip_puff_mapping.py" name="sip_puff_mapping"/>
+		<node pkg="teleop_nodes" type="sip_puff_mapping.py" name="sip_puff_mapping" output="screen"/>
 		<node pkg="teleop_nodes" type="sip_and_puff_node.py" name="sip_and_puff_node" output="screen">
 			<param name="snp_paradigm" value="$(find teleop_nodes)/cfg/SipPuffModeSwitchParadigm.cfg"/>
 		</node>

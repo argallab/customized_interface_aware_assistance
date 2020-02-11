@@ -67,6 +67,7 @@ add_service_files(
   FILES
   SetMode.srv
   StopLatch.srv
+	InferCorrect.srv
 )
 
 ## Generate actions in the 'action' folder

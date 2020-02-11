@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 # This is a python script for measuring stochastic deviations of input commands from intended commands
-# This was written for the paper titled "Do You Really Want To Do that?Customized Handling of Unintended Actions InAssistive Robots" to 
-# model personalized distributions for p(u_i|u_m) from user data 
+# This was written for the paper titled "Do You Really Want To Do that?Customized Handling of Unintended Actions InAssistive Robots" to
+# model personalized distributions for p(u_i|u_m) from user data
 
 import rospy
 import time
@@ -10,18 +10,18 @@ from sensor_msgs.msg import Joy
 from std_msgs.msg import String
 from simulators.msg import Command
 from envs.text_window_env import TextWindowEnv
-from utils import LOW_LEVEL_CONTROL_COMMANDS, EXPERIMENT_START_COUNTDOWN
+from utils import LOW_LEVEL_COMMANDS, EXPERIMENT_START_COUNTDOWN
 import pyglet
-import sys 
+import sys
 from random import randrange
 import threading
 
 
-class CommandFollowing(object):    
+class CommandFollowing(object):
     def __init__(self, duration=1.0, iterations=1):
-            
-        # initialization 
-        rospy.init_node("command_following")    
+
+        # initialization
+        rospy.init_node("command_following")
         self.initialize_subscribers()
         self.initialize_publishers()
 
@@ -35,7 +35,7 @@ class CommandFollowing(object):
 
         env_params = dict()
         env_params['text'] = ''
-        
+
         self.env = TextWindowEnv(env_params)
         self.env.reset()
 
@@ -45,15 +45,15 @@ class CommandFollowing(object):
         self.lock = threading.Lock()
 
 
-    def initialize_subscribers(self): 
+    def initialize_subscribers(self):
         rospy.Subscriber('/keyboard_entry', String, self.keyboard_callback)
         rospy.Subscriber('/joy_sip_puff', Joy, self.joy_callback)
 
-    def initialize_publishers(self): 
+    def initialize_publishers(self):
         # for ros bag purposes (not being used for any code logic)
         self.command_pub = rospy.Publisher('command_prompt', Command, queue_size=1)
 
-    def publish_command(self, msg): 
+    def publish_command(self, msg):
         self.command_msg.header.stamp = rospy.Time.now()
         self.command_msg.command = msg
         self.command_pub.publish(self.command_msg)
