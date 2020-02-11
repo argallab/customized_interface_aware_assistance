@@ -9,7 +9,7 @@ from utils import ROBOT_RADIUS
 
 import pyglet
 
-class SipPuffCallibrationEnv(object):
+class SipPuffTrainingEnv(object):
 
     def __init__(self, env_params):
 
@@ -21,13 +21,15 @@ class SipPuffCallibrationEnv(object):
         assert 'command' in self.env_params
 
         self.env_params['command'] = ''
+
+        self.prompt = ''
+        self.start_prompt = False 
+        self.correct_count_threshold = 30
  
         self.current_command = '' 
         self.bold = True
 
         self.DIMENSIONS = LOW_LEVEL_COMMANDS
-        print self.DIMENSIONS
-
 
     def _render_command_display(self):
         for i, d in enumerate(self.DIMENSIONS):
@@ -44,17 +46,42 @@ class SipPuffCallibrationEnv(object):
                 color=MODE_DISPLAY_TEXT_COLOR, 
                 anchor_y=MODE_DISPLAY_TEXT_Y_ANCHOR)
 
+    def _render_command_text(self):
+        self.viewer.draw_text(self.prompt, x=COMMAND_DISPLAY_POSITION[0], y=COMMAND_DISPLAY_POSITION[1]/2, font_size=MODE_DISPLAY_TEXT_FONTSIZE, color=COMMAND_TEXT_COLOR, bold=self.bold)
+
     def render(self):
         if self.viewer is None:
-            print 'rendering veiwer'
             self.viewer = Viewer(VIEWPORT_W, VIEWPORT_H)
             self.viewer.set_bounds(0, VIEWPORT_W/SCALE, 0, VIEWPORT_H/SCALE)
             self.viewer.window.set_location(650, 300)
 
         self._render_command_display()
         self._render_command_display_text()
+        self._render_command_text()
 
         return self.viewer.render(False)
 
-    def reset(self):
+    def step(self, input): 
         self.current_command = self.env_params['command']
+
+        if self.start_prompt:             
+            if self.ready_for_new_prompt: 
+                self.correct_count = 0
+                self.prompt = self.prompt_commands[0]
+                self.ready_for_new_prompt = False
+            if self.current_command == self.prompt: 
+                self.correct_count += 1
+                if self.correct_count == self.correct_count_threshold: 
+                    self.prompt_commands.pop(0)
+                    self.ready_for_new_prompt = True
+                    if self.prompt_commands == []: 
+                        self.start_prompt = False
+                        self.prompt = 'End of Prompted Training'
+
+
+    def reset(self):        
+        if 'start_prompt' in self.env_params.keys(): 
+            self.start_prompt = self.env_params['start_prompt']
+            self.ready_for_new_prompt = True
+        if 'prompt_commands' in self.env_params.keys(): 
+            self.prompt_commands = self.env_params['prompt_commands']

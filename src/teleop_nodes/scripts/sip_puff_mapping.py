@@ -53,7 +53,7 @@ class SNPMapping(object):
     self.send_msg.axes = np.zeros(1)  # pressure ([-1, 1])
     self.send_msg.buttons = np.zeros(4) # hard puff, soft puff, soft sip, hard sip
 
-    self.is_assistance = rospy.get_param('is_assistance', True)
+    self.is_assistance = rospy.get_param('is_assistance', False)
     rospy.loginfo("Waiting for mode_inference_and_correction node ")
     rospy.wait_for_service("/mode_switch_inference_and_correction/handle_unintended_commands")
     rospy.loginfo("Found mode_inference_and_correction_node")

@@ -67,7 +67,7 @@ class CommandFollowing(object):
             self.command_following_task()
 
     def joy_callback(self, msg): 
-        if  not self.send_command: 
+        if not self.send_command: 
             if msg.header.frame_id == "input stopped":  
                 print 'reset'
                 self.send_command = True
@@ -76,7 +76,7 @@ class CommandFollowing(object):
     # randomize commands iterations
     def generate_command_list(self):
         for i in range(self.iterations): 
-            commands = LOW_LEVEL_CONTROL_COMMANDS[:]
+            commands = LOW_LEVEL_COMMANDS[:]
             for j in range(len(commands)): 
                 rand_index = randrange(len(commands))
                 self.command_list.append(commands[rand_index]) 
