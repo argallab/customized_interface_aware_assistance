@@ -32,10 +32,6 @@ class TextWindowEnv(object):
         self._render_text()
         return self.viewer.render(False)
 
-    def dummyfn(self, msg="foo"): 
-        print msg
-        self.count -= 1
-
     def reset(self): 
         # (mahdieh to do) Definitely better ways of doing this...
         if 'x' in self.env_params.keys(): 
