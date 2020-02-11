@@ -7,7 +7,7 @@
 
 import rospy
 from sensor_msgs.msg import Joy
-from envs.sip_puff_callibration import SipPuffCallibrationEnv
+from envs.sip_puff_callibration_env import SipPuffCallibrationEnv
 from utils import LOW_LEVEL_COMMANDS, EXPERIMENT_START_COUNTDOWN
 
 
@@ -16,32 +16,28 @@ class SipPuffCallibration(object):
 
         # initialization
         rospy.init_node("sip_puff_callibration")
-        # self.initialize_subscribers()
-        # self.initialize_publishers()
+        rospy.on_shutdown(self.shutdown_hook)
+        self.initialize_subscribers()
 
         env_params = dict()
-        env_params['command'] = 'hello'
+        env_params['command'] = ''
 
         self.env = SipPuffCallibrationEnv(env_params)
-        self.env.reset()
+        # self.call_render(env_params['command'])
 
-        self.call_render(env_params['command'])
+        r = rospy.Rate(100)
 
+        while not rospy.is_shutdown():
+            self.env.reset()
+            self.env.render()
+            r.sleep()
 
     def initialize_subscribers(self):
         rospy.Subscriber('/joy_sip_puff', Joy, self.joy_callback)
 
     def joy_callback(self, msg): 
-        print msg.header.frame_id
-        self.call_render(msg.header.frame_id)
-
-
-    # set new text message and render            
-    def call_render(self, msg): 
-        self.env.env_params['command'] = msg
-        self.env.reset()
-        self.env.render()
-        rospy.sleep(0.1)
+        # self.call_render(msg.header.frame_id)
+        self.env.env_params['command'] = msg.header.frame_id
 
     def shutdown_hook(self):
         pass
