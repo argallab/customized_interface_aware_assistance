@@ -70,9 +70,11 @@ class ModeInferenceEnv(object):
         if current_discrete_state[0] != self.LOCATIONS[-1]:
             assert self.OPTIMAL_ACTION_DICT is not None and current_discrete_state in self.OPTIMAL_ACTION_DICT
             response.optimal_high_level_action =  self.OPTIMAL_ACTION_DICT[current_discrete_state]
+            response.current_mode = current_discrete_state[-1]
             response.status = True
         else:
             response.optimal_high_level_action = 'None'
+            response.current_mode = 'None'
             response.status = False
         return response
 
@@ -274,10 +276,10 @@ class ModeInferenceEnv(object):
                             self.OPTIMAL_NEXT_STATE_DICT[s] = (s[0], s[1], self.MODES_MOTION_ALLOWED[s[0]][0])
 
     def _generate_optimal_control_dict(self):
-    	for s in self.OPTIMAL_NEXT_STATE_DICT:
-    		sp = self.OPTIMAL_NEXT_STATE_DICT[s]
-    		self.OPTIMAL_ACTION_DICT[s] = [k for k,v in self.STATE_TRANSITION_MODEL[s].items() if v == sp]
-    		self.OPTIMAL_ACTION_DICT[s] = TRUE_COMMAND_TO_ACTION[self.OPTIMAL_ACTION_DICT[s][0]]
+        for s in self.OPTIMAL_NEXT_STATE_DICT:
+            sp = self.OPTIMAL_NEXT_STATE_DICT[s]
+            self.OPTIMAL_ACTION_DICT[s] = [k for k,v in self.STATE_TRANSITION_MODEL[s].items() if v == sp]
+            self.OPTIMAL_ACTION_DICT[s] = TRUE_COMMAND_TO_ACTION[s[2]][self.OPTIMAL_ACTION_DICT[s][0]]
 
     #RENDER FUNCTIONS
     def _render_goal(self):

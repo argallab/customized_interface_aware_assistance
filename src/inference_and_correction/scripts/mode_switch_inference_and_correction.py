@@ -26,7 +26,7 @@ class ModeSwitchInferenceAndCorrection(object):
         self.DEFAULT_UI_GIVEN_A_NOISE = 0.01
         self.DEFAULT_UM_GIVEN_UI_NOISE = 0.3
         self.P_UI_GIVEN_UM = collections.OrderedDict()
-        self.ASSISTANCE_TYPE = AssistanceType.Corrective
+        self.ASSISTANCE_TYPE = AssistanceType.Filter
         self.ENTROPY_THRESHOLD = rospy.get_param('entropy_threshold', 0.9)
 
         for u in LOW_LEVEL_COMMANDS:
@@ -34,10 +34,11 @@ class ModeSwitchInferenceAndCorrection(object):
 
         if os.path.exists(os.path.join(self.distribution_directory_path, str(self.subject_id)+'_p_ui_given_a.pkl')):
             with open(os.path.join(self.distribution_directory_path, str(self.subject_id)+'_p_ui_given_a.pkl'), 'rb') as fp:
-                self.P_UI_GIVEN_A = pickle.load(fp)#assumes that the conditional probability distribution is stored as a collections.OrderedDict
+                self.P_UI_GIVEN_A = pickle.load(fp)#assumes that the conditional probability distribution is stored as a collections.OrderedDict conditioned on the mode
         else:
             self.P_UI_GIVEN_A = collections.OrderedDict()
             self._init_p_ui_given_a()
+
 
         if os.path.exists(os.path.join(self.distribution_directory_path, str(self.subject_id)+'_p_um_given_ui.pkl')):
             with open(os.path.join(self.distribution_directory_path, str(self.subject_id)+'_p_um_given_ui.pkl'), 'rb') as fp:
@@ -64,8 +65,10 @@ class ModeSwitchInferenceAndCorrection(object):
         # print optimal_action_response.optimal_high_level_action
         if optimal_action_response.status: #not at the last position
             optimal_a = optimal_action_response.optimal_high_level_action #mode_r, model, move_p, move_n
+            current_mode = optimal_action_response.current_mode
             print("OPTIMAL A", optimal_a)
-            self.compute_p_ui_given_um(optimal_a, um)
+            print("CURRENT_MODE", current_mode)
+            self.compute_p_ui_given_um(optimal_a, current_mode, um)
             u_intended = self.compute_u_intended() #argmax computation for u_intended
             print ("U_INTENDED", u_intended)
             normalized_h_of_p_ui_given_um = self.compute_entropy_of_p_ui_given_um()
@@ -108,24 +111,26 @@ class ModeSwitchInferenceAndCorrection(object):
 
         return u_corrected, True
 
-    def compute_p_ui_given_um(self, optimal_a, um):
+    def compute_p_ui_given_um(self, optimal_a, current_mode, um):
         for ui in LOW_LEVEL_COMMANDS:
-            self.P_UI_GIVEN_UM[ui] = self.P_UM_GIVEN_UI[ui][um] * self.P_UI_GIVEN_A[optimal_a][ui]
+            self.P_UI_GIVEN_UM[ui] = self.P_UM_GIVEN_UI[ui][um] * self.P_UI_GIVEN_A[current_mode][optimal_a][ui]
 
         normalization_constant = sum(self.P_UI_GIVEN_UM.values())
         for u in self.P_UI_GIVEN_UM.keys():
             self.P_UI_GIVEN_UM[u] = self.P_UI_GIVEN_UM[u]/normalization_constant
 
     def _init_p_ui_given_a(self):
-        for k in TRUE_ACTION_TO_COMMAND.keys():
-            self.P_UI_GIVEN_A[k] = collections.OrderedDict()
-            for u in LOW_LEVEL_COMMANDS:
-                if u == TRUE_ACTION_TO_COMMAND[k]:
-                    self.P_UI_GIVEN_A[k][u] = 1.0
-                else:
-                    self.P_UI_GIVEN_A[k][u] = np.random.random()*self.DEFAULT_UI_GIVEN_A_NOISE
-            normalization_constant = sum(self.P_UI_GIVEN_A[k].values())
-            self.P_UI_GIVEN_A[k] = collections.OrderedDict({u:(v/normalization_constant) for u, v in self.P_UI_GIVEN_A[k].items()})
+        for mode in TRUE_ACTION_TO_COMMAND.keys():
+            self.P_UI_GIVEN_A[mode] = collections.OrderedDict()
+            for action in TRUE_ACTION_TO_COMMAND[mode].keys():
+                self.P_UI_GIVEN_A[mode][action] = collections.OrderedDict()
+                for u in LOW_LEVEL_COMMANDS:
+                    if u == TRUE_ACTION_TO_COMMAND[mode][action]:
+                        self.P_UI_GIVEN_A[mode][action][u] = 1.0
+                    else:
+                        self.P_UI_GIVEN_A[mode][action][u] = np.random.random()*self.DEFAULT_UI_GIVEN_A_NOISE
+                normalization_constant = sum(self.P_UI_GIVEN_A[mode][action].values())
+                self.P_UI_GIVEN_A[mode][action] = collections.OrderedDict({u:(v/normalization_constant) for u, v in self.P_UI_GIVEN_A[mode][action].items()})
 
     def _init_p_um_given_ui(self):
         for i in LOW_LEVEL_COMMANDS:

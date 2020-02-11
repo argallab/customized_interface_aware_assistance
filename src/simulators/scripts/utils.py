@@ -71,9 +71,17 @@ EXPERIMENT_START_COUNTDOWN = ['Get Ready!','3', '2', '1']
 #high level actions, move_p = move in positive direction, move_n = move in negative direction, mode_r = switch mode to right, mode_l = switch mode to left. positive and negative is conditioned on mode
 HIGH_LEVEL_ACTIONS = ['move_p', 'move_n', 'mode_r', 'mode_l']
 #true mapping of a to u
-TRUE_ACTION_TO_COMMAND = collections.OrderedDict({'move_p': 'Soft Puff', 'move_n':'Soft Sip', 'mode_r':'Hard Puff', 'mode_l': 'Hard Sip'})
+# TRUE_ACTION_TO_COMMAND = collections.OrderedDict({'move_p': 'Soft Puff', 'move_n':'Soft Sip', 'mode_r':'Hard Puff', 'mode_l': 'Hard Sip'})
+TRUE_ACTION_TO_COMMAND = collections.OrderedDict({'x': collections.OrderedDict({'move_p': 'Soft Puff', 'move_n':'Soft Sip', 'mode_r':'Hard Puff', 'mode_l': 'Hard Sip'}),
+												  'y': collections.OrderedDict({'move_p': 'Soft Puff', 'move_n':'Soft Sip', 'mode_r':'Hard Puff', 'mode_l': 'Hard Sip'}),
+												  't': collections.OrderedDict({'move_p': 'Soft Sip', 'move_n':'Soft Puff', 'mode_r':'Hard Puff', 'mode_l': 'Hard Sip'})})
+
 #true inverse mapping of u to a
-TRUE_COMMAND_TO_ACTION = collections.OrderedDict({v:k for k, v in TRUE_ACTION_TO_COMMAND.items()})
+# TRUE_COMMAND_TO_ACTION = collections.OrderedDict({v:k for k, v in TRUE_ACTION_TO_COMMAND.items()})
+TRUE_COMMAND_TO_ACTION = collections.OrderedDict()
+for k in TRUE_ACTION_TO_COMMAND.keys():
+	TRUE_COMMAND_TO_ACTION[k] = collections.OrderedDict({v:k for k, v in TRUE_ACTION_TO_COMMAND[k].items()})
+
 #transition function for mode switches.
 MODE_SWITCH_TRANSITION = {'x': {'Hard Puff': 'y', 'Hard Sip': 't', 'Soft Puff': 'x', 'Soft Sip': 'x'},
 						  'y': {'Hard Puff': 't', 'Hard Sip': 'x', 'Soft Puff': 'y', 'Soft Sip': 'y'},
@@ -105,10 +113,10 @@ class RGOrient(Enum):
     BOTTOM_RIGHT = 3
 
 
-TRANSITION_FOR_ACTION =   { RGOrient.TOP_RIGHT:   {'Soft Puff': {'x': 'next', 'y': 'next', 't': 'next'}, 'Soft Sip': {'x': 'prev', 'y': 'prev', 't': 'prev'}},
-    					   RGOrient.TOP_LEFT:     {'Soft Puff': {'x': 'prev', 'y': 'next', 't': 'next'}, 'Soft Sip': {'x': 'next', 'y': 'prev', 't': 'prev'}},
-    					   RGOrient.BOTTOM_RIGHT: {'Soft Puff': {'x': 'next', 'y': 'prev', 't': 'next'}, 'Soft Sip': {'x': 'prev', 'y': 'next', 't': 'prev'}},
-    					   RGOrient.BOTTOM_LEFT:  {'Soft Puff': {'x': 'prev', 'y': 'prev', 't': 'next'}, 'Soft Sip': {'x': 'next', 'y': 'next', 't': 'prev'}}
+TRANSITION_FOR_ACTION =   { RGOrient.TOP_RIGHT:   {'Soft Puff': {'x': 'next', 'y': 'next', 't': 'prev'}, 'Soft Sip': {'x': 'prev', 'y': 'prev', 't': 'next'}},
+    					   RGOrient.TOP_LEFT:     {'Soft Puff': {'x': 'prev', 'y': 'next', 't': 'prev'}, 'Soft Sip': {'x': 'next', 'y': 'prev', 't': 'next'}},
+    					   RGOrient.BOTTOM_RIGHT: {'Soft Puff': {'x': 'next', 'y': 'prev', 't': 'prev'}, 'Soft Sip': {'x': 'prev', 'y': 'next', 't': 'next'}},
+    					   RGOrient.BOTTOM_LEFT:  {'Soft Puff': {'x': 'prev', 'y': 'prev', 't': 'prev'}, 'Soft Sip': {'x': 'next', 'y': 'next', 't': 'next'}}
     						}
 
 
