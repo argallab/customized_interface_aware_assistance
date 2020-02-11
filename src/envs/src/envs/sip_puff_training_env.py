@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
 from backends.rendering import Viewer, Transform
-from utils import SCALE, VIEWPORT_W, VIEWPORT_H, VIEWPORT_WS, VIEWPORT_HS
+from utils import SCALE, VIEWPORT_W, VIEWPORT_H, VIEWPORT_WS, VIEWPORT_HS, ROBOT_RADIUS
 from utils import COMMAND_TEXT_COLOR, COMMAND_DISPLAY_POSITION, COMMAND_DISPLAY_FONTSIZE 
-from utils import LOW_LEVEL_COMMANDS, MODE_DISPLAY_RADIUS, MODE_DISPLAY_TEXT_FONTSIZE, MODE_DISPLAY_TEXT_COLOR, MODE_DISPLAY_TEXT_X_OFFSET, MODE_DISPLAY_TEXT_START_POSITION
-from utils import MODE_DISPLAY_CIRCLE_START_POSITION_S, MODE_DISPLAY_CIRCLE_X_OFFSET_S, ACTIVE_MODE_COLOR, NONACTIVE_MODE_COLOR, MODE_DISPLAY_TEXT_Y_ANCHOR
-from utils import ROBOT_RADIUS
+from utils import LOW_LEVEL_COMMANDS, MODE_DISPLAY_RADIUS, MODE_DISPLAY_TEXT_FONTSIZE, MODE_DISPLAY_TEXT_COLOR
+from utils import ACTIVE_MODE_COLOR, NONACTIVE_MODE_COLOR, ACTIVE_MODE_COLOR_ERROR
+from utils import MODE_DISPLAY_TEXT_Y_ANCHOR
 
 import pyglet
 
@@ -21,6 +21,7 @@ class SipPuffTrainingEnv(object):
         assert 'command' in self.env_params
 
         self.env_params['command'] = ''
+        self.env_params['active_color'] = ACTIVE_MODE_COLOR
 
         self.prompt = ''
         self.start_prompt = False 
@@ -35,7 +36,7 @@ class SipPuffTrainingEnv(object):
         for i, d in enumerate(self.DIMENSIONS):
             t = Transform(translation=(VIEWPORT_WS/5 + i*VIEWPORT_WS/5, VIEWPORT_HS/2))            
             if d == self.current_command:
-                self.viewer.draw_circle(MODE_DISPLAY_RADIUS/SCALE, 30, True, color=ACTIVE_MODE_COLOR).add_attr(t)
+                self.viewer.draw_circle(MODE_DISPLAY_RADIUS/SCALE, 30, True, color=self.env_params['active_color']).add_attr(t)
             else:
                 self.viewer.draw_circle(MODE_DISPLAY_RADIUS/SCALE, 30, True, color=NONACTIVE_MODE_COLOR).add_attr(t)
 
@@ -69,8 +70,10 @@ class SipPuffTrainingEnv(object):
                 self.correct_count = 0
                 self.prompt = self.prompt_commands[0]
                 self.ready_for_new_prompt = False
+                self.env_params['active_color'] = ACTIVE_MODE_COLOR_ERROR
             if self.current_command == self.prompt: 
                 self.correct_count += 1
+                self.env_params['active_color'] = ACTIVE_MODE_COLOR
                 if self.correct_count == self.correct_count_threshold: 
                     self.prompt_commands.pop(0)
                     self.ready_for_new_prompt = True
