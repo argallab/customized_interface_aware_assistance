@@ -91,7 +91,7 @@ class ModeInferenceEnv(object):
             curr_between = (min(start_x, end_x) <= curr_x <= max(start_x, end_x)) and (min(start_y, end_y) <= curr_y <= max(start_y, end_y)) #check if the current point is between the end points
             curr_on_and_between = curr_on and curr_between #Logical AND of ON and BETWEEN
         else:
-            curr_on_and_between = (curr_x == end_x) and (start_y <= curr_y <= end_y)
+            curr_on_and_between =  (min(start_x, end_x) <= curr_x <= max(start_x, end_x))  and (min(start_y, end_y) <= curr_y <= max(start_y,end_y))
 
 
         position_on_line = PositionOnLine.NOT_ON_LINE
@@ -101,6 +101,8 @@ class ModeInferenceEnv(object):
                 position_on_line = PositionOnLine.END
             if abs(curr_y -start_y) < 0.1 and abs(curr_x - start_x) < 0.1:
                 position_on_line = PositionOnLine.START
+
+        assert position_on_line is not PositionOnLine.NOT_ON_LINE
 
         return position_on_line
 
@@ -117,6 +119,7 @@ class ModeInferenceEnv(object):
         current_position = self.robot.get_position()
         current_orientation = self.robot.get_angle()
         start_index = int(self.current_discrete_state[0][-1]) #get the number in the location id. That is, if location is p3, retrieve 3. This number is a proxy for which waypoint is the robot at
+        # print start_index
         #only consider line segments from the current index onwards.
         for (turn_id, p, pt) in zip(range(start_index, self.num_locations-1), self.waypoints[start_index:-1], self.waypoints[start_index+1:]):
             if turn_id < self.location_of_turn or turn_id > self.location_of_turn:
@@ -475,11 +478,20 @@ class ModeInferenceEnv(object):
         self._create_state_transition_model()
         self._init_state_transition_model()
 
+
+
         #create optimal next state and optimal next action dict
         self.OPTIMAL_NEXT_STATE_DICT = collections.OrderedDict()
         self.OPTIMAL_ACTION_DICT = collections.OrderedDict()
         self._create_optimal_next_state_dict()
         self._generate_optimal_control_dict()
+
+        # print 'SAS', self.STATE_TRANSITION_MODEL
+        # print '      '
+        # print 'NEXT STATE', self.OPTIMAL_NEXT_STATE_DICT
+        # print '       '
+        # print 'NEXT OPITMAL', self.OPTIMAL_ACTION_DICT
+
 
         #create bidrectional mapping between discrete location ids and the waypoints
         self.LOCATIONS_TO_WAYPOINTS_DICT = collections.OrderedDict()
@@ -493,13 +505,21 @@ class ModeInferenceEnv(object):
 
         self.ALLOWED_DIRECTIONS_OF_MOTION = collections.OrderedDict()
         self._init_allowed_directions_of_motion()
+        # print '       '
+        # print 'ALLOWED_DIRECTIONS_OF_MOTION', self.ALLOWED_DIRECTIONS_OF_MOTION
+        # print '       '
+        # print 'MODES_MOTION_ALLOWED', self.MODES_MOTION_ALLOWED
+        # print '               '
+        # print 'WP TO LOC', self.WAYPOINTS_TO_LOCATION_DICT
+        # print '                 '
+        # print ':LOC to WP', self.LOCATIONS_TO_WAYPOINTS_DICT
 
         rospy.Service('/mode_inference_env/get_optimal_action', OptimalAction, self.get_optimal_action)
 
 
     def step(self, input_action):
         assert 'human' in input_action.keys()
-
+        # print rospy.get_param('current_discrete_state')
         current_discrete_position, should_snap = self._transform_continuous_position_to_discrete_position() #transform the continuous robot position to a discrete state representation. Easier for computing the optimal action etc
         if should_snap:
             #if the robot is very close to the 'next' corner, then artificially snap the position of the robot to that corner. So that the linear motion along the segment is properly completed
@@ -517,12 +537,16 @@ class ModeInferenceEnv(object):
         self.current_discrete_state = (current_discrete_position, current_discrete_orientation, self.current_mode) #update the current discrete state.
         current_allowed_mode = self._retrieve_current_allowed_mode() #x,y,t #for the given location, retrieve what is the allowed mode of motion.
         current_allowed_mode_index = DIM_TO_MODE_INDEX[current_allowed_mode] #0,1,2 #get the mode index of the allowed mode of motion
+        # print "current_state", self.current_discrete_state
+        # print "current_allowed_mode_index", current_allowed_mode_index
         user_vel = np.array([input_action['human'].velocity.data[0], input_action['human'].velocity.data[1], input_action['human'].velocity.data[2]]) #numpyify the velocity data. note the negative sign on the 3rd component.To account for proper counterclockwise motion
         user_vel[np.setdiff1d(self.DIMENSION_INDICES, current_allowed_mode_index)] = 0.0 #zero out all velocities except the ones for the allowed mode
 
         #check if the direction of user_vel is correct as well. For each location in the allowed mode/dimension there is proper direction in which the velocity should be.
         current_allowed_direction_of_motion_in_allowed_mode = self._retrieve_allowed_direction_motion_in_allowed_mode()
+        # print user_vel
         if get_sign_of_number(user_vel[current_allowed_mode_index]) != current_allowed_direction_of_motion_in_allowed_mode: #check if the direction velocity component in the allowed mode matches the allowed direction of motion in the allowed mode
+            # print('NOT ALLOWED')
             user_vel[current_allowed_mode_index] = 0.0 #if not, zero the velocity out
 
         # print self.current_discrete_state, current_allowed_mode, user_vel
