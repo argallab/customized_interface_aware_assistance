@@ -87,19 +87,26 @@ class CommandFollowing(object):
 
     # display commands for desired duration and (wait for user to stop input before sending next command)
     def command_following_task(self): 
+        # for i in range(len(self.command_list)): 
+        #     if self.send_command: 
+        #         self.publish_command(self.command_list[i])
+        #         self.call_render(self.command_list[i], self.duration) 
+        #         self.send_command = False
+        #         self.call_render('', self.countdown_duration/2)                   
+        #         self.count += 1
+        #         print self.count
+        #     else: 
+        #         print 'waiting'
+        #         self.event.wait()  # blocks until flag becomes true
+        #         print 'wait over'
+        #         self.event.clear() # clear flag for next loop
+        # self.call_render('ALL DONE! :D', self.duration)
+        # self.env.viewer.close()
         for i in range(len(self.command_list)): 
-            if self.send_command: 
-                self.publish_command(self.command_list[i])
-                self.call_render(self.command_list[i], self.duration) 
-                self.send_command = False
-                self.call_render('', self.countdown_duration/2)                   
-                self.count += 1
-                print self.count
-            else: 
-                print 'waiting'
-                self.event.wait()  # blocks until flag becomes true
-                print 'wait over'
-                self.event.clear() # clear flag for next loop
+            self.publish_command(self.command_list[i])
+            self.call_render(self.command_list[i], self.duration)    
+            self.publish_command('')
+            self.call_render('', self.countdown_duration)               
         self.call_render('ALL DONE! :D', self.duration)
         self.env.viewer.close()
 
