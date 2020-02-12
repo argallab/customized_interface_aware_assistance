@@ -28,7 +28,7 @@ class CommandFollowing(object):
         self.duration = float(duration) # duration command text is displayed on screen
         self.iterations = int(iterations) # number of iterations each command is to be displayed on screen 
         self.countdown_duration = 1.0
-        self.send_command = True
+        self.input_time = rospy.get_rostime()
         self.command_list = []
 
         self.command_msg = Command()
@@ -69,11 +69,7 @@ class CommandFollowing(object):
             self.command_following_task()
 
     def joy_callback(self, msg): 
-        if not self.send_command: 
-            if msg.header.frame_id == "input stopped":  
-                self.send_command = True
-                print 'event set'
-                self.event.set()
+        self.input_time = msg.header.stamp
 
     # randomize commands iterations
     def generate_command_list(self):
@@ -87,19 +83,16 @@ class CommandFollowing(object):
 
     # display commands for desired duration and (wait for user to stop input before sending next command)
     def command_following_task(self): 
-        for i in range(len(self.command_list)): 
-            if self.send_command: 
-                self.publish_command(self.command_list[i])
-                self.call_render(self.command_list[i], self.duration) 
-                self.send_command = False
-                self.call_render('', self.countdown_duration/2)                   
-                self.count += 1
-                print self.count
-            else: 
-                print 'waiting'
-                self.event.wait()  # blocks until flag becomes true
-                print 'wait over'
-                self.event.clear() # clear flag for next loop
+        i = 1
+        while i < len(self.command_list): 
+            self.command_time = rospy.get_rostime()
+            self.publish_command(self.command_list[i])
+            self.call_render(self.command_list[i], self.duration)    
+            self.publish_command('')
+            self.call_render('', self.countdown_duration)    
+            if (self.input_time < self.command_time): 
+                self.command_list.append(self.command_list[i])   
+            i += 1 
         self.call_render('ALL DONE! :D', self.duration)
         self.env.viewer.close()
 
