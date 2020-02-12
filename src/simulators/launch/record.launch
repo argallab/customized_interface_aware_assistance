@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<launch>
+<arg name="bag_prefix" default=""/>
+
+<node name="data_record" pkg="rosbag" type="record" args=" -o $(arg bag_prefix)
+
+/joy
+/joy_sip_puff
+/user_vel
+/joy_cont_asl
+/keyboard_entry
+/command_prompt
+/mode_switches
+" 
+
+respawn="true" />
+
+</launch>

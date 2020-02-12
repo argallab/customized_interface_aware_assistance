@@ -44,6 +44,8 @@ class CommandFollowing(object):
         self.event = threading.Event()
         self.lock = threading.Lock()
 
+        self.count = 0
+
 
     def initialize_subscribers(self):
         rospy.Subscriber('/keyboard_entry', String, self.keyboard_callback)
@@ -67,16 +69,16 @@ class CommandFollowing(object):
             self.command_following_task()
 
     def joy_callback(self, msg): 
-        if  not self.send_command: 
+        if not self.send_command: 
             if msg.header.frame_id == "input stopped":  
-                print 'reset'
                 self.send_command = True
+                print 'event set'
                 self.event.set()
 
     # randomize commands iterations
     def generate_command_list(self):
         for i in range(self.iterations): 
-            commands = LOW_LEVEL_CONTROL_COMMANDS[:]
+            commands = LOW_LEVEL_COMMANDS[:]
             for j in range(len(commands)): 
                 rand_index = randrange(len(commands))
                 self.command_list.append(commands[rand_index]) 
@@ -85,16 +87,19 @@ class CommandFollowing(object):
     # display commands for desired duration and (wait for user to stop input before sending next command)
     def command_following_task(self): 
         for i in range(len(self.command_list)): 
-            print i
             if self.send_command: 
                 self.lock.acquire()
                 self.publish_command(self.command_list[i])
                 self.call_render(self.command_list[i], self.duration) 
                 self.send_command = False
-                self.call_render('', self.duration)                   
+                self.call_render('', self.countdown_duration)                   
                 self.lock.release()
+                self.count += 1
+                print self.count
             else: 
+                print 'waiting'
                 self.event.wait()  # blocks until flag becomes true
+                print 'wait over'
                 self.event.clear() # clear flag for next loop
         self.call_render('ALL DONE! :D', self.duration)
         self.env.viewer.close()
