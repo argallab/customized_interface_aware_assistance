@@ -117,7 +117,7 @@ class SNPMapping(object):
           # self._lock_input = True
 
       rospy.loginfo("After")
-      rospy.loginfo(self.send_msg.header.frame_id)
+      print(self.send_msg.header.frame_id, self.send_msg.buttons)
 
     return 0
 

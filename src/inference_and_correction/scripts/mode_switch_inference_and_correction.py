@@ -24,7 +24,7 @@ class ModeSwitchInferenceAndCorrection(object):
         self.P_UI_GIVEN_A = None
         self.P_UM_GIVEN_UI = None
         self.DEFAULT_UI_GIVEN_A_NOISE = 0.01
-        self.DEFAULT_UM_GIVEN_UI_NOISE = 0.3
+        self.DEFAULT_UM_GIVEN_UI_NOISE = 0.35
         self.P_UI_GIVEN_UM = collections.OrderedDict()
         self.ASSISTANCE_TYPE = rospy.get_param('assistance_type', 2)
         if self.ASSISTANCE_TYPE == 0:
@@ -33,8 +33,8 @@ class ModeSwitchInferenceAndCorrection(object):
             self.ASSISTANCE_TYPE = AssistanceType.Corrective
         elif self.ASSISTANCE_TYPE == 2:
             self.ASSISTANCE_TYPE = AssistanceType.No_Assistance
-            
-        self.ENTROPY_THRESHOLD = rospy.get_param('entropy_threshold', 0.9)
+
+        self.ENTROPY_THRESHOLD = rospy.get_param('entropy_threshold', 0.4)
 
         for u in LOW_LEVEL_COMMANDS:
             self.P_UI_GIVEN_UM[u] = 1.0/len(LOW_LEVEL_COMMANDS)
@@ -61,8 +61,8 @@ class ModeSwitchInferenceAndCorrection(object):
         rospy.wait_for_service("/mode_inference_env/get_optimal_action")
         rospy.loginfo("mode_inference_env node found!")
         self.get_optimal_action = rospy.ServiceProxy('/mode_inference_env/get_optimal_action', OptimalAction)
-        print("P_UI_GIVEN_A", self.P_UI_GIVEN_A)
-        print("P_UM_GIVEN_UI", self.P_UM_GIVEN_UI)
+        # print("P_UM_GIVEN_UI", self.P_UM_GIVEN_UI)
+        # print("P_UI_GIVEN_A", self.P_UI_GIVEN_A)
 
 
     def handle_unintended_commands(self, req):

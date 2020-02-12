@@ -47,6 +47,7 @@ class Simulator(object):
 
 		self.env_params = None
 		self.trial_info_dir_path = os.path.join(os.path.dirname(__file__), 'trial_dir')
+		# self.trial_info_dir_path = None
 
 
 		if self.trial_info_dir_path is not None and os.path.exists(self.trial_info_dir_path):
@@ -59,10 +60,11 @@ class Simulator(object):
 
 			assert 'env_params' in trial_info_dict
 			self.env_params = trial_info_dict['env_params']
+			self.env_params['assistance_type'] = 0
 			print "ENV PARAMS", self.env_params
 		else:
 			self.env_params = dict()
-			self.env_params['num_turns'] = 1
+			self.env_params['num_turns'] = 3
 			self.env_params['robot_position'] = ((VIEWPORT_W)/4/SCALE, (3*VIEWPORT_H)/4/SCALE)
 			self.env_params['goal_position'] = ((3*VIEWPORT_W)/4/SCALE, (VIEWPORT_H)/4/SCALE)
 			self.env_params['robot_orientation'] = 0.0
@@ -70,8 +72,8 @@ class Simulator(object):
 			self.env_params['r_to_g_relative_orientation'] = RGOrient.BOTTOM_RIGHT
 			self.env_params['start_direction'] = StartDirection.Y
 			self.env_params['start_mode'] = 't'
-			self.env_params['location_of_turn'] = 1
-			self.env_params['assistance_type'] = 0
+			self.env_params['location_of_turn'] = 2
+			self.env_params['assistance_type'] = 1
 			assert self.env_params['location_of_turn'] > 0 and self.env_params['location_of_turn'] <= self.env_params['num_turns'] #can't be the first or last location
 
 		rospy.set_param('assistance_type', self.env_params['assistance_type'])
