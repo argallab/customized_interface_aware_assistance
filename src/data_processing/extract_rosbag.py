@@ -26,7 +26,6 @@ class ROSBag(object):
 		self.topics = topics 
 		self.save_prefix = save_prefix
 
-
 		# 
 
 	# close bags after destruction
