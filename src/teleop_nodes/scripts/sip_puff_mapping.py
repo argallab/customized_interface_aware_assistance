@@ -39,7 +39,7 @@ class SNPMapping(object):
     self.hard_sip_max_limit = rospy.get_param("/sip_and_puff_thresholds/hard_sip_max_limit")
 
     # latch limit governs the threshold for direction and main mode switches
-    self._lock_input = False
+    # self._lock_input = False
     self._ignore_input_counter = 0
     self._num_inputs_to_ignore = 10
     self._button_latch_time = 0.8
@@ -93,11 +93,11 @@ class SNPMapping(object):
     elif (self.hard_puff_max_limit < airVelocity < self.hard_puff_min_limit): # register as hard puff
       self.send_msg.header.frame_id = "Hard Puff"
       self.send_msg.buttons[0] = 1
-      self._lock_input = True
+      # self._lock_input = True
     elif (self.hard_sip_min_limit < airVelocity < self.hard_sip_max_limit): # register as hard sip
       self.send_msg.header.frame_id = "Hard Sip"
       self.send_msg.buttons[3] = 1
-      self._lock_input = True
+      # self._lock_input = True
     else:
       self.send_msg.header.frame_id = "Soft-Hard Deadband"
       self.send_msg.buttons = np.zeros(4)
@@ -113,8 +113,8 @@ class SNPMapping(object):
       self.send_msg.buttons = np.zeros(4)
       if self.send_msg.header.frame_id != "Zero Band":
         self.send_msg.buttons[self.command_to_button_index_map[self.send_msg.header.frame_id]] = 1
-        if self.send_msg.header.frame_id == "Hard Puff" or self.send_msg.header.frame_id == "Hard Sip":
-          self._lock_input = True
+        # if self.send_msg.header.frame_id == "Hard Puff" or self.send_msg.header.frame_id == "Hard Sip":
+          # self._lock_input = True
 
       rospy.loginfo("After")
       print(self.send_msg.header.frame_id, self.send_msg.buttons)
@@ -131,16 +131,16 @@ class SNPMapping(object):
     if self._ignore_input_counter < self._num_inputs_to_ignore: # seems like thread issue if the number to ignore is too high
         self._ignore_input_counter +=1
 
-    if self._lock_input is False:
-      self.send_msg.header.stamp = rospy.Time.now()
-      self.send_msg.axes[0] = msg.axes[1]
-    #  # If ramp up to hard puff or sip (i.e. steep angle)
-    #   if abs((msg.axes[0] - self.old_msg.axes[0])/(msg.header.stamp - self.old_msg.header.stamp).to_sec()) >= 5 and (msg.header.stamp - self.old_msg.header.stamp).to_sec()<0.002:
-    #     self.send_msg.header.frame_id = "soft-hard ramp"
-    #     self.send_msg.buttons = np.zeros(4)
-      # else:
-      self.checkLimits(msg.axes[1])
-      self.pub.publish(self.send_msg)
+    # if self._lock_input is False:
+    self.send_msg.header.stamp = rospy.Time.now()
+    self.send_msg.axes[0] = msg.axes[1]
+  #  # If ramp up to hard puff or sip (i.e. steep angle)
+  #   if abs((msg.axes[0] - self.old_msg.axes[0])/(msg.header.stamp - self.old_msg.header.stamp).to_sec()) >= 5 and (msg.header.stamp - self.old_msg.header.stamp).to_sec()<0.002:
+  #     self.send_msg.header.frame_id = "soft-hard ramp"
+  #     self.send_msg.buttons = np.zeros(4)
+    # else:
+    self.checkLimits(msg.axes[1])
+    self.pub.publish(self.send_msg)
 
     # prevent robot arm moving after done blowing, zero out velocities
     if msg.buttons[0] is 0 and msg.buttons[1] is 0: # the last input in each blow is 0 for buttons
@@ -148,8 +148,8 @@ class SNPMapping(object):
       self.send_msg.header.frame_id = "input stopped"
       self.send_msg.buttons = np.zeros(4)
       self.pub.publish(self.send_msg)
-      if self._lock_input is True:
-        self._lock_input = False
+      # if self._lock_input is True:
+      #   self._lock_input = False
 
     self.old_msg = msg
 
