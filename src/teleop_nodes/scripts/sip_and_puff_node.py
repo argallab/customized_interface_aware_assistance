@@ -40,6 +40,7 @@ class SNPInput(ControlInput):
     self._latch_lock = 0
     self._latch_start_time = rospy.get_time()
     self._latch_command_duration = 0.5 #seconds
+    self._lock_input = True # to prevent constant mode switching
 
     # Set up velocity command and load velocity limits to be sent to hand nodes
     if self.finger_dim > 0:
@@ -116,7 +117,7 @@ class SNPInput(ControlInput):
     rospy.set_param('mode',self._mode)
     print "Num of mode switches %d" % self._mode_switch_count
 
-  # checks whether to switch mode, and changes x-->y-->z-->roll-->pitch-->yaw-->gripper
+  # checks whether to switch mode, and changes cyclically 
   def switchMode(self, msg):
     switch = False
     # Paradigm 1: One-way mode switching
@@ -148,6 +149,7 @@ class SNPInput(ControlInput):
         print "Changed direction "
 
     if switch:
+      self._lock_input = True
       print "************MODE IS NOW ", self._mode, " *******************"
       self.modeswitch_msg.header.frame_id = 'user'
       self.publish_modeswitch()
@@ -271,8 +273,11 @@ class SNPInput(ControlInput):
 
   # the main function, determines velocities to send to robot
   def receive(self, msg):
-    self.handle_paradigms(msg)
-    self.handle_threading()
+    if msg.header.frame_id == "input stopped": 
+      self._lock_input = False
+    if not self._lock_input: 
+      self.handle_paradigms(msg)
+      self.handle_threading()
 
   # function required from abstract in control_input
   def getDefaultData(self):
