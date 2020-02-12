@@ -6,6 +6,12 @@ import time
 import collections
 from dynamic_reconfigure.server import Server
 from teleop_nodes.srv import InferCorrect, InferCorrectRequest, InferCorrectResponse
+import sys
+import os
+import rospkg
+sys.path.append(os.path.join(rospkg.RosPack().get_path('simulators'), 'scripts'))
+from utils import AssistanceType
+
 npa = np.array
 
 '''Reads raw sip_and_puff joy data, does thresholding and buffering
@@ -53,7 +59,7 @@ class SNPMapping(object):
     self.send_msg.axes = np.zeros(1)  # pressure ([-1, 1])
     self.send_msg.buttons = np.zeros(4) # hard puff, soft puff, soft sip, hard sip
 
-    self.is_assistance = rospy.get_param('is_assistance', False)
+    self.assistance_type = rospy.get_param('assistance_type', AssistanceType.No_Assistance)
     rospy.loginfo("Waiting for mode_inference_and_correction node ")
     rospy.wait_for_service("/mode_switch_inference_and_correction/handle_unintended_commands")
     rospy.loginfo("Found mode_inference_and_correction_node")
@@ -92,7 +98,7 @@ class SNPMapping(object):
     rospy.loginfo("Before")
     rospy.loginfo(self.send_msg.header.frame_id)
 
-    if self.is_assistance and self.send_msg.header.frame_id != "Zero Band" and self.send_msg.header.frame_id != "Soft-Hard Deadband" and self.send_msg.header.frame_id != "Input Stopped":
+    if self.assistance_type != AssistanceType.No_Assistance and self.send_msg.header.frame_id != "Zero Band" and self.send_msg.header.frame_id != "Soft-Hard Deadband" and self.send_msg.header.frame_id != "Input Stopped":
       request = InferCorrectRequest()
       request.um = self.send_msg.header.frame_id
       response = self.infer_and_correct_service(request)
@@ -133,11 +139,11 @@ class SNPMapping(object):
     if msg.buttons[0] is 0 and msg.buttons[1] is 0: # the last input in each blow is 0 for buttons
       self._ignore_input_counter = 0 # the constraints get
       self.send_msg.header.frame_id = "input stopped"
-      self.send_msg.buttons = np.zeros(4) 
+      self.send_msg.buttons = np.zeros(4)
       self.pub.publish(self.send_msg)
       if self._lock_input is True:
         self._lock_input = False
-    
+
     self.old_msg = msg
 
 if __name__ == '__main__':

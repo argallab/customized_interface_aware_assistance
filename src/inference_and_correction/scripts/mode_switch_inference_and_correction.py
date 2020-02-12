@@ -26,7 +26,7 @@ class ModeSwitchInferenceAndCorrection(object):
         self.DEFAULT_UI_GIVEN_A_NOISE = 0.01
         self.DEFAULT_UM_GIVEN_UI_NOISE = 0.3
         self.P_UI_GIVEN_UM = collections.OrderedDict()
-        self.ASSISTANCE_TYPE = AssistanceType.Filter
+        self.ASSISTANCE_TYPE = rospy.get_param('assistance_type', AssistanceType.Filter)
         self.ENTROPY_THRESHOLD = rospy.get_param('entropy_threshold', 0.9)
 
         for u in LOW_LEVEL_COMMANDS:

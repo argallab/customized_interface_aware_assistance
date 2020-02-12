@@ -94,6 +94,7 @@ MODE_SWITCH_TRANSITION = {'x': {'Hard Puff': 'y', 'Hard Sip': 't', 'Soft Puff': 
 class AssistanceType(Enum):
     Filter = 0
     Corrective = 1
+    No_Assistance = 2
 
 class PositionOnLine(Enum):
     START = 0
