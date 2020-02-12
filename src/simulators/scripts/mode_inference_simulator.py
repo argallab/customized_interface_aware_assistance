@@ -19,7 +19,7 @@ from utils import RGOrient, StartDirection, AssistanceType
 from IPython import embed
 
 class Simulator(object):
-	def __init__(self, dim=3, trial_index = 100, trial_info_dir_path=None):
+	def __init__(self, dim=3, trial_index = 22, trial_info_dir_path=None):
 		#TODO pass args as a dict
 		super(Simulator, self).__init__()
 		rospy.init_node("Simulator")
@@ -46,7 +46,8 @@ class Simulator(object):
 		# self.input_action_initialized = False
 
 		self.env_params = None
-		self.trial_info_dir_path = '/home/deepak/Desktop/Code/ModeSwitchInference/Code/python_scripts/trial_generation_for_experiment_1/trial_dir'
+		self.trial_info_dir_path = os.path.join(os.path.dirname(__file__), 'trial_dir')
+
 
 		if self.trial_info_dir_path is not None and os.path.exists(self.trial_info_dir_path):
 			print ('IN HERE')
@@ -58,6 +59,7 @@ class Simulator(object):
 
 			assert 'env_params' in trial_info_dict
 			self.env_params = trial_info_dict['env_params']
+			print "ENV PARAMS", self.env_params
 		else:
 			self.env_params = dict()
 			self.env_params['num_turns'] = 1
@@ -69,12 +71,10 @@ class Simulator(object):
 			self.env_params['start_direction'] = StartDirection.Y
 			self.env_params['start_mode'] = 't'
 			self.env_params['location_of_turn'] = 1
-			self.env_params['assistance_type'] = AssistanceType.Corrective
+			self.env_params['assistance_type'] = 0
 			assert self.env_params['location_of_turn'] > 0 and self.env_params['location_of_turn'] <= self.env_params['num_turns'] #can't be the first or last location
 
-
-		assistance_type = AssistanceType.Corrective
-		rospy.set_param('assistance_type', assistance_type)
+		rospy.set_param('assistance_type', self.env_params['assistance_type'])
 
 		rospy.loginfo("Waiting for teleop_node ")
 		rospy.wait_for_service("/teleop_node/set_mode")
