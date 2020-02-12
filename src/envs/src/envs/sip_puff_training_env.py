@@ -8,6 +8,8 @@ from utils import ACTIVE_MODE_COLOR, NONACTIVE_MODE_COLOR, ACTIVE_MODE_COLOR_ERR
 from utils import MODE_DISPLAY_TEXT_Y_ANCHOR
 
 import pyglet
+import time
+
 
 class SipPuffTrainingEnv(object):
 
@@ -25,7 +27,9 @@ class SipPuffTrainingEnv(object):
 
         self.prompt = ''
         self.start_prompt = False 
-        self.correct_count_threshold = 30
+        self.correct_count_threshold = 20
+        self.clear_for_next_prompt = False
+        self.time = time.time()
  
         self.current_command = '' 
         self.bold = True
@@ -76,7 +80,13 @@ class SipPuffTrainingEnv(object):
                 self.env_params['active_color'] = ACTIVE_MODE_COLOR
                 if self.correct_count == self.correct_count_threshold: 
                     self.prompt_commands.pop(0)
+                    self.clear_for_next_prompt = True
+                    self.time = time.time()
+            if self.clear_for_next_prompt: 
+                self.prompt = ''
+                if (time.time()-self.time>=0.5): 
                     self.ready_for_new_prompt = True
+                    self.clear_for_next_prompt = False
                     if self.prompt_commands == []: 
                         self.start_prompt = False
                         self.prompt = 'End of Prompted Training'
