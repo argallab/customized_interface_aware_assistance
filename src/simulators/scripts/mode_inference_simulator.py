@@ -15,11 +15,11 @@ import pickle
 import os
 from utils import Robot2D, FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS, SCALE, VIEWPORT_W, VIEWPORT_H, DIM_TO_MODE_INDEX
 from utils import ROBOT_RADIUS, GOAL_RADIUS, GOAL_SHAPES, GOAL_COLORS, PI, HUMAN_ROBOT_COLOR, AUTONOMY_ROBOT_COLOR, TRIANGLE_L
-from utils import RGOrient, StartDirection
+from utils import RGOrient, StartDirection, AssistanceType
 from IPython import embed
 
 class Simulator(object):
-	def __init__(self, dim=3, trial_index = 0, trial_info_dir_path=None):
+	def __init__(self, dim=3, trial_index = 100, trial_info_dir_path=None):
 		#TODO pass args as a dict
 		super(Simulator, self).__init__()
 		rospy.init_node("Simulator")
@@ -46,10 +46,13 @@ class Simulator(object):
 		# self.input_action_initialized = False
 
 		self.env_params = None
-		self.trial_info_dir_path = trial_info_dir_path
+		self.trial_info_dir_path = '/home/deepak/Desktop/Code/ModeSwitchInference/Code/python_scripts/trial_generation_for_experiment_1/trial_dir'
+
 		if self.trial_info_dir_path is not None and os.path.exists(self.trial_info_dir_path):
+			print ('IN HERE')
 			trial_info_filename = str(self.trial_index) + '.pkl'
 			trial_info_filepath = os.path.join(self.trial_info_dir_path, trial_info_filename)
+			assert os.path.exists(trial_info_filepath) is not None
 			with open(trial_info_filepath, 'rb') as fp:
 				trial_info_dict = pickle.load(fp) #this dict could have other info related to autonomy params. We are only interested in the environment params for the time being
 
@@ -57,17 +60,21 @@ class Simulator(object):
 			self.env_params = trial_info_dict['env_params']
 		else:
 			self.env_params = dict()
-			self.env_params['num_turns'] = 3
-			self.env_params['robot_position'] = ((3*VIEWPORT_W)/4/SCALE, (VIEWPORT_H)/4/SCALE)
-			self.env_params['goal_position'] = (VIEWPORT_W/4/SCALE, (3*VIEWPORT_H)/4/SCALE)
+			self.env_params['num_turns'] = 1
+			self.env_params['robot_position'] = ((VIEWPORT_W)/4/SCALE, (3*VIEWPORT_H)/4/SCALE)
+			self.env_params['goal_position'] = ((3*VIEWPORT_W)/4/SCALE, (VIEWPORT_H)/4/SCALE)
 			self.env_params['robot_orientation'] = 0.0
 			self.env_params['goal_orientation'] = PI/2
-			self.env_params['r_to_g_relative_orientation'] = RGOrient.TOP_LEFT
+			self.env_params['r_to_g_relative_orientation'] = RGOrient.BOTTOM_RIGHT
 			self.env_params['start_direction'] = StartDirection.Y
 			self.env_params['start_mode'] = 't'
 			self.env_params['location_of_turn'] = 1
+			self.env_params['assistance_type'] = AssistanceType.Corrective
+			assert self.env_params['location_of_turn'] > 0 and self.env_params['location_of_turn'] <= self.env_params['num_turns'] #can't be the first or last location
 
-		print self.env_params['start_mode']
+
+		assistance_type = AssistanceType.Corrective
+		rospy.set_param('assistance_type', assistance_type)
 
 		rospy.loginfo("Waiting for teleop_node ")
 		rospy.wait_for_service("/teleop_node/set_mode")
