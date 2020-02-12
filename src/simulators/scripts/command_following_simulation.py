@@ -83,17 +83,16 @@ class CommandFollowing(object):
                 rand_index = randrange(len(commands))
                 self.command_list.append(commands[rand_index]) 
                 commands.pop(rand_index)
+        print 'total commands: ', (len(self.command_list))
 
     # display commands for desired duration and (wait for user to stop input before sending next command)
     def command_following_task(self): 
         for i in range(len(self.command_list)): 
             if self.send_command: 
-                self.lock.acquire()
                 self.publish_command(self.command_list[i])
                 self.call_render(self.command_list[i], self.duration) 
                 self.send_command = False
-                self.call_render('', self.countdown_duration)                   
-                self.lock.release()
+                self.call_render('', self.countdown_duration/2)                   
                 self.count += 1
                 print self.count
             else: 
