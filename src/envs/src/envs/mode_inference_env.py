@@ -369,7 +369,7 @@ class ModeInferenceEnv(object):
                 # self.viewer.draw_text("   ", x = VIEWPORT_W/2, y=VIEWPORT_H/6, font_size=MODE_DISPLAY_TEXT_FONTSIZE, color=MODE_DISPLAY_TEXT_COLOR, anchor_y='top')
                 self.current_time += 1
             else:
-                print('BAI')
+                pass
             self.lock.release()
             end = rospy.get_rostime()
             if end-start < period:
