@@ -5,6 +5,7 @@ from utils import RobotSE2, FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS, SCALE
 from utils import PI, ROBOT_RADIUS, GOAL_RADIUS, MODE_DISPLAY_RADIUS
 from utils import ROBOT_COLOR_WHEN_MOVING, ROBOT_COLOR_WHEN_COMMAND_REQUIRED, ACTIVE_MODE_COLOR, NONACTIVE_MODE_COLOR, TURN_LOCATION_COLOR, MODE_DISPLAY_TEXT_COLOR, MODE_DISPLAY_TEXT_FONTSIZE
 from utils import MODE_DISPLAY_CIRCLE_START_POSITION_S, MODE_DISPLAY_CIRCLE_X_OFFSET_S, MODE_DISPLAY_TEXT_START_POSITION, MODE_DISPLAY_TEXT_X_OFFSET, MODE_DISPLAY_TEXT_Y_ANCHOR
+from utils import TIMER_DISPLAY_POSITION, TIMER_DISPLAY_FONTSIZE, TIMER_COLOR_NEUTRAL, TIMER_COLOR_WARNING, TIMER_COLOR_DANGER, TIMER_DISPLAY_TEXT_Y_ANCHOR, TIMER_DANGER_THRESHOLD, TIMER_WARNING_THRESHOLD
 from utils import WP_RADIUS, INFLATION_FACTOR, PATH_HALF_WIDTH, MODE_INDEX_TO_DIM, DIM_TO_MODE_INDEX
 from utils import RGOrient, StartDirection, PositionOnLine
 from utils import get_sign_of_number
@@ -15,6 +16,7 @@ import numpy as np
 import collections
 import itertools
 import rospy
+import threading
 from envs.srv import OptimalAction, OptimalActionRequest, OptimalActionResponse
 from IPython import embed
 
@@ -351,11 +353,37 @@ class ModeInferenceEnv(object):
         self.viewer.draw_text("Y", x=MODE_DISPLAY_TEXT_START_POSITION[0] + MODE_DISPLAY_TEXT_X_OFFSET, y=MODE_DISPLAY_TEXT_START_POSITION[1], font_size=MODE_DISPLAY_TEXT_FONTSIZE, color=MODE_DISPLAY_TEXT_COLOR, anchor_y=MODE_DISPLAY_TEXT_Y_ANCHOR)
         self.viewer.draw_text("T", x=MODE_DISPLAY_TEXT_START_POSITION[0] + 2*MODE_DISPLAY_TEXT_X_OFFSET, y=MODE_DISPLAY_TEXT_START_POSITION[1], font_size=MODE_DISPLAY_TEXT_FONTSIZE, color=MODE_DISPLAY_TEXT_COLOR, anchor_y=MODE_DISPLAY_TEXT_Y_ANCHOR)
 
+    def _render_timer_text(self):
+        if self.current_time < TIMER_WARNING_THRESHOLD:
+            self.viewer.draw_text(str(self.current_time), x=TIMER_DISPLAY_POSITION[0], y=TIMER_DISPLAY_POSITION[1], font_size=TIMER_DISPLAY_FONTSIZE, color=TIMER_COLOR_NEUTRAL, anchor_y=TIMER_DISPLAY_TEXT_Y_ANCHOR, bold=True)
+        elif self.current_time < TIMER_DANGER_THRESHOLD:
+            self.viewer.draw_text(str(self.current_time), x=TIMER_DISPLAY_POSITION[0], y=TIMER_DISPLAY_POSITION[1], font_size=TIMER_DISPLAY_FONTSIZE, color=TIMER_COLOR_WARNING, anchor_y=TIMER_DISPLAY_TEXT_Y_ANCHOR, bold=True)
+        else:
+            self.viewer.draw_text(str(self.current_time), x=TIMER_DISPLAY_POSITION[0], y=TIMER_DISPLAY_POSITION[1], font_size=TIMER_DISPLAY_FONTSIZE, color=TIMER_COLOR_DANGER, anchor_y=TIMER_DISPLAY_TEXT_Y_ANCHOR, bold=True)
+
+    def _render_timer(self, period):
+        while not rospy.is_shutdown():
+            start = rospy.get_rostime()
+            self.lock.acquire()
+            if self.viewer is not None:
+                # self.viewer.draw_text("   ", x = VIEWPORT_W/2, y=VIEWPORT_H/6, font_size=MODE_DISPLAY_TEXT_FONTSIZE, color=MODE_DISPLAY_TEXT_COLOR, anchor_y='top')
+                self.current_time += 1
+            else:
+                print('BAI')
+            self.lock.release()
+            end = rospy.get_rostime()
+            if end-start < period:
+                rospy.sleep(period - (end-start))
+            else:
+                rospy.loginfo('took more time')
+
     def render(self, mode='human'):
         if self.viewer is None:
             self.viewer = Viewer(VIEWPORT_W, VIEWPORT_H)
             self.viewer.set_bounds(0, VIEWPORT_W/SCALE, 0, VIEWPORT_H/SCALE)
-            self.viewer.window.set_location(650, 300)
+            self.viewer.window.set_location(1650, 300)
+            self.timer_thread.start()
+
 
         #render location for turning
         self._render_turn_location()
@@ -373,6 +401,8 @@ class ModeInferenceEnv(object):
         self._render_mode_display()
         #render dimension text
         self._render_mode_display_text()
+        #render timer
+        self._render_timer_text()
 
         return self.viewer.render(False)
 
@@ -515,6 +545,12 @@ class ModeInferenceEnv(object):
         # print ':LOC to WP', self.LOCATIONS_TO_WAYPOINTS_DICT
 
         rospy.Service('/mode_inference_env/get_optimal_action', OptimalAction, self.get_optimal_action)
+        self.period = rospy.Duration(1.0)
+        self.timer_thread = threading.Thread(target=self._render_timer, args=(self.period,))
+        self.lock = threading.Lock()
+        self.current_time = 0
+        print 'START'
+
 
 
     def step(self, input_action):
