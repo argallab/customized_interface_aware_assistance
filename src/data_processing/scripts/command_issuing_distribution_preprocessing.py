@@ -19,18 +19,28 @@ def build_parser():
 	parser.add_argument('-command_prompt', help='name of /command_prompt file', nargs='*')
 	parser.add_argument('-input', help='name of /joy_sip_puff file', nargs='*')
 	parser.add_argument('-o', '--output', help='name of the output file', nargs='*')
-	parser.add_argument('-s', '--start', help='name of /keyboard_entry file', nargs='*')
 
 	return parser
 
-def read_csv_files(path, command_prompt, user_input, start, output):
+def read_csv_files(path, command_prompt, user_input, output):
 	user_input_file = path + '/' + user_input
 	command_prompt_file = path + '/' + command_prompt
-	keyboard_entry_file = path + '/' + start
 	command_prompt_df = pd.read_csv(command_prompt_file, header = 0)
 	user_input_df = pd.read_csv(user_input_file, header = 0)
-	keyboard_entry_df = pd.read_csv(keyboard_entry_file, header = 0)
-	return command_prompt_df, user_input_df, keyboard_entry_df
+	return command_prompt_df, user_input_df
+
+def ensure_ascending_time(time_stamp_array): 
+	for i in range(len(time_stamp_array)): 
+		print i
+		t_array = time_stamp_array[i]
+		previous = t_array.rosbagTimestamp[0]
+		for number in t_array.rosbagTimestamp: 
+			if number < previous: 
+				sys.exit('Times are not in ascending order. Fix data before proceeding')
+			previous = number
+		plt.figure()
+    	plt.plot(range(0,len(t_array.rosbagTimestamp)), t_array.rosbagTimestamp)
+    	plt.show()
 
 def get_nearest_time_stamp(tq, time_stamp_array):
 	'''
@@ -107,6 +117,7 @@ def build_probabilities(command_prompt, user_input):
 def plot_response_curves():
 	pass
 
+# def plot_timestamps(): 
 
 if __name__ == '__main__':
 
@@ -116,18 +127,12 @@ if __name__ == '__main__':
 	output = args.output
 	command_prompt = args.command_prompt[0]
 	user_input = args.input[0]
-	start = args.start[0]
 
-	topics = read_csv_files(path, command_prompt, user_input, start, output)
-	# print topics[1].head()
-	# print topics[1][['axes']]
-	# build_probabilities(topics[0], topics[1], topics[2])
-	topics_scaled = scale_times(topics[0], topics[1], topics[2])
-	build_probabilities(topics_scaled[0], topics_scaled[1])
-
-
-
+	topics = read_csv_files(path, command_prompt, user_input, output)
+	# topics_scaled = scale_times(topics[0], topics[1], topics[2])
+	ensure_ascending_time(topics)
+	build_probabilities(topics[0], topics[1])
 
 
 	# How to run:
-	# python command_issuing_distribution_preprocessing.py -path mahdieh -command_prompt _slash_command_prompt.csv -input _slash_joy_sip_puff.csv -s _slash_keyboard_entry.csv
+	# python command_issuing_distribution_preprocessing.py -path mahdieh_command_issuing_full -command_prompt _slash_command_prompt.csv -input _slash_joy_sip_puff.csv 
