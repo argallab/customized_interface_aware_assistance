@@ -84,22 +84,25 @@ class SNPMapping(object):
     if (self.lower_puff_limit < airVelocity < self.lower_sip_limit):
       self.send_msg.header.frame_id = "Zero Band"
       self.send_msg.buttons = np.zeros(4)
-    elif (self.lower_sip_limit < airVelocity < self.soft_sip_max_limit): # register as soft sip
+    elif (self.lower_sip_limit <= airVelocity <= self.soft_sip_max_limit): # register as soft sip
       self.send_msg.header.frame_id = "Soft Sip"
       self.send_msg.buttons[2] = 1
-    elif (self.soft_puff_max_limit < airVelocity < self.lower_puff_limit): # register as soft puff
+    elif (self.soft_puff_max_limit <= airVelocity <= self.lower_puff_limit): # register as soft puff
       self.send_msg.header.frame_id = "Soft Puff"
       self.send_msg.buttons[1] = 1
-    elif (self.hard_puff_max_limit < airVelocity < self.hard_puff_min_limit): # register as hard puff
+    elif (self.hard_puff_max_limit <= airVelocity < self.hard_puff_min_limit): # register as hard puff
       self.send_msg.header.frame_id = "Hard Puff"
       self.send_msg.buttons[0] = 1
       # self._lock_input = True
-    elif (self.hard_sip_min_limit < airVelocity < self.hard_sip_max_limit): # register as hard sip
+    elif (self.hard_sip_min_limit < airVelocity <= self.hard_sip_max_limit): # register as hard sip
       self.send_msg.header.frame_id = "Hard Sip"
       self.send_msg.buttons[3] = 1
       # self._lock_input = True
     else:
-      self.send_msg.header.frame_id = "Soft-Hard Deadband"
+      if airVelocity < 0: 
+        self.send_msg.header.frame_id = "Soft-Hard Puff Deadband"
+      else: 
+        self.send_msg.header.frame_id = "Soft-Hard Sip Deadband"
       self.send_msg.buttons = np.zeros(4)
     print("      ")
     rospy.loginfo("Before")
