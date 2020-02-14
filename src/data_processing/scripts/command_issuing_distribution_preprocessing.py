@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import bisect
 from IPython import embed
+import pickle  
 
 time_synch_difference = 0.01
 
@@ -30,9 +31,7 @@ def read_csv_files(path, command_prompt, user_input, output):
 	return command_prompt_df, user_input_df
 
 def ensure_ascending_time(time_stamp_array): 
-	for i in range(len(time_stamp_array)): 
-		print i
-		t_array = time_stamp_array[i]
+	for t_array in time_stamp_array: 
 		previous = t_array.rosbagTimestamp[0]
 		for number in t_array.rosbagTimestamp: 
 			if number < previous: 
@@ -60,59 +59,82 @@ def get_nearest_time_stamp(tq, time_stamp_array):
 		else: #tq is closer to the previous value
 			return time_stamp_array[idx-1], idx-1
 
-# To do: computationally effecient way of doing this, instad of looping everytime
+
 def get_user_response_block_indices(time_s, time_e, user_input):
 	assert 'rosbagTimestamp' in user_input
-	user_input_time_stamp_list = user_input['rosbagTimestamp'].values.tolist() #list
-	time_s_u, index_of_time_s_u = get_nearest_time_stamp(time_s, user_input_time_stamp_list)
-	time_e_u, index_of_time_e_u = get_nearest_time_stamp(time_e, user_input_time_stamp_list)
+	time_s_u, index_of_time_s_u = get_nearest_time_stamp(time_s, user_input.rosbagTimestamp)
+	time_e_u, index_of_time_e_u = get_nearest_time_stamp(time_e, user_input.rosbagTimestamp)
+
 	assert time_e_u > time_s_u #sanity checks
 	assert index_of_time_e_u > index_of_time_s_u #sanity check
 
 	user_response_block_indices = range(index_of_time_s_u, index_of_time_e_u) #list of indices for lookup
 	return user_response_block_indices
 
+def populate_probabilities_from_count(array, user_input): 
+	LABEL_TO_ARRAY_DICT = {'"Hard Puff"': 0, '"Hard Sip"': 1, '"Soft Puff"': 2, '"Soft Sip"':3, '"Zero Band"': 4, '"Soft-Hard Puff Deadband"': 5, '"Soft-Hard Sip Deadband"': 6  }
+	
+	counts_array = np.zeros(7)
+	for label in user_input: 
+		if label == '"input stopped"': 
+			pass
+		else: 
+			counts_array[LABEL_TO_ARRAY_DICT[label]] += 1
 
-	# print min(time_diff)
+	norm_counts_array = counts_array/len(user_input)
+	array = (array + norm_counts_array)/2
+	return array
 
-def scale_times(command_prompt, user_input, start):
+	# for label in user_input: 
+	# 	switch (label) {
+	# 		case '"Hard Puf"': 
+	# 		case '"Hard Sip"': 
+	# 		case '"Soft Puff"': 	
+	# 		case '"Soft Sip"': 	
+	# 		case '"Zero Band"': 	
+	# 		case '"Soft-Hard Puff Deadband"': 	
+	# 		case '"Soft-Hard Sip Deadband"': 				
+	# 	}
 
-	command_prompt_t = command_prompt.rosbagTimestamp
-	command_prompt_t = command_prompt_t.subtract(start.rosbagTimestamp)
-	command_prompt['rosbagTimestamp'] = command_prompt.rosbagTimestamp.replace(command_prompt_t)
-
-	# print user_input.rosbagTimestamp[0]
-	a = user_input.rosbagTimestamp[0]
-	user_input_t = user_input.rosbagTimestamp
-	user_input_t = user_input_t.subtract(start.rosbagTimestamp)
-	user_input['rosbagTimestamp'] = user_input.rosbagTimestamp.replace(user_input_t)
-
-	# print user_input.rosbagTimestamp[0] - a
-
-	return command_prompt, user_input
 
 def build_probabilities(command_prompt, user_input):
-	# To do: Change to 7 for separating deadbands
-	u_hp = np.zeros(6)
-	u_hs = np.zeros(6)
-	u_sp = np.zeros(6)
-	u_ss = np.zeros(6)
+
+	# h_p, h_s, s_p, s_s, zero, s-h_p, s-h_s
+	u_hp = np.zeros(7)
+	u_hs = np.zeros(7)
+	u_sp = np.zeros(7)
+	u_ss = np.zeros(7)
+
+	u_hp_profile = []
+	u_hs_profile = []
+	u_sp_profile = []
+	u_ss_profile = []
 
 	COMMAND_TO_ARRAY_DICT = {'Hard Puff': u_hp, 'Hard Sip': u_hs, 'Soft Puff': u_sp, 'Soft Sip': u_ss}
-	for i in range(30, len(command_prompt)):
+	COMMAND_TO_PROFILE_ARRAY_DICT = {'Hard Puff': u_hp_profile, 'Hard Sip': u_hs_profile, 'Soft Puff': u_sp_profile, 'Soft Sip': u_ss_profile}
+	for i in range(0,len(command_prompt)-1,2):
 		key =  command_prompt.at[i, 'command'].replace('"','')
-		time_s =  command_prompt.at[i, 'rosbagTimestamp']
-		# To do: Change time end to the empty command
-		if i < len(command_prompt)-1:
-			time_e = command_prompt.at[i+1, 'rosbagTimestamp']
-			# print command_prompt.get_value(i+1, 'seq')
+		comm_start_t =  command_prompt.at[i, 'rosbagTimestamp']
+		comm_end_t =  command_prompt.at[i+1, 'rosbagTimestamp']
 
-			user_response_block_indices = get_user_response_block_indices(time_s, time_e, user_input)
-			#user_response_header = user_input['frame_id'][user_response_block_indices]
-			#etc....
-		# COMMAND_TO_ARRAY_DICT[key][0] += 1
+		user_response_block_indices = get_user_response_block_indices(comm_start_t, comm_end_t, user_input)
 
-		# print key, COMMAND_TO_ARRAY_DICT[key]
+		user_response_header = user_input['frame_id'][user_response_block_indices]
+
+		COMMAND_TO_ARRAY_DICT[key] = populate_probabilities_from_count(COMMAND_TO_ARRAY_DICT[key], user_response_header)
+
+		COMMAND_TO_PROFILE_ARRAY_DICT[key][] 
+
+
+	pickle.dump(u_hp, open("u_hp.p", "wb"))
+	pickle.dump(u_hs, open("u_hs.p", "wb"))
+	pickle.dump(u_sp, open("u_sp.p", "wb"))
+	pickle.dump(u_ss, open("u_ss.p", "wb"))
+
+	# plot_response_curves()
+
+	return u_hp, u_hs, u_sp, u_ss 
+
 
 def plot_response_curves():
 	pass
