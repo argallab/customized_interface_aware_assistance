@@ -83,7 +83,7 @@ class CommandFollowing(object):
 
     # display commands for desired duration and (wait for user to stop input before sending next command)
     def command_following_task(self): 
-        i = 1
+        i = 0
         while i < len(self.command_list): 
             self.command_time = rospy.get_rostime()
             self.publish_command(self.command_list[i])
