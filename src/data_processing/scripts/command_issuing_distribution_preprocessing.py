@@ -10,6 +10,9 @@ import numpy as np
 import bisect
 from IPython import embed
 import pickle  
+import itertools
+import collections 
+
 
 time_synch_difference = 0.01
 
@@ -20,6 +23,7 @@ def build_parser():
 	parser.add_argument('-command_prompt', help='name of /command_prompt file', nargs='*')
 	parser.add_argument('-input', help='name of /joy_sip_puff file', nargs='*')
 	parser.add_argument('-o', '--output', help='name of the output file', nargs='*')
+	parser.add_argument('-id', help='subject id', type=str)
 
 	return parser
 
@@ -37,7 +41,6 @@ def ensure_ascending_time(time_stamp_array):
 			if number < previous: 
 				sys.exit('Times are not in ascending order. Fix data before proceeding')
 			previous = number
-		plt.figure()
     	plt.plot(range(0,len(t_array.rosbagTimestamp)), t_array.rosbagTimestamp)
     	plt.show()
 
@@ -71,33 +74,44 @@ def get_user_response_block_indices(time_s, time_e, user_input):
 	user_response_block_indices = range(index_of_time_s_u, index_of_time_e_u) #list of indices for lookup
 	return user_response_block_indices
 
-def populate_probabilities_from_count(array, user_input): 
+def populate_probabilities_from_count(user_input): 
 	LABEL_TO_ARRAY_DICT = {'"Hard Puff"': 0, '"Hard Sip"': 1, '"Soft Puff"': 2, '"Soft Sip"':3, '"Zero Band"': 4, '"Soft-Hard Puff Deadband"': 5, '"Soft-Hard Sip Deadband"': 6  }
 	
 	counts_array = np.zeros(7)
+	length = 0
 	for label in user_input: 
 		if label == '"input stopped"': 
 			pass
 		else: 
 			counts_array[LABEL_TO_ARRAY_DICT[label]] += 1
+			length += 1
 
-	norm_counts_array = counts_array/len(user_input)
-	array = (array + norm_counts_array)/2
-	return array
+	norm_counts_array = counts_array/length
 
-	# for label in user_input: 
-	# 	switch (label) {
-	# 		case '"Hard Puf"': 
-	# 		case '"Hard Sip"': 
-	# 		case '"Soft Puff"': 	
-	# 		case '"Soft Sip"': 	
-	# 		case '"Zero Band"': 	
-	# 		case '"Soft-Hard Puff Deadband"': 	
-	# 		case '"Soft-Hard Sip Deadband"': 				
-	# 	}
+	return norm_counts_array
+
+def _combine_probabilities(command_probs): 
+	for i in command_probs: 
+		command_probs[i][0] = command_probs[i][0]+command_probs[i][5]
+		command_probs[i][1] = command_probs[i][1]+command_probs[i][6]
+		my_list = list(command_probs[i])
+		my_list.pop(6)
+		my_list.pop(5)
+		command_probs[i] = np.array(my_list)
+	return command_probs
+
+def _init_p_um_given_ui(commands, keys, subject_id):
+
+	p_um = collections.OrderedDict()
+	for i in commands: 
+		p_um[i] = collections.OrderedDict()
+		for index, name in enumerate(keys): 
+			p_um[i][name] = commands[i][index]
+	# embed(banner1="u_m")
+	pickle.dump(p_um, open(subject_id+'_p_um_given_ui.pkl', "wb"))
 
 
-def build_probabilities(command_prompt, user_input):
+def build_probabilities(command_prompt, user_input, subject_id):
 
 	# h_p, h_s, s_p, s_s, zero, s-h_p, s-h_s
 	u_hp = np.zeros(7)
@@ -110,6 +124,7 @@ def build_probabilities(command_prompt, user_input):
 	u_sp_profile = []
 	u_ss_profile = []
 
+	COMMAND_TO_ARRAY_DICT = collections.OrderedDict()
 	COMMAND_TO_ARRAY_DICT = {'Hard Puff': u_hp, 'Hard Sip': u_hs, 'Soft Puff': u_sp, 'Soft Sip': u_ss}
 	COMMAND_TO_PROFILE_ARRAY_DICT = {'Hard Puff': u_hp_profile, 'Hard Sip': u_hs_profile, 'Soft Puff': u_sp_profile, 'Soft Sip': u_ss_profile}
 	for i in range(0,len(command_prompt)-1,2):
@@ -121,23 +136,46 @@ def build_probabilities(command_prompt, user_input):
 
 		user_response_header = user_input['frame_id'][user_response_block_indices]
 
-		COMMAND_TO_ARRAY_DICT[key] = populate_probabilities_from_count(COMMAND_TO_ARRAY_DICT[key], user_response_header)
+		COMMAND_TO_ARRAY_DICT[key] += populate_probabilities_from_count(user_response_header)
 
-		COMMAND_TO_PROFILE_ARRAY_DICT[key][] 
+		a = user_input['axes'][user_response_block_indices].str.replace(r"\[", "")
+		a = a.str.replace(r"\]", "")
+		a = [float(i) for i in a]
+		COMMAND_TO_PROFILE_ARRAY_DICT[key].append(a)
 
+	for k, v in COMMAND_TO_ARRAY_DICT.items(): 
+		v = v/len(COMMAND_TO_PROFILE_ARRAY_DICT[k])
+		COMMAND_TO_ARRAY_DICT[k] = v
 
-	pickle.dump(u_hp, open("u_hp.p", "wb"))
-	pickle.dump(u_hs, open("u_hs.p", "wb"))
-	pickle.dump(u_sp, open("u_sp.p", "wb"))
-	pickle.dump(u_ss, open("u_ss.p", "wb"))
+	keys = ['Hard Puff', 'Hard Sip', 'Soft Puff', 'Soft Sip', 'Zero Band', 'Soft-Hard Puff Deadband', 'Soft-Hard Sip Deadband']
+	# keys = ['Hard Puff', 'Hard Sip', 'Soft Puff', 'Soft Sip', 'Zero Band']
+	# keys = ['Hard Puff', 'Hard Sip', 'Soft Puff', 'Soft Sip']
+	# COMMAND_TO_ARRAY_DICT = _combine_probabilities(COMMAND_TO_ARRAY_DICT)
+	_init_p_um_given_ui(COMMAND_TO_ARRAY_DICT, keys, subject_id)
 
-	# plot_response_curves()
+	# for i in range(len(COMMAND_TO_PROFILE_ARRAY_DICT.keys())): 
+	# 	plot_response_curves(COMMAND_TO_PROFILE_ARRAY_DICT[i], i)
+	# plot_response_curves(u_hp_profile, 'Hard Puff')
+	# plot_response_curves(u_hs_profile, 'Hard Sip')
+	# plot_response_curves(u_sp_profile, 'Soft Puff')
+	# plot_response_curves(u_ss_profile, 'Soft Sip')
 
 	return u_hp, u_hs, u_sp, u_ss 
 
 
-def plot_response_curves():
-	pass
+def plot_response_curves(user_input, title):
+	plt.xlabel("X-axis")
+	plt.ylabel("user input")
+	plt.title(title)
+	plt.ylim(bottom=-1, top=1)
+	i = 1
+	for y in user_input:
+		plt.plot(range(len(y)),y,label = 'id %s'%i)
+		i += 1
+	plt.legend()
+	plt.show()
+	# plt.show(block=False)
+	# plt.pause(0.0001)
 
 # def plot_timestamps(): 
 
@@ -149,12 +187,13 @@ if __name__ == '__main__':
 	output = args.output
 	command_prompt = args.command_prompt[0]
 	user_input = args.input[0]
+	subject_id = args.id
 
 	topics = read_csv_files(path, command_prompt, user_input, output)
 	# topics_scaled = scale_times(topics[0], topics[1], topics[2])
-	ensure_ascending_time(topics)
-	build_probabilities(topics[0], topics[1])
+	# ensure_ascending_time(topics)
+	build_probabilities(topics[0], topics[1], subject_id)
 
 
 	# How to run:
-	# python command_issuing_distribution_preprocessing.py -path mahdieh_command_issuing_full -command_prompt _slash_command_prompt.csv -input _slash_joy_sip_puff.csv 
+	# python command_issuing_distribution_preprocessing.py -path deepak -command_prompt _slash_command_prompt.csv -input _slash_joy_sip_puff.csv 
