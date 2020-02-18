@@ -38,6 +38,8 @@ class Viewer(object):
         self.geoms = []
         self.text_labels = []
         self.onetime_geoms = []
+        self.sprites = []
+        self.batch = pyglet.graphics.Batch()
         self.transform = Transform()
 
         glEnable(GL_BLEND)
@@ -66,6 +68,10 @@ class Viewer(object):
     def add_onetime(self, geom):
         self.onetime_geoms.append(geom)
 
+    def add_sprite(self, sprite, x, y): 
+        # self.sprites.append(sprite, x, y, batch=self.batch)
+        self.sprites.append(sprite)
+
     def render(self, return_rgb_array=False):
         self.window.switch_to()
         self.window.dispatch_events()
@@ -80,6 +86,7 @@ class Viewer(object):
         arr = None
         for label in self.text_labels:
             label.draw()
+        self.batch.draw()
         if return_rgb_array:
             buffer = pyglet.image.get_buffer_manager().get_color_buffer()
             image_data = buffer.get_image_data()
@@ -95,6 +102,7 @@ class Viewer(object):
         self.window.flip()
         self.onetime_geoms = []
         self.text_labels = []
+        self.sprites = []
         return arr if return_rgb_array else self.isopen
 
     # Convenience
@@ -130,6 +138,12 @@ class Viewer(object):
                                   )
         self.add_text_onetime(label)
         return label
+
+    def draw_sprite(self, image_file, x, y): 
+        img = pyglet.image.load(image_file)
+        img_sprite = pyglet.sprite.Sprite(img, x, y, batch=self.batch)
+        self.add_sprite(img_sprite, x, y)
+        return img
 
     def get_array(self):
         self.window.flip()
