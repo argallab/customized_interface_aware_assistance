@@ -64,6 +64,21 @@ class ModeInferenceEnv(object):
         self.start_direction = None
         self.start_mode = None
         self.location_of_turn = None
+        self.service_initialized = False
+
+    def update_params(self, env_params):
+        self.env_params = env_params
+        assert self.env_params is not None
+
+        assert 'num_turns' in self.env_params
+        assert 'robot_position' in self.env_params
+        assert 'goal_position' in self.env_params
+        assert 'robot_orientation' in self.env_params
+        assert 'goal_orientation' in self.env_params
+        assert 'r_to_g_relative_orientation' in self.env_params
+        assert 'start_direction' in self.env_params
+        assert 'start_mode' in self.env_params
+        assert 'location_of_turn' in self.env_params
 
     def get_optimal_action(self, req):
         response = OptimalActionResponse()
@@ -464,8 +479,11 @@ class ModeInferenceEnv(object):
         if self.robot is None: return
         self.world.DestroyBody(self.robot.robot)
         self.robot = None
-        self.waypoints = np.zeros((self.num_turns+2, 2))
+        self.waypoints = np.zeros((self.num_locations, 2))
+        
+        # self.timer_thread.join()
         #TODO add all other initializations
+        #destory time thread.
 
     def reset(self):
         self._destroy()
@@ -544,7 +562,9 @@ class ModeInferenceEnv(object):
         # print '                 '
         # print ':LOC to WP', self.LOCATIONS_TO_WAYPOINTS_DICT
 
-        rospy.Service('/mode_inference_env/get_optimal_action', OptimalAction, self.get_optimal_action)
+        if not self.service_initialized:
+            rospy.Service('/mode_inference_env/get_optimal_action', OptimalAction, self.get_optimal_action)
+            self.service_initialized = True
         self.period = rospy.Duration(1.0)
         self.timer_thread = threading.Thread(target=self._render_timer, args=(self.period,))
         self.lock = threading.Lock()
@@ -590,3 +610,7 @@ class ModeInferenceEnv(object):
         self.robot.robot.linearVelocity = b2Vec2(user_vel[0], user_vel[1]) #update robot velocity
         self.robot.robot.angularVelocity = -user_vel[2]
         self.world.Step(1.0/FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS) #call box2D step function
+        is_done = False
+        if self.current_discrete_state[0] == self.LOCATIONS[-1]: #reached the last location
+            is_done = True
+        return self.robot.get_position(), self.robot.get_angle(), self.current_discrete_state, is_done

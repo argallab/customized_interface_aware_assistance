@@ -167,6 +167,13 @@ class RobotSE2(object):
     def get_angle(self):
         return self.robot.angle
 
+	def get_linear_velocity(self):
+		return self.robot.linearVelocity
+
+	def get_angular_velocity(self):
+		return self.robot.angularVelocity
+
+	#Setters
     def set_position(self, position):
         self.robot.position = position
 
