@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+
+<launch>
+
+	<arg name="iteration" default="1" doc="Number of times to display each action"/>
+	<arg name="batch" default="1" doc="Number of batches to display each block of actions"/>
+
+	<arg name="SNP" default="true" doc="Set to true if using sip/puff to control arm."/>
+
+	<node pkg="simulators" output="screen" type="internal_command_model_simulation.py" name="internal_command_model_simulation" args="$(arg iteration)"/>
+
+	<node pkg="general_purpose" output="screen" type="keyboard_input_to_topic" name="keyboard_input_to_topic"/>
+
+	<include file="$(find teleop_nodes)/launch/teleop_nodes.launch">
+		<arg name="SNP" value="$(arg SNP)"/>
+	</include>
+
+
+</launch>

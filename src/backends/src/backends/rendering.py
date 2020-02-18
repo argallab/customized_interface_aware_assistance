@@ -139,7 +139,7 @@ class Viewer(object):
         self.add_text_onetime(label)
         return label
 
-    def draw_sprite(self, image_file, x, y): 
+    def draw_sprite(self, image_file, x, y, scale=1): 
         img = pyglet.image.load(image_file)
         img_sprite = pyglet.sprite.Sprite(img, x, y, batch=self.batch)
         self.add_sprite(img_sprite, x, y)
