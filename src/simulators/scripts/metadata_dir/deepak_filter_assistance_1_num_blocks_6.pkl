@@ -1,0 +1,14 @@
+(lp0
+I32
+aI57
+aI41
+aI48
+aI13
+aI14
+aI59
+aI50
+aI39
+aI30
+aI12
+aI58
+a.

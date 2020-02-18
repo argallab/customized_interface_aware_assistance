@@ -35,9 +35,15 @@ START_MODE_OPTIONS = [-1, 1] # if (x,y, theta) is the mode sequence, -1 refers t
 def generate_experiment_trials(args):
     num_reps_per_condition = args.num_reps_per_condition
     trial_dir = args.trial_dir
+    metadata_dir = args.metadata_dir
     if not os.path.exists(trial_dir):
         os.makedirs(trial_dir)
+
+    if not os.path.exists(metadata_dir):
+        os.makedirs(metadata_dir)
+
     index = 0
+    assistance_to_pkl_index = collections.defaultdict(list)
 
     for rg_config, num_turns, start_direction, assistance_type  in itertools.product(RG_CONFIGS, NUM_TURNS, START_DIRECTIONS, ASSISTANCE_TYPES):
         trial_info_dict = collections.OrderedDict()
@@ -59,12 +65,18 @@ def generate_experiment_trials(args):
         for j in range(num_reps_per_condition):
             with open(os.path.join(trial_dir, str(index) + '.pkl'), 'wb') as fp:
                 pickle.dump(trial_info_dict, fp)
+            assistance_to_pkl_index[assistance_type].append(index)
             index += 1
             print 'Trial Number ', index
+
+    with open(os.path.join(metadata_dir, 'assistance_to_pkl_index.pkl'), 'wb') as fp:
+        pickle.dump(assistance_to_pkl_index, fp)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--trial_dir', dest='trial_dir',default=os.path.join(os.getcwd(), 'trial_dir'), help="The directory where trials will be stored are")
+    parser.add_argument('--metadata_dir', dest='metadata_dir',default=os.path.join(os.getcwd(), 'metadata_dir'), help="The directory where metadata of trials will be stored")
     parser.add_argument('--num_reps_per_condition', action='store', type=int, default=3, help="number of repetetions for single combination of conditions ")
     args = parser.parse_args()
     generate_experiment_trials(args)

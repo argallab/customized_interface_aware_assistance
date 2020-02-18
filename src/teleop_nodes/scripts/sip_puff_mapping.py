@@ -99,16 +99,16 @@ class SNPMapping(object):
       self.send_msg.buttons[3] = 1
       # self._lock_input = True
     else:
-      if airVelocity < 0: 
+      if airVelocity < 0:
         self.send_msg.header.frame_id = "Soft-Hard Puff Deadband"
-      else: 
+      else:
         self.send_msg.header.frame_id = "Soft-Hard Sip Deadband"
       self.send_msg.buttons = np.zeros(4)
     print("      ")
     rospy.loginfo("Before")
     rospy.loginfo(self.send_msg.header.frame_id)
 
-    if self.assistance_type != AssistanceType.No_Assistance and self.send_msg.header.frame_id != "Zero Band" and self.send_msg.header.frame_id != "Soft-Hard Deadband" and self.send_msg.header.frame_id != "Input Stopped":
+    if self.assistance_type != AssistanceType.No_Assistance and self.send_msg.header.frame_id != "Zero Band" and self.send_msg.header.frame_id != "Soft-Hard Puff Deadband" and self.send_msg.header.frame_id != "Soft-Hard Sip Deadband" and self.send_msg.header.frame_id != "Input Stopped":
       request = InferCorrectRequest()
       request.um = self.send_msg.header.frame_id
       response = self.infer_and_correct_service(request)
