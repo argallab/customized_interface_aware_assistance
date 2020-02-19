@@ -31,9 +31,13 @@ class ActionCommandModelling(object):
                         'mode_switch_right_1', 'mode_switch_right_2', 'mode_switch_right_3',
                         'mode_switch_left_1', 'mode_switch_left_2', 'mode_switch_left_3']
 
+        self.training = ['hard_puff_training','hard_sip_training','soft_puff_training','soft_sip_training']
+
         env_params = dict()
         env_params['file_dir'] = file_dir
         env_params['img_prompt'] = ''
+        env_params['training_prompts'] = self.training[:]
+        env_params['blocks'] = blocks
 
         self.env = ActionEnv(env_params)
         self.env.initialize_publishers('action_prompt')
@@ -65,22 +69,31 @@ class ActionCommandModelling(object):
     def key_press_callback(self, k, mode): 
         if k==key.S: 
             self.env.env_params['start_prompt'] = True
-            print 'started key'
+            self.env.reset()
 
         if k==49: 
             self.env.env_params['next_prompt'] = True
+            self.env._get_user_input()
 
         if k==50:
             self.env.env_params['next_prompt'] = True
+            self.env._get_user_input()
 
         if k==51:
             self.env.env_params['next_prompt'] = True
+            self.env._get_user_input()
 
         if k==52: 
             self.env.env_params['next_prompt'] = True
+            self.env._get_user_input()
 
+        if k==key.LEFT: 
+            self.env.env_params['back'] = True
+            self.env._get_user_input()
 
-        self.env.reset()
+        if k==key.RIGHT:
+            self.env.env_params['next'] = True
+            self.env._get_user_input()
 
     def shutdown_hook(self):
         pass
@@ -89,4 +102,3 @@ class ActionCommandModelling(object):
 if __name__ == '__main__':
     ActionCommandModelling(sys.argv[1], sys.argv[2])
     rospy.spin()
-
