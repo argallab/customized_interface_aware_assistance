@@ -56,7 +56,10 @@ def generate_experiment_trials(args):
         trial_info_dict['env_params']['robot_position'] = ROBOT_GOAL_CONFIGURATIONS[rg_config]['robot']
         trial_info_dict['env_params']['robot_orientation'] = 0.0
         trial_info_dict['env_params']['goal_position'] = ROBOT_GOAL_CONFIGURATIONS[rg_config]['goal']
-        trial_info_dict['env_params']['goal_orientation'] = PI/2
+        if index % 2 == 0:
+            trial_info_dict['env_params']['goal_orientation'] = PI/2 #randomly pick PI/2 or -PI/2
+        else:
+            trial_info_dict['env_params']['goal_orientation'] = -PI/2
 
         start_mode_option = random.choice(START_MODE_OPTIONS)
         trial_info_dict['env_params']['start_mode'] = START_MODE_DICT[start_direction][start_mode_option]
