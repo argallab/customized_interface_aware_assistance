@@ -21,7 +21,7 @@ from utils import RGOrient, StartDirection, AssistanceType
 from IPython import embed
 
 class Simulator(object):
-	def __init__(self, dim=3, trial_index = 0, trial_info_dir_path=None):
+	def __init__(self, dim=3,trial_index = 0, trial_info_dir_path=None):
 		#TODO pass args as a dict
 		super(Simulator, self).__init__()
 		rospy.init_node("Simulator")
@@ -51,24 +51,30 @@ class Simulator(object):
 
 		self.env_params = None
 		self.trial_info_dir_path = os.path.join(os.path.dirname(__file__), 'trial_dir')
+		self.metadata_dir = os.path.join(os.path.dirname(__file__), 'metadata_dir')
+		self.assistance_block = 'filter_assistance_0' #pass these things from launch file
+		self.subject_id = 'deepak'
 		# self.trial_info_dir_path = None
 		self.trial_pkls = None
 		self.terminate = False
 		self.restart = False
 
 		if self.trial_info_dir_path is not None and os.path.exists(self.trial_info_dir_path):
-			print ('IN HERE')
-			self.trial_pkls = os.listdir(self.trial_info_dir_path)
-			random.shuffle(self.trial_pkls)
-			trial_info_filename = self.trial_pkls[self.trial_index]
-			trial_info_filepath = os.path.join(self.trial_info_dir_path, trial_info_filename)
+			print ('LOAD METADATA')
+			self.metadata_index_path = os.path.join(self.metadata_dir, self.subject_id +'_' + self.assistance_block + '_num_blocks_6.pkl')
+			assert os.path.exists(self.metadata_index_path)
+			with open(self.metadata_index_path, 'rb') as fp:
+				self.metadata_index = pickle.load(fp)
+
+			trial_info_filename = self.metadata_index[self.trial_index]
+			trial_info_filepath = os.path.join(self.trial_info_dir_path, str(trial_info_filename) + '.pkl')
 			assert os.path.exists(trial_info_filepath) is not None
 			with open(trial_info_filepath, 'rb') as fp:
 				trial_info_dict = pickle.load(fp) #this dict could have other info related to autonomy params. We are only interested in the environment params for the time being
 
 			assert 'env_params' in trial_info_dict
 			self.env_params = trial_info_dict['env_params']
-			print "ENV PARAMS", self.env_params
+			print self.env_params['assistance_type']
 		else:
 			self.env_params = dict()
 			self.env_params['num_turns'] = 3
@@ -84,7 +90,6 @@ class Simulator(object):
 			assert self.env_params['location_of_turn'] > 0 and self.env_params['location_of_turn'] <= self.env_params['num_turns'] #can't be the first or last location
 
 		rospy.set_param('assistance_type', self.env_params['assistance_type'])
-
 		rospy.loginfo("Waiting for teleop_node ")
 		rospy.wait_for_service("/teleop_node/set_mode")
 		rospy.loginfo("teleop_node node service found! ")
@@ -96,7 +101,6 @@ class Simulator(object):
 		self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params['start_mode']]
 
 		status = self.set_mode_srv(self.set_mode_request)
-
 		self.env = ModeInferenceEnv(self.env_params)
 
 		self.env.reset()
@@ -105,45 +109,62 @@ class Simulator(object):
 
 		r = rospy.Rate(100)
 		self.trial_start_time = time.time()
-		self.max_time = 10
+		self.max_time = 50
 		is_done = False
+
 		while not rospy.is_shutdown():
 			if (time.time() - self.trial_start_time) > self.max_time:
 				print("Move to NEXT TRIAL")
-				time.sleep(2.0) #sleep before the next trial happens
+				time.sleep(3.0) #sleep before the next trial happens
 				self.trial_index += 1
-				if self.trial_index == len(self.trial_pkls):
+				if self.trial_index == len(self.metadata_index):
 					self.shutdown_hook('Reached end of trial list. End of session')
 					break #experiment is done
-				trial_info_filename = self.trial_pkls[self.trial_index]
-				trial_info_filepath = os.path.join(self.trial_info_dir_path, trial_info_filename)
+				trial_info_filename = self.metadata_index[self.trial_index]
+				trial_info_filepath = os.path.join(self.trial_info_dir_path, str(trial_info_filename) +'.pkl')
 				assert os.path.exists(trial_info_filepath) is not None
 				with open(trial_info_filepath, 'rb') as fp:
 					trial_info_dict = pickle.load(fp)
 
 				assert 'env_params' in trial_info_dict
 				self.env_params = trial_info_dict['env_params']
+				print self.env_params['assistance_type']
+
+				rospy.set_param('assistance_type', self.env_params['assistance_type'])
+				self.set_mode_request = SetModeRequest()
+				self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params['start_mode']]
+				status = self.set_mode_srv(self.set_mode_request)
+
 				self.env.update_params(self.env_params)
 				self.env.reset()
 				self.env.render()
 				self.trial_start_time = time.time()
+				is_done = False
+				self.is_restart = False
 
 			if is_done:
 				print("TRIAL DONE")
 				is_done = False
-				time.sleep(2.0)
+				time.sleep(3.0)
 				self.trial_index += 1
-				if self.trial_index == len(self.trial_pkls):
+				if self.trial_index == len(self.metadata_index):
 					self.shutdown_hook('Reached end of trial list. End of session')
 					break
-				trial_info_filename = self.trial_pkls[self.trial_index]
-				trial_info_filepath = os.path.join(self.trial_info_dir_path, trial_info_filename)
+				trial_info_filename = self.metadata_index[self.trial_index]
+				trial_info_filepath = os.path.join(self.trial_info_dir_path, str(trial_info_filename) +'.pkl')
 				assert os.path.exists(trial_info_filepath) is not None
 				with open(trial_info_filepath, 'rb') as fp:
 					trial_info_dict = pickle.load(fp)
 
 				assert 'env_params' in trial_info_dict
 				self.env_params = trial_info_dict['env_params']
+				print self.env_params['assistance_type']
+
+				rospy.set_param('assistance_type', self.env_params['assistance_type'])
+				self.set_mode_request = SetModeRequest()
+				self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params['start_mode']]
+				status = self.set_mode_srv(self.set_mode_request)
+
 				self.env.update_params(self.env_params)
 				self.env.reset()
 				self.env.render()
@@ -152,22 +173,30 @@ class Simulator(object):
 			if self.restart:
 				print("RESTART INITIATED")
 				self.restart = False
-				time.sleep(2.0)
+				time.sleep(3.0)
 				#TODO should I be incrementing trial index here or should I just restart the same trial?
-				if self.trial_index == len(self.trial_pkls):
+				if self.trial_index == len(self.metadata_index):
 					self.shutdown_hook('Reached end of trial list. End of session')
 					break
-				trial_info_filename = self.trial_pkls[self.trial_index]
-				trial_info_filepath = os.path.join(self.trial_info_dir_path, trial_info_filename)
+				trial_info_filename = self.metadata_index[self.trial_index]
+				trial_info_filepath = os.path.join(self.trial_info_dir_path, str(trial_info_filename) + '.pkl')
 				assert os.path.exists(trial_info_filepath) is not None
 				with open(trial_info_filepath, 'rb') as fp:
 					trial_info_dict = pickle.load(fp)
 				assert 'env_params' in trial_info_dict
 				self.env_params = trial_info_dict['env_params']
+				print self.env_params['assistance_type']
+
+				rospy.set_param('assistance_type', self.env_params['assistance_type'])
+				self.set_mode_request = SetModeRequest()
+				self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params['start_mode']]
+				status = self.set_mode_srv(self.set_mode_request)
+
 				self.env.update_params(self.env_params)
 				self.env.reset()
 				self.env.render()
 				self.trial_start_time = time.time()
+				is_done = False
 
 
 			robot_continuous_position, robot_continuous_orientation, robot_discrete_state, is_done = self.env.step(self.input_action)

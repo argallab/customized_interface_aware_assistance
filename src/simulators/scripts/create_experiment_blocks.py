@@ -24,15 +24,7 @@ def create_experiment_blocks(args, num_blocks=6):
     num_trials_per_assistance = len(assistance_to_pkl_index[0])
     num_trials_per_block = 72/num_blocks
 
-    no_assistance_list = assistance_to_pkl_index[0]
-    random.shuffle(no_assistance_list)
-    no_assistance_blocks = list(chunks(no_assistance_list, num_trials_per_block))
-    for i, no_assistance_block in enumerate(no_assistance_blocks):
-        filename = subject_id + '_no_assistance_' + str(i) + '_num_blocks_'+str(num_blocks)+'.pkl'
-        with open(os.path.join(metadata_dir, filename), 'wb') as fp:
-            pickle.dump(no_assistance_block, fp)
-
-    filter_assistance_list = assistance_to_pkl_index[1]
+    filter_assistance_list = assistance_to_pkl_index[0]
     random.shuffle(filter_assistance_list)
     filter_assistance_blocks = list(chunks(filter_assistance_list, num_trials_per_block))
     for i, filter_assistance_block in enumerate(filter_assistance_blocks):
@@ -40,17 +32,25 @@ def create_experiment_blocks(args, num_blocks=6):
         with open(os.path.join(metadata_dir, filename), 'wb') as fp:
             pickle.dump(filter_assistance_block, fp)
 
-    corrective_assistance_list = assistance_to_pkl_index[2]
+    corrective_assistance_list = assistance_to_pkl_index[1]
     random.shuffle(corrective_assistance_list)
     corrective_assistance_blocks = list(chunks(corrective_assistance_list, num_trials_per_block))
     for i, corrective_assistance_block in enumerate(corrective_assistance_blocks):
-        filename = subject_id + '_corrective_assistance_block_' + str(i) + '_num_blocks_'+str(num_blocks)+'.pkl'
+        filename = subject_id + '_corrective_assistance_' + str(i) + '_num_blocks_'+str(num_blocks)+'.pkl'
         with open(os.path.join(metadata_dir, filename), 'wb') as fp:
             pickle.dump(corrective_assistance_block, fp)
+
+    no_assistance_list = assistance_to_pkl_index[2]
+    random.shuffle(no_assistance_list)
+    no_assistance_blocks = list(chunks(no_assistance_list, num_trials_per_block))
+    for i, no_assistance_block in enumerate(no_assistance_blocks):
+        filename = subject_id + '_no_assistance_' + str(i) + '_num_blocks_'+str(num_blocks)+'.pkl'
+        with open(os.path.join(metadata_dir, filename), 'wb') as fp:
+            pickle.dump(no_assistance_block, fp)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--metadata_dir', dest='metadata_dir',default=os.path.join(os.getcwd(), 'metadata_dir'), help="The directory where metadata of trials will be stored")
     parser.add_argument('--subject_id', dest='subject_id',default='deepak', help="unique_identifier for subject")
     args = parser.parse_args()
-    create_experiment_blocks(args, num_blocks=3)
+    create_experiment_blocks(args, num_blocks=6)
