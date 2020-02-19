@@ -7,6 +7,7 @@ from utils import COMMAND_TEXT_COLOR, COMMAND_DISPLAY_POSITION, COMMAND_DISPLAY_
 from utils import TIMER_DISPLAY_POSITION, TIMER_DISPLAY_FONTSIZE, TIMER_COLOR_NEUTRAL, TIMER_DISPLAY_TEXT_Y_ANCHOR
 from utils import EXPERIMENT_START_COUNTDOWN    
 from simulators.msg import Command
+from std_msgs.msg import String
 import pyglet
 import collections 
 import rospy
@@ -16,12 +17,15 @@ import random
 import threading
 from IPython import embed
 
+# TO DO: (mahdeih) Too many if statments and booleans, can do a better job of the state machine, clean in up!!
+
 class ActionEnv(object):
 
     def __init__(self, env_params):
 
         self.viewer = None
         self.action_msg = Command()
+        self.sim_state_msg = String()
 
         self.env_params = env_params
         assert self.env_params is not None
@@ -32,6 +36,7 @@ class ActionEnv(object):
         self.img_prompt = self.env_params['img_prompt']
 
         self.ts = time.time()
+        self.te = time.time()
         self.prompt_ind = 0
         self.msg_prompt = ''
         self.start_prompt = False
@@ -50,6 +55,7 @@ class ActionEnv(object):
         self.back = False 
         self.current_block = 0
         self.display_timer = False  
+        self.ready_for_user = False
 
       
 
@@ -64,11 +70,18 @@ class ActionEnv(object):
     def initialize_publishers(self, rostopic):
         # for ros bag purposes (not being used for any code logic)
         self.action_pub = rospy.Publisher(rostopic, Command, queue_size=1)
+        # To do: clean publishers: 
+        self.sim_state = rospy.Publisher('sim_state', String, queue_size=1)
+        
 
     def publish_action(self, msg):
         self.action_msg.header.stamp = rospy.Time.now()
         self.action_msg.command = msg
         self.action_pub.publish(self.action_msg)
+
+    def publish_sim_state(self, msg): 
+        # self.sim_state_msg = msg 
+        self.sim_state.publish(msg)
 
     def _set_image_path(self):         
         self.file_path = os.path.abspath(os.path.join(self.file_dir, self.img_prompt+'.png'))
@@ -112,7 +125,7 @@ class ActionEnv(object):
 
     def training_refresher(self): 
         self.img_prompt = self.training_prompts[self.msg_ind]
-        self.publish_action(self.img_prompt)
+        # self.publish_action(self.img_prompt)
         self._set_image_path()
 
     def step(self): 
@@ -133,7 +146,8 @@ class ActionEnv(object):
                     self.display_start_countdown = False
                     self.clear_for_next_prompt = False
                     self.ready_for_new_prompt = True
-                    self.display_timer = True 
+                    
+                    self.publish_sim_state('start_test')
 
             else: 
 
@@ -142,24 +156,34 @@ class ActionEnv(object):
                     self.publish_action(self.img_prompt)
                     self._set_image_path()
                     self.ready_for_new_prompt = False
+                    self.ready_for_user = True 
+                    self.display_timer = True 
                     self.ts = time.time()
-                    self.current_time = self.action_timing_bound
+                    self.current_time = self.action_timing_bound                
 
-                if (time.time() - self.ts) >= self.action_timing_bound: 
-                    print 'clear'
+                if self.clear_for_next_prompt:                     
+                    # to do: make  not hardcoded
+                    if (time.time() - self.te>= 0.25): 
+                        self.prompt_ind += 1
+                        self.ready_for_new_prompt = True
+                        self.clear_for_next_prompt = False 
+                        if self.prompt_ind >= len(self.action_prompts): 
+                            self.img_prompt = ''
+                            self.start_prompt = False                     
+                            if int(self.current_block) < int(self.blocks): 
+                                self.start_training = True 
+                                self.publish_sim_state('start_training')
+                            else: 
+                                self.msg_prompt = 'End of Test'
+
+                elif (time.time() - self.ts) >= self.action_timing_bound: 
                     self.clear_for_next_prompt = True
-
-                if self.clear_for_next_prompt: 
-                    self.prompt_ind += 1
-                    self.ready_for_new_prompt = True
-                    self.clear_for_next_prompt = False 
-                    if self.prompt_ind >= len(self.action_prompts): 
-                        self.img_prompt = ''
-                        self.start_prompt = False                     
-                        if int(self.current_block) < int(self.blocks)-1: 
-                            self.start_training = True 
-                        else: 
-                            self.msg_prompt = 'End of Test'
+                    self.ready_for_user = False 
+                    self.te = time.time()
+                    self.msg_prompt = ''
+                    self.img_prompt = ''
+                    self.display_timer = False 
+                    self.publish_action(self.img_prompt)
 
         if self.start_training: 
             self.msg_prompt = ''
@@ -175,7 +199,7 @@ class ActionEnv(object):
         if 'start_prompt' in self.env_params.keys(): 
             if self.start_prompt == False: 
                 self.start_prompt = self.env_params['start_prompt']
-                self.display_start_countdown = True 
+                self.display_start_countdown = True                 
                 self.ready_for_new_prompt = True
                 self.clear_for_next_prompt = False
                 self.start_training = False 
@@ -183,6 +207,7 @@ class ActionEnv(object):
                 self.start_msg_ind = 0
                 self.start_timer = True
                 random.shuffle(self.action_prompts)
+                self.publish_sim_state('start_countdown')
 
         if 'training_prompts' in self.env_params.keys(): 
             self.training_prompts = self.env_params['training_prompts']
@@ -190,12 +215,20 @@ class ActionEnv(object):
 
         if 'blocks' in self.env_params.keys(): 
             self.blocks = self.env_params['blocks']
+            self.blocks = int(self.blocks)-1
 
     def _get_user_input(self): 
 
         if 'next_prompt' in self.env_params.keys(): 
-            self.clear_for_next_prompt = self.env_params['next_prompt']
-            self.env_params['next_prompt'] = False # reset 
+            if self.ready_for_user: 
+                self.clear_for_next_prompt = self.env_params['next_prompt']
+                self.env_params['next_prompt'] = False # reset 
+                self.ready_for_user = False 
+                self.te = time.time()
+                self.msg_prompt = ''
+                self.img_prompt = ''
+                self.display_timer = False
+                self.publish_action(self.img_prompt)
 
         if 'next' in self.env_params.keys(): 
             if self.start_training: 

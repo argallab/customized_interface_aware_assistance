@@ -53,9 +53,6 @@ class ModeSwitchInferenceAndCorrection(object):
             self.P_UI_GIVEN_A = collections.OrderedDict()
             self._init_p_ui_given_a()
 
-        # print "P_UI_GIVEN_A", self.P_UI_GIVEN_A
-
-
         if os.path.exists(os.path.join(self.distribution_directory_path, str(self.subject_id)+'_p_um_given_ui.pkl')):
             print('LOADING PERSONALIZED P_UM_GIVEN_UI')
             with open(os.path.join(self.distribution_directory_path, str(self.subject_id)+'_p_um_given_ui.pkl'), 'rb') as fp:

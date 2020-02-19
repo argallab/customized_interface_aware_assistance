@@ -11,6 +11,9 @@
 /keyboard_entry
 /command_prompt
 /mode_switches
+/user_response
+/sim_state
+/action_prompt
 " 
 
 respawn="true" />

@@ -2,11 +2,22 @@
 
 <launch>
 
+	<arg name="save" default="false" doc="Set to true if you wanted save bag file of trial"/>
+
 	<arg name="iteration" default="1" doc="Number of times to display each action"/>
 	<arg name="batch" default="1" doc="Number of batches to display each block of actions"/>
 
-	<node pkg="simulators" output="screen" type="internal_command_model_simulation.py" name="internal_command_model_simulation" args="$(arg iteration)"/>
+	<node pkg="simulators" output="screen" type="internal_command_model_simulation.py" name="internal_command_model_simulation" args="$(arg iteration) $(arg batch)"/>
 
-	<node pkg="general_purpose" output="screen" type="keyboard_input_to_topic" name="keyboard_input_to_topic"/>
+	<!-- record bags -->
+  <!-- bag file name parameters -->
+  <arg name="id" default="test" doc="trial identifier string"/>
+  <group if="$(arg save)">
+    <include file="$(find simulators)/launch/record.launch">
+      <arg name="bag_prefix" value="$(arg id)_internal_model"/>
+    </include>    
+  </group>
+
+
 
 </launch>
