@@ -72,6 +72,26 @@ def generate_experiment_trials(args):
     with open(os.path.join(metadata_dir, 'assistance_to_pkl_index.pkl'), 'wb') as fp:
         pickle.dump(assistance_to_pkl_index, fp)
 
+    #create_training pickle file
+    trial_info_dict = collections.OrderedDict()
+    trial_info_dict['env_params'] = collections.OrderedDict()
+    trial_info_dict['env_params']['r_to_g_relative_orientation'] = RGOrient.TOP_LEFT
+    trial_info_dict['env_params']['num_turns'] = 1
+    trial_info_dict['env_params']['start_direction'] = StartDirection.X
+    trial_info_dict['env_params']['assistance_type'] = 2 #No Assistance. Just for manual practice
+    trial_info_dict['env_params']['robot_position'] = ROBOT_GOAL_CONFIGURATIONS[RGOrient.TOP_LEFT]['robot']
+    trial_info_dict['env_params']['robot_orientation'] = 0.0
+    trial_info_dict['env_params']['goal_position'] = ROBOT_GOAL_CONFIGURATIONS[RGOrient.TOP_LEFT]['goal']
+    trial_info_dict['env_params']['goal_orientation'] = PI/2
+
+    start_mode_option = random.choice(START_MODE_OPTIONS)
+    trial_info_dict['env_params']['start_mode'] = START_MODE_DICT[StartDirection.X][start_mode_option]
+    trial_info_dict['env_params']['location_of_turn'] = random.choice(range(1, 2))
+    with open(os.path.join(trial_dir, 'training_trial.pkl'), 'wb') as fp:
+        pickle.dump(trial_info_dict, fp)
+
+
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
