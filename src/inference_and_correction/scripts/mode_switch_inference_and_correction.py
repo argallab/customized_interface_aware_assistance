@@ -48,9 +48,12 @@ class ModeSwitchInferenceAndCorrection(object):
             print('LOADING PERSONALIZED P_UI_GIVEN_A')
             with open(os.path.join(self.distribution_directory_path, str(self.subject_id)+'_p_ui_given_a.pkl'), 'rb') as fp:
                 self.P_UI_GIVEN_A = pickle.load(fp)#assumes that the conditional probability distribution is stored as a collections.OrderedDict conditioned on the mode
+
         else:
             self.P_UI_GIVEN_A = collections.OrderedDict()
             self._init_p_ui_given_a()
+
+        # print "P_UI_GIVEN_A", self.P_UI_GIVEN_A
 
 
         if os.path.exists(os.path.join(self.distribution_directory_path, str(self.subject_id)+'_p_um_given_ui.pkl')):
@@ -60,6 +63,8 @@ class ModeSwitchInferenceAndCorrection(object):
         else:
             self.P_UM_GIVEN_UI = collections.OrderedDict()
             self._init_p_um_given_ui()
+
+        # print "P_UM_GIVEN_UI", self.P_UM_GIVEN_UI
 
 
         rospy.Service('/mode_switch_inference_and_correction/handle_unintended_commands', InferCorrect, self.handle_unintended_commands)
