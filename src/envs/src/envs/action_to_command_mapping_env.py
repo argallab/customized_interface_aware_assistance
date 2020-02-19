@@ -39,6 +39,7 @@ class ActionEnv(object):
 
         self.period = rospy.Duration(1.0)
         self.timer_thread = threading.Thread(target=self._render_timer, args=(self.period,))
+        self.lock = threading.Lock()
         self.current_time = 0
       
 
@@ -69,14 +70,18 @@ class ActionEnv(object):
         self.viewer.draw_text(self.msg_prompt, x=COMMAND_DISPLAY_POSITION[0], y=COMMAND_DISPLAY_POSITION[1], font_size=COMMAND_DISPLAY_FONTSIZE, color=COMMAND_TEXT_COLOR, bold=self.bold)
 
     def _render_timer_text(self):
-        self.viewer.draw_text(str(self.current_time), x=TIMER_DISPLAY_POSITION[0], y=TIMER_DISPLAY_POSITION[1], font_size=TIMER_DISPLAY_FONTSIZE, color=TIMER_COLOR_NEUTRAL, anchor_y=TIMER_DISPLAY_TEXT_Y_ANCHOR, bold=True)
+        self.viewer.draw_text(str(self.current_time), x=COMMAND_DISPLAY_POSITION[0], y=COMMAND_DISPLAY_POSITION[1], font_size=TIMER_DISPLAY_FONTSIZE, color=TIMER_COLOR_NEUTRAL, anchor_y=TIMER_DISPLAY_TEXT_Y_ANCHOR, bold=True)
+        print self.current_time
 
     def _render_timer(self, period):
         while not rospy.is_shutdown():
             start = rospy.get_rostime()
             self.lock.acquire()
             if self.start_prompt:
-                self.current_time += 1
+                if self.current_time > 0: 
+                    self.current_time -= 1
+                else: 
+                    rospy.loginfo('timeout')
             else:
                 pass
             self.lock.release()
@@ -107,6 +112,7 @@ class ActionEnv(object):
                 self._set_image_path()
                 self.ready_for_new_prompt = False
                 self.ts = time.time()
+                self.current_time = self.timing_bound
 
             if (time.time() - self.ts) >= self.timing_bound: 
                 self.clear_for_next_prompt = True
