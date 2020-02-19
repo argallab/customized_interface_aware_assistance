@@ -16,7 +16,8 @@ VIEWPORT_H = 400
 #COLORS
 HUMAN_ROBOT_COLOR = (0.0, 0.0, 0.0)
 AUTONOMY_ROBOT_COLOR = (0.5, 0.5, 0.5)
-TURN_LOCATION_COLOR = (173/255.0, 216/255.0, 230/255.0)
+# TURN_LOCATION_COLOR = (173/255.0, 216/255.0, 230/255.0)
+TURN_LOCATION_COLOR = (0.7, 0.52, 0.75)
 ACTIVE_MODE_COLOR = (0, 1.0, 0.0)
 NONACTIVE_MODE_COLOR = (0.8,0.8, 0.8)
 ACTIVE_MODE_COLOR_WARNING = (1.0, 1.0, 0)
@@ -33,8 +34,8 @@ TIMER_COLOR_WARNING = (255,197, 97, 255) # yellow (candy corn)
 
 #GEOMETRY
 MODE_DISPLAY_RADIUS = 15
-ROBOT_RADIUS = 10
-GOAL_RADIUS = 10
+ROBOT_RADIUS = 14
+GOAL_RADIUS = 14
 TRIANGLE_L = 6
 GOAL_COLORS = {'circle': (1.0, 0.0, 0.0), 'triangle': (0.0, 1.0, 0.0), 'rect': (0.0, 0.0, 1.0)}
 GOAL_SHAPES = {0:'circle', 1:'triangle', 2:'rect'}
@@ -159,7 +160,7 @@ class RobotSE2(object):
 
     #GETTERS
     def get_direction_marker_end_points(self):
-        return (self.robot.position[0], self.robot.position[1]), (self.robot.position[0] + self.radius*math.cos(self.robot.angle), self.robot.position[1] + self.radius*math.sin(self.robot.angle))
+        return (self.robot.position[0], self.robot.position[1]), (self.robot.position[0] + 2*self.radius*math.cos(self.robot.angle), self.robot.position[1] + 2*self.radius*math.sin(self.robot.angle))
 
     def get_position(self):
         return self.robot.position

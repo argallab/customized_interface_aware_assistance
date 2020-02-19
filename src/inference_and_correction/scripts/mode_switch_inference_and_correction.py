@@ -73,15 +73,15 @@ class ModeSwitchInferenceAndCorrection(object):
         if optimal_action_response.status: #not at the last position
             optimal_a = optimal_action_response.optimal_high_level_action #mode_r, model, move_p, move_n
             current_mode = optimal_action_response.current_mode
-            print("OPTIMAL A", optimal_a)
-            print("CURRENT_MODE", current_mode)
+            # print("OPTIMAL A", optimal_a)
+            # print("CURRENT_MODE", current_mode)
             self.compute_p_ui_given_um(optimal_a, current_mode, um)
             u_intended = self.compute_u_intended() #argmax computation for u_intended
-            print ("U_INTENDED", u_intended)
+            # print ("U_INTENDED", u_intended)
             normalized_h_of_p_ui_given_um = self.compute_entropy_of_p_ui_given_um()
-            print("ENTROPY", normalized_h_of_p_ui_given_um)
-            u_corrected , is_corrected_or_filtered = self.correct_or_pass_um(um, u_intended, normalized_h_of_p_ui_given_um)
-            print ("U_CORRECTED", u_corrected, is_corrected_or_filtered)
+            # print("ENTROPY", normalized_h_of_p_ui_given_um)
+            u_corrected, is_corrected_or_filtered = self.correct_or_pass_um(um, u_intended, normalized_h_of_p_ui_given_um)
+            # print ("U_CORRECTED", u_corrected, is_corrected_or_filtered)
             response.u_corrected = u_corrected
             response.is_corrected_or_filtered = is_corrected_or_filtered
             response.status = True
@@ -104,7 +104,19 @@ class ModeSwitchInferenceAndCorrection(object):
         u_intended = self.P_UI_GIVEN_UM.keys()[np.argmax(p_ui_given_um_vector)]
         return u_intended
 
+    def update_assistance_type(self):
+        #TODO maybe replace with service
+        self.ASSISTANCE_TYPE =  rospy.get_param('assistance_type')
+        if self.ASSISTANCE_TYPE == 0:
+            self.ASSISTANCE_TYPE = AssistanceType.Filter
+        elif self.ASSISTANCE_TYPE == 1:
+            self.ASSISTANCE_TYPE = AssistanceType.Corrective
+        elif self.ASSISTANCE_TYPE == 2:
+            self.ASSISTANCE_TYPE = AssistanceType.No_Assistance
+
     def correct_or_pass_um(self, um, u_intended, normalized_h_of_p_ui_given_um):
+        self.update_assistance_type()
+        # print self.ASSISTANCE_TYPE
         if u_intended != um:
             if normalized_h_of_p_ui_given_um <= self.ENTROPY_THRESHOLD:
                 if self.ASSISTANCE_TYPE == AssistanceType.Filter:

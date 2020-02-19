@@ -60,6 +60,7 @@ class SNPMapping(object):
     self.send_msg.buttons = np.zeros(4) # hard puff, soft puff, soft sip, hard sip
 
     self.assistance_type = rospy.get_param('assistance_type', 2)
+
     if self.assistance_type == 0:
         self.assistance_type = AssistanceType.Filter
     elif self.assistance_type == 1:
@@ -80,6 +81,16 @@ class SNPMapping(object):
   # checks whether within limits, otherwise air velocity in dead zone (essentailly zero)
   # written this way to make debugging easier if needed
   # labels hard and soft sips and puffs, buffers out
+  def update_assistance_type(self):
+      #TODO maybe replace with service
+      self.assistance_type =  rospy.get_param('assistance_type')
+      if self.assistance_type == 0:
+          self.assistance_type = AssistanceType.Filter
+      elif self.assistance_type == 1:
+          self.assistance_type = AssistanceType.Corrective
+      elif self.assistance_type == 2:
+          self.assistance_type = AssistanceType.No_Assistance
+
   def checkLimits(self, airVelocity):
     if (self.lower_puff_limit < airVelocity < self.lower_sip_limit):
       self.send_msg.header.frame_id = "Zero Band"
@@ -99,16 +110,18 @@ class SNPMapping(object):
       self.send_msg.buttons[3] = 1
       # self._lock_input = True
     else:
-      if airVelocity < 0: 
+      if airVelocity < 0:
         self.send_msg.header.frame_id = "Soft-Hard Puff Deadband"
-      else: 
+      else:
         self.send_msg.header.frame_id = "Soft-Hard Sip Deadband"
       self.send_msg.buttons = np.zeros(4)
-    print("      ")
-    rospy.loginfo("Before")
-    rospy.loginfo(self.send_msg.header.frame_id)
+    # print("      ")
+    # rospy.loginfo("Before")
+    # rospy.loginfo(self.send_msg.header.frame_id)
 
-    if self.assistance_type != AssistanceType.No_Assistance and self.send_msg.header.frame_id != "Zero Band" and self.send_msg.header.frame_id != "Soft-Hard Deadband" and self.send_msg.header.frame_id != "Input Stopped":
+    self.update_assistance_type()
+    # print self.assistance_type  
+    if self.assistance_type != AssistanceType.No_Assistance and self.send_msg.header.frame_id != "Zero Band" and self.send_msg.header.frame_id != "Soft-Hard Puff Deadband" and self.send_msg.header.frame_id != "Soft-Hard Sip Deadband" and self.send_msg.header.frame_id != "Input Stopped":
       request = InferCorrectRequest()
       request.um = self.send_msg.header.frame_id
       response = self.infer_and_correct_service(request)
@@ -119,8 +132,8 @@ class SNPMapping(object):
         # if self.send_msg.header.frame_id == "Hard Puff" or self.send_msg.header.frame_id == "Hard Sip":
           # self._lock_input = True
 
-      rospy.loginfo("After")
-      print(self.send_msg.header.frame_id, self.send_msg.buttons)
+      # rospy.loginfo("After")
+      # print(self.send_msg.header.frame_id, self.send_msg.buttons)
 
     return 0
 

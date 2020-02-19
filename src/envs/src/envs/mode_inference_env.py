@@ -305,7 +305,7 @@ class ModeInferenceEnv(object):
     def _render_goal(self):
         t = Transform(translation=(self.goal_position[0],self.goal_position[1]))
         self.viewer.draw_circle(GOAL_RADIUS/SCALE, 30, True, color=(0.53, 1.0, 0.42)).add_attr(t)
-        self.viewer.draw_line(self.goal_position, (self.goal_position[0] + (GOAL_RADIUS/SCALE)*math.cos(self.goal_orientation), self.goal_position[1] + (GOAL_RADIUS/SCALE)*math.sin(self.goal_orientation)) )
+        self.viewer.draw_line(self.goal_position, (self.goal_position[0] + 2*(GOAL_RADIUS/SCALE)*math.cos(self.goal_orientation), self.goal_position[1] + 2*(GOAL_RADIUS/SCALE)*math.sin(self.goal_orientation)) )
 
     def _render_bodies(self):
         for r in [self.robot]:
@@ -409,7 +409,7 @@ class ModeInferenceEnv(object):
         #draw robot direction indicator after the robot has been drawn.
         self._render_robot_direction_indicators()
         #render waypoints
-        self._render_waypoints()
+        # self._render_waypoints()
         #render path
         self._render_path()
         #render virtual mode display
@@ -480,7 +480,7 @@ class ModeInferenceEnv(object):
         self.world.DestroyBody(self.robot.robot)
         self.robot = None
         self.waypoints = np.zeros((self.num_locations, 2))
-        
+
         # self.timer_thread.join()
         #TODO add all other initializations
         #destory time thread.

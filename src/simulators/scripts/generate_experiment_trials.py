@@ -35,9 +35,15 @@ START_MODE_OPTIONS = [-1, 1] # if (x,y, theta) is the mode sequence, -1 refers t
 def generate_experiment_trials(args):
     num_reps_per_condition = args.num_reps_per_condition
     trial_dir = args.trial_dir
+    metadata_dir = args.metadata_dir
     if not os.path.exists(trial_dir):
         os.makedirs(trial_dir)
+
+    if not os.path.exists(metadata_dir):
+        os.makedirs(metadata_dir)
+
     index = 0
+    assistance_to_pkl_index = collections.defaultdict(list)
 
     for rg_config, num_turns, start_direction, assistance_type  in itertools.product(RG_CONFIGS, NUM_TURNS, START_DIRECTIONS, ASSISTANCE_TYPES):
         trial_info_dict = collections.OrderedDict()
@@ -59,12 +65,38 @@ def generate_experiment_trials(args):
         for j in range(num_reps_per_condition):
             with open(os.path.join(trial_dir, str(index) + '.pkl'), 'wb') as fp:
                 pickle.dump(trial_info_dict, fp)
+            assistance_to_pkl_index[assistance_type].append(index)
             index += 1
             print 'Trial Number ', index
+
+    with open(os.path.join(metadata_dir, 'assistance_to_pkl_index.pkl'), 'wb') as fp:
+        pickle.dump(assistance_to_pkl_index, fp)
+
+    #create_training pickle file
+    trial_info_dict = collections.OrderedDict()
+    trial_info_dict['env_params'] = collections.OrderedDict()
+    trial_info_dict['env_params']['r_to_g_relative_orientation'] = RGOrient.TOP_LEFT
+    trial_info_dict['env_params']['num_turns'] = 1
+    trial_info_dict['env_params']['start_direction'] = StartDirection.X
+    trial_info_dict['env_params']['assistance_type'] = 2 #No Assistance. Just for manual practice
+    trial_info_dict['env_params']['robot_position'] = ROBOT_GOAL_CONFIGURATIONS[RGOrient.TOP_LEFT]['robot']
+    trial_info_dict['env_params']['robot_orientation'] = 0.0
+    trial_info_dict['env_params']['goal_position'] = ROBOT_GOAL_CONFIGURATIONS[RGOrient.TOP_LEFT]['goal']
+    trial_info_dict['env_params']['goal_orientation'] = PI/2
+
+    start_mode_option = random.choice(START_MODE_OPTIONS)
+    trial_info_dict['env_params']['start_mode'] = START_MODE_DICT[StartDirection.X][start_mode_option]
+    trial_info_dict['env_params']['location_of_turn'] = random.choice(range(1, 2))
+    with open(os.path.join(trial_dir, 'training_trial.pkl'), 'wb') as fp:
+        pickle.dump(trial_info_dict, fp)
+
+
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--trial_dir', dest='trial_dir',default=os.path.join(os.getcwd(), 'trial_dir'), help="The directory where trials will be stored are")
+    parser.add_argument('--metadata_dir', dest='metadata_dir',default=os.path.join(os.getcwd(), 'metadata_dir'), help="The directory where metadata of trials will be stored")
     parser.add_argument('--num_reps_per_condition', action='store', type=int, default=3, help="number of repetetions for single combination of conditions ")
     args = parser.parse_args()
     generate_experiment_trials(args)
