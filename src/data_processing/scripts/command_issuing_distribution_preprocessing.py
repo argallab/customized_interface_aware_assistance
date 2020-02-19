@@ -14,8 +14,6 @@ import itertools
 import collections 
 
 
-time_synch_difference = 0.01
-
 def build_parser():
 	# Builds the parser for reading the command line arguments
 	parser = argparse.ArgumentParser(description='Script to process command issuing experiment data')

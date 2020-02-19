@@ -46,7 +46,6 @@ class ModeSwitchInferenceAndCorrection(object):
             self.P_UI_GIVEN_A = collections.OrderedDict()
             self._init_p_ui_given_a()
 
-
         if os.path.exists(os.path.join(self.distribution_directory_path, str(self.subject_id)+'_p_um_given_ui.pkl')):
             with open(os.path.join(self.distribution_directory_path, str(self.subject_id)+'_p_um_given_ui.pkl'), 'rb') as fp:
                 self.P_UM_GIVEN_UI = pickle.load(fp) #assumes that the conditional probability distribution is stored as a collections.OrderedDict

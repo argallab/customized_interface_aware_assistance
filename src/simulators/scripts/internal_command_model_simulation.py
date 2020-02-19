@@ -10,6 +10,7 @@ from envs.action_to_command_mapping_env import ActionEnv
 import sys
 from random import randrange
 from pyglet.window import key
+from IPython import embed 
 
 class ActionCommandModelling(object):
     def __init__(self, iterations=1, blocks=1):
@@ -20,8 +21,8 @@ class ActionCommandModelling(object):
 
         # self.initialize_subscribers()
 
-        self.iterations = iterations
-        self.blocks = blocks
+        self.iterations = int(iterations)
+        self.blocks = int(blocks)
 
         self.action_list = []
 
@@ -40,7 +41,12 @@ class ActionCommandModelling(object):
         env_params['blocks'] = blocks
 
         self.env = ActionEnv(env_params)
+
+        # TO DO: cleanup publishers 
         self.env.initialize_publishers('action_prompt')
+        self.initialize_publishers()
+        self.key_input_msg = Command()
+        self.user_response_msg = Command()
 
         self.generate_action_list()
 
@@ -57,7 +63,7 @@ class ActionCommandModelling(object):
 
     # randomize actions
     def generate_action_list(self): 
-        for i in range(len(self.iterations)): 
+        for i in range(self.iterations): 
             actions = self.actions[:]
             for j in range(len(actions)): 
                 rand_ind = randrange(len(actions))
@@ -66,25 +72,47 @@ class ActionCommandModelling(object):
         self.env.env_params['action_prompts'] = self.action_list[:]
         self.env.reset()
 
+    def initialize_publishers(self): 
+        self.user_input_pub = rospy.Publisher('keyboard_entry', Command, queue_size = 1)
+        self.user_response_pub = rospy.Publisher('user_response', Command, queue_size = 1)
+
+    def publish_keyboard_input(self, msg): 
+        self.key_input_msg.header.stamp = rospy.Time.now()
+        self.key_input_msg.command = msg
+        self.user_input_pub.publish(self.key_input_msg)
+
+    def publish_user_response(self, msg): 
+        self.user_response_msg.header.stamp = rospy.Time.now()
+        self.user_response_msg.command = msg
+        self.user_response_pub.publish(self.user_response_msg)
+
     def key_press_callback(self, k, mode): 
+
+        self.publish_keyboard_input(str(k))
+
         if k==key.S: 
             self.env.env_params['start_prompt'] = True
+            self.publish_keyboard_input('s')
             self.env.reset()
 
-        if k==49: 
+        if k==key._1: 
             self.env.env_params['next_prompt'] = True
+            self.publish_user_response('1')
             self.env._get_user_input()
 
-        if k==50:
+        if k==key._2:
             self.env.env_params['next_prompt'] = True
+            self.publish_user_response('2')
             self.env._get_user_input()
 
-        if k==51:
+        if k==key._3:
             self.env.env_params['next_prompt'] = True
+            self.publish_user_response('3')
             self.env._get_user_input()
 
-        if k==52: 
+        if k==key._4: 
             self.env.env_params['next_prompt'] = True
+            self.publish_user_response('4')
             self.env._get_user_input()
 
         if k==key.LEFT: 
