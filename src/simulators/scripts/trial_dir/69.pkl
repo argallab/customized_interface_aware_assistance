@@ -52,11 +52,11 @@ aF5.0
 aaa(lp27
 S'goal_orientation'
 p28
-aF1.5707963267948966
+aF-1.5707963267948966
 aa(lp29
 S'start_mode'
 p30
-aS't'
+aS'x'
 p31
 aa(lp32
 S'location_of_turn'
