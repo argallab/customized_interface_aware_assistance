@@ -88,7 +88,7 @@
 	<group if="$(arg DISP)">
 		<node pkg="rosserial_python" name="mode_display_arduino" type="serial_node.py" args="$(arg DISP_PORT)" />
 		<!-- FIX THIS: This loads too fast, before service is ready in teleop node -->
-		<node pkg="rqt_reconfigure" type="rqt_reconfigure" name="mode_paradigm_control"/>
+		<!-- <node pkg="rqt_reconfigure" type="rqt_reconfigure" name="mode_paradigm_control"/> -->
 		<rosparam param="is_joint" subst_value="True">$(arg JOINT)</rosparam>
 	</group>
 </launch>

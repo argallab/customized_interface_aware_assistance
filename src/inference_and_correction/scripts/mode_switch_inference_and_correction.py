@@ -17,10 +17,11 @@ from utils import AssistanceType
 
 
 class ModeSwitchInferenceAndCorrection(object):
-    def __init__(self):
+    def __init__(self, subject_id):
         rospy.init_node('mode_switch_inference_and_correction', anonymous=True)
-        self.subject_id = rospy.get_param('subject_id', 0)
-        self.distribution_directory_path = os.getcwd() + 'distribution_directory' #TODO chnage this to point to an absolute path for distribution director
+        self.subject_id = subject_id
+        self.distribution_directory_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'personalized_distributions')
+
         self.P_UI_GIVEN_A = None
         self.P_UM_GIVEN_UI = None
         self.DEFAULT_UI_GIVEN_A_NOISE = 0.01
@@ -40,6 +41,7 @@ class ModeSwitchInferenceAndCorrection(object):
             self.P_UI_GIVEN_UM[u] = 1.0/len(LOW_LEVEL_COMMANDS)
 
         if os.path.exists(os.path.join(self.distribution_directory_path, str(self.subject_id)+'_p_ui_given_a.pkl')):
+            print('LOADING PERSONALIZED P_UI_GIVEN_A')
             with open(os.path.join(self.distribution_directory_path, str(self.subject_id)+'_p_ui_given_a.pkl'), 'rb') as fp:
                 self.P_UI_GIVEN_A = pickle.load(fp)#assumes that the conditional probability distribution is stored as a collections.OrderedDict conditioned on the mode
         else:
@@ -48,6 +50,7 @@ class ModeSwitchInferenceAndCorrection(object):
 
 
         if os.path.exists(os.path.join(self.distribution_directory_path, str(self.subject_id)+'_p_um_given_ui.pkl')):
+            print('LOADING PERSONALIZED P_UM_GIVEN_UI')
             with open(os.path.join(self.distribution_directory_path, str(self.subject_id)+'_p_um_given_ui.pkl'), 'rb') as fp:
                 self.P_UM_GIVEN_UI = pickle.load(fp) #assumes that the conditional probability distribution is stored as a collections.OrderedDict
         else:
@@ -61,9 +64,6 @@ class ModeSwitchInferenceAndCorrection(object):
         rospy.wait_for_service("/mode_inference_env/get_optimal_action")
         rospy.loginfo("mode_inference_env node found!")
         self.get_optimal_action = rospy.ServiceProxy('/mode_inference_env/get_optimal_action', OptimalAction)
-        # print("P_UM_GIVEN_UI", self.P_UM_GIVEN_UI)
-        # print("P_UI_GIVEN_A", self.P_UI_GIVEN_A)
-
 
     def handle_unintended_commands(self, req):
         um = req.um
@@ -164,5 +164,6 @@ class ModeSwitchInferenceAndCorrection(object):
             self.P_UM_GIVEN_UI[i] = collections.OrderedDict({u:(v/normalization_constant) for u, v in self.P_UM_GIVEN_UI[i].items()})
 
 if __name__ == '__main__':
-    s = ModeSwitchInferenceAndCorrection()
+    subject_id = sys.argv[1]
+    s = ModeSwitchInferenceAndCorrection(subject_id)
     rospy.spin()

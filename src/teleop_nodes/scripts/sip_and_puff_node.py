@@ -41,6 +41,8 @@ class SNPInput(ControlInput):
     self._latch_start_time = rospy.get_time()
     self._latch_command_duration = 0.5 #seconds
     self._lock_input = True # to prevent constant mode switching
+    self.mode_switch_paradigm = 2
+    self.motion_paradigm = 3
 
     # Set up velocity command and load velocity limits to be sent to hand nodes
     if self.finger_dim > 0:
@@ -83,7 +85,7 @@ class SNPInput(ControlInput):
     self.modepub = rospy.Publisher("/mi/current_mode", Int16, queue_size=1)
 
   def initialize_services(self):
-    mode_paradigm_srv = Server(SipPuffModeSwitchParadigmConfig, self.reconfigure_cb)
+    # mode_paradigm_srv = Server(SipPuffModeSwitchParadigmConfig, self.reconfigure_cb)
     rospy.Service('/teleop_node/set_mode', SetMode, self.set_mode)
     rospy.Service('/teleop_node/stop_latch', SetBool, self.stop_latch)
 
@@ -117,7 +119,7 @@ class SNPInput(ControlInput):
     rospy.set_param('mode',self._mode)
     print "Num of mode switches %d" % self._mode_switch_count
 
-  # checks whether to switch mode, and changes cyclically 
+  # checks whether to switch mode, and changes cyclically
   def switchMode(self, msg):
     switch = False
     # Paradigm 1: One-way mode switching
@@ -273,9 +275,9 @@ class SNPInput(ControlInput):
 
   # the main function, determines velocities to send to robot
   def receive(self, msg):
-    if msg.header.frame_id == "input stopped": 
+    if msg.header.frame_id == "input stopped":
       self._lock_input = False
-    if not self._lock_input: 
+    if not self._lock_input:
       self.handle_paradigms(msg)
       self.handle_threading()
 
@@ -289,20 +291,20 @@ class SNPInput(ControlInput):
       self.lock.release()
 
   # Mode switching rosparam
-  def reconfigure_cb(self, config, level):
-    self.mode_switch_paradigm = config.snp_mode_switch_paradigm
-    self.motion_paradigm = config.snp_motion_paradigm
-    t = threading.Thread(target=self.latch_timing_threader)
-    if self.motion_paradigm == 1:
-      t.daemon = True
-      t.start()
-    else:
-      t.daemon = False
-    self._positive_latch = 0
-    self._negative_latch = 0
-    self._latch_lock = 0
-    print "mode switch paradigm", self.mode_switch_paradigm, "motion paradigm", self.motion_paradigm
-    return config
+  # def reconfigure_cb(self, config, level):
+  #   self.mode_switch_paradigm = config.snp_mode_switch_paradigm
+  #   self.motion_paradigm = config.snp_motion_paradigm
+  #   t = threading.Thread(target=self.latch_timing_threader)
+  #   if self.motion_paradigm == 1:
+  #     t.daemon = True
+  #     t.start()
+  #   else:
+  #     t.daemon = False
+  #   self._positive_latch = 0
+  #   self._negative_latch = 0
+  #   self._latch_lock = 0
+  #   print "mode switch paradigm", self.mode_switch_paradigm, "motion paradigm", self.motion_paradigm
+  #   return config
 
 if __name__ == '__main__':
   rospy.init_node('sip_puff_node', anonymous=True)

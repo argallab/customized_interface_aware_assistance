@@ -6,7 +6,7 @@ import time
 from sensor_msgs.msg import Joy
 from envs.mode_inference_env import ModeInferenceEnv
 from std_msgs.msg import Float32MultiArray
-from std_msgs.msg import MultiArrayDimension, String
+from std_msgs.msg import MultiArrayDimension, String, Int8
 from teleop_nodes.msg import CartVelCmd
 from simulators.msg import State
 from teleop_nodes.srv import SetMode, SetModeRequest, SetModeResponse
@@ -15,6 +15,7 @@ import numpy as np
 import pickle
 from pyglet.window import key
 import random
+import sys
 import os
 from utils import Robot2D, FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS, SCALE, VIEWPORT_W, VIEWPORT_H, DIM_TO_MODE_INDEX
 from utils import ROBOT_RADIUS, GOAL_RADIUS, GOAL_SHAPES, GOAL_COLORS, PI, HUMAN_ROBOT_COLOR, AUTONOMY_ROBOT_COLOR, TRIANGLE_L
@@ -22,7 +23,7 @@ from utils import RGOrient, StartDirection, AssistanceType
 from IPython import embed
 
 class Simulator(object):
-	def __init__(self, dim=3,trial_index = 0, trial_info_dir_path=None, training=False):
+	def __init__(self, subject_id, assistance_block, block_id, training):
 		#TODO pass args as a dict
 		super(Simulator, self).__init__()
 		rospy.init_node("Simulator")
@@ -30,17 +31,16 @@ class Simulator(object):
 		self.called_shutdown = False
 		self.shutdown_pub = rospy.Publisher('/shutdown', String, queue_size=1)
 		self.trial_marker_pub = rospy.Publisher('/trial_marker', String, queue_size=1)
+		self.trial_index_pub = rospy.Publisher('/trial_index', Int8, queue_size=1)
 		self.robot_state_pub = rospy.Publisher('/robot_state', State, queue_size=1)
 
-
 		self.robot_state = State()
-		# rospy.Subscriber('/joy', Joy, self.joy_callback)
-		self.dim = dim
+		self.dim = 3
 		user_vel = CartVelCmd()
 		_dim = [MultiArrayDimension()]
 		_dim[0].label = 'cartesian_velocity'
-		_dim[0].size = dim
-		_dim[0].stride = dim
+		_dim[0].size = self.dim
+		_dim[0].stride = self.dim
 		user_vel.velocity.layout.dim = _dim
 		user_vel.velocity.data = np.zeros(self.dim)
 		user_vel.header.stamp = rospy.Time.now()
@@ -53,28 +53,31 @@ class Simulator(object):
 		rospy.Subscriber('/user_vel', CartVelCmd, self.joy_callback)
 		self.trial_index = 0
 
-		# self.input_action_initialized = False
-
 		self.env_params = None
 		self.trial_info_dir_path = os.path.join(os.path.dirname(__file__), 'trial_dir')
 		self.metadata_dir = os.path.join(os.path.dirname(__file__), 'metadata_dir')
-		self.assistance_block = 'filter_assistance_0' #pass these things from launch file
-		self.subject_id = 'deepak'
-		# self.trial_info_dir_path = None
-		self.trial_pkls = None
+
+		self.subject_id = subject_id
+		self.assistance_block = assistance_block #pass these things from launch file
+		self.block_id = block_id
+		self.training = training
+
+		self.testing_block_filename = self.subject_id + '_' + self.assistance_block + '_assistance_' + self.block_id + '_num_blocks_6.pkl'
+		print "TRAINING BLOCK FILENAME and IS TRAINING MODE", self.testing_block_filename, self.training
+
 		self.terminate = False
 		self.restart = False
-		self.training = False
+
 
 		if self.trial_info_dir_path is not None and os.path.exists(self.trial_info_dir_path) and not self.training:
 			print ('LOAD METADATA')
-			self.metadata_index_path = os.path.join(self.metadata_dir, self.subject_id +'_' + self.assistance_block + '_num_blocks_6.pkl')
+			self.metadata_index_path = os.path.join(self.metadata_dir, self.testing_block_filename) #metadata containing indices for the specific testing block
 			assert os.path.exists(self.metadata_index_path)
 			with open(self.metadata_index_path, 'rb') as fp:
 				self.metadata_index = pickle.load(fp)
 
-			trial_info_filename = self.metadata_index[self.trial_index]
-			trial_info_filepath = os.path.join(self.trial_info_dir_path, str(trial_info_filename) + '.pkl')
+			trial_info_filename_index = self.metadata_index[self.trial_index]
+			trial_info_filepath = os.path.join(self.trial_info_dir_path, str(trial_info_filename_index) + '.pkl')
 			assert os.path.exists(trial_info_filepath) is not None
 			with open(trial_info_filepath, 'rb') as fp:
 				trial_info_dict = pickle.load(fp) #this dict could have other info related to autonomy params. We are only interested in the environment params for the time being
@@ -98,8 +101,8 @@ class Simulator(object):
 				assert self.env_params['location_of_turn'] > 0 and self.env_params['location_of_turn'] <= self.env_params['num_turns'] #can't be the first or last location
 			else:
 				print ('LOADING TRAINING TRIAL')
-				trial_info_filename = 'training_trial'
-				trial_info_filepath = os.path.join(self.trial_info_dir_path, str(trial_info_filename) + '.pkl')
+				trial_info_filename_index = 'training_trial'
+				trial_info_filepath = os.path.join(self.trial_info_dir_path, str(trial_info_filename_index) + '.pkl')
 				assert os.path.exists(trial_info_filepath) is not None
 				with open(trial_info_filepath, 'rb') as fp:
 					trial_info_dict = pickle.load(fp) #this dict could have other info related to autonomy params. We are only interested in the environment params for the time being
@@ -125,6 +128,7 @@ class Simulator(object):
 		self.env.reset()
 		self.env.render()
 		self.trial_marker_pub.publish('start')
+		self.trial_index_pub.publish(trial_info_filename_index)
 		self.env.viewer.window.on_key_press = self.key_press
 
 		r = rospy.Rate(100)
@@ -145,8 +149,8 @@ class Simulator(object):
 					if self.trial_index == len(self.metadata_index):
 						self.shutdown_hook('Reached end of trial list. End of session')
 						break #experiment is done
-					trial_info_filename = self.metadata_index[self.trial_index]
-					trial_info_filepath = os.path.join(self.trial_info_dir_path, str(trial_info_filename) +'.pkl')
+					trial_info_filename_index = self.metadata_index[self.trial_index]
+					trial_info_filepath = os.path.join(self.trial_info_dir_path, str(trial_info_filename_index) +'.pkl')
 					assert os.path.exists(trial_info_filepath) is not None
 					with open(trial_info_filepath, 'rb') as fp:
 						trial_info_dict = pickle.load(fp)
@@ -164,6 +168,7 @@ class Simulator(object):
 					self.env.reset()
 					self.env.render()
 					self.trial_marker_pub.publish('start')
+					self.trial_index_pub.publish(trial_info_filename_index)
 					self.trial_start_time = time.time()
 					is_done = False
 					self.is_restart = False
@@ -181,8 +186,8 @@ class Simulator(object):
 					if self.trial_index == len(self.metadata_index):
 						self.shutdown_hook('Reached end of trial list. End of session')
 						break
-					trial_info_filename = self.metadata_index[self.trial_index]
-					trial_info_filepath = os.path.join(self.trial_info_dir_path, str(trial_info_filename) +'.pkl')
+					trial_info_filename_index = self.metadata_index[self.trial_index]
+					trial_info_filepath = os.path.join(self.trial_info_dir_path, str(trial_info_filename_index) +'.pkl')
 					assert os.path.exists(trial_info_filepath) is not None
 					with open(trial_info_filepath, 'rb') as fp:
 						trial_info_dict = pickle.load(fp)
@@ -200,6 +205,7 @@ class Simulator(object):
 					self.env.reset()
 					self.env.render()
 					self.trial_marker_pub.publish('start')
+					self.trial_index_pub.publish(trial_info_filename_index)
 					self.trial_start_time = time.time()
 				else:
 					self.shutdown_hook('Reached end of training. End of session')
@@ -215,8 +221,8 @@ class Simulator(object):
 					if self.trial_index == len(self.metadata_index):
 						self.shutdown_hook('Reached end of trial list. End of session')
 						break
-					trial_info_filename = self.metadata_index[self.trial_index]
-					trial_info_filepath = os.path.join(self.trial_info_dir_path, str(trial_info_filename) + '.pkl')
+					trial_info_filename_index = self.metadata_index[self.trial_index]
+					trial_info_filepath = os.path.join(self.trial_info_dir_path, str(trial_info_filename_index) + '.pkl')
 					assert os.path.exists(trial_info_filepath) is not None
 					with open(trial_info_filepath, 'rb') as fp:
 						trial_info_dict = pickle.load(fp)
@@ -233,6 +239,7 @@ class Simulator(object):
 					self.env.reset()
 					self.env.render()
 					self.trial_marker_pub.publish('start')
+					self.trial_index_pub.publish(trial_info_filename_index)
 					self.trial_start_time = time.time()
 					is_done = False
 
@@ -277,6 +284,10 @@ class Simulator(object):
 
 if __name__ == '__main__':
 	#TODO parse num turns from launch file
-
-	Simulator()
+	subject_id = sys.argv[1]
+	assistance_block = sys.argv[2]
+	block_id = sys.argv[3]
+	training = int(sys.argv[4])
+	print type(subject_id), type(block_id), type(training)
+	Simulator(subject_id, assistance_block, block_id, training)
 	rospy.spin()
