@@ -1,6 +1,11 @@
 <?xml version="1.0"?>
 
 <launch>
+  <arg name="subject_id" default="mahdieh" doc="Unique string identifier for the subject"/>
+	<arg name="assistance_block" default="no_assistance" doc="Assistance type for the testing block. For loading up the appropriate trial block file"/>
+  <arg name="block_id" default="0" doc="block_id for the assistance type for the testing block"/>
+  <arg name="training" default="0" doc="bool string indicating whether the simulator is run in training mode or not"/>
+
   <arg name="JOY" default="false" doc="Set to true if using 3-axis joystick to control arm."/>
   <arg name="HA" default="false" doc="Set to true if using sip/puff to control arm."/>
 	<arg name="SNP" default="false" doc="Set to true if using sip/puff to control arm."/>
@@ -9,8 +14,8 @@
 	<arg name="blending" default="false" doc="Set to true if there is not control blending."/>
   <arg name="PS3" default="false" doc="Set to false if don't want to use ps3 controller."/>
 
-  <node pkg="simulators" output="screen" type="mode_inference_simulator.py" name="mode_inference_simulator"/>
-  <node pkg="inference_and_correction" output="screen" type="mode_switch_inference_and_correction.py" name="mode_switch_inference_and_correction"/>
+  <node pkg="simulators" output="screen" type="mode_inference_simulator.py" name="mode_inference_simulator"  args="$(arg subject_id) $(arg assistance_block) $(arg block_id) $(arg training)"/>
+  <node pkg="inference_and_correction" output="screen" type="mode_switch_inference_and_correction.py" name="mode_switch_inference_and_correction"  args="$(arg subject_id)"/>
   <include file="$(find teleop_nodes)/launch/teleop_nodes.launch">
     <arg name="JOY" value="$(arg JOY)"/>
     <arg name="HA" value="$(arg HA)"/>

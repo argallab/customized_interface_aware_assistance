@@ -24,6 +24,7 @@ def create_experiment_blocks(args, num_blocks=6):
     num_trials_per_assistance = len(assistance_to_pkl_index[0])
     num_trials_per_block = 72/num_blocks
 
+    #assistance type 0 - Filter, 1 -Corrective, 2 - No Assistance
     filter_assistance_list = assistance_to_pkl_index[0]
     random.shuffle(filter_assistance_list)
     filter_assistance_blocks = list(chunks(filter_assistance_list, num_trials_per_block))

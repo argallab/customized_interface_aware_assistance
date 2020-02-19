@@ -6,6 +6,7 @@ from utils import PI, ROBOT_RADIUS, GOAL_RADIUS, MODE_DISPLAY_RADIUS
 from utils import ROBOT_COLOR_WHEN_MOVING, ROBOT_COLOR_WHEN_COMMAND_REQUIRED, ACTIVE_MODE_COLOR, NONACTIVE_MODE_COLOR, TURN_LOCATION_COLOR, MODE_DISPLAY_TEXT_COLOR, MODE_DISPLAY_TEXT_FONTSIZE
 from utils import MODE_DISPLAY_CIRCLE_START_POSITION_S, MODE_DISPLAY_CIRCLE_X_OFFSET_S, MODE_DISPLAY_TEXT_START_POSITION, MODE_DISPLAY_TEXT_X_OFFSET, MODE_DISPLAY_TEXT_Y_ANCHOR
 from utils import TIMER_DISPLAY_POSITION, TIMER_DISPLAY_FONTSIZE, TIMER_COLOR_NEUTRAL, TIMER_COLOR_WARNING, TIMER_COLOR_DANGER, TIMER_DISPLAY_TEXT_Y_ANCHOR, TIMER_DANGER_THRESHOLD, TIMER_WARNING_THRESHOLD
+from utils import TRIAL_OVER_TEXT_DISPLAY_POSITION, TRIAL_OVER_TEXT_FONTSIZE, TRIAL_OVER_TEXT_COLOR, TRIAL_OVER_TEXT_Y_ANCHOR
 from utils import WP_RADIUS, INFLATION_FACTOR, PATH_HALF_WIDTH, MODE_INDEX_TO_DIM, DIM_TO_MODE_INDEX
 from utils import RGOrient, StartDirection, PositionOnLine
 from utils import get_sign_of_number
@@ -392,6 +393,9 @@ class ModeInferenceEnv(object):
             else:
                 rospy.loginfo('took more time')
 
+    def _render_trial_over_text(self):
+        self.viewer.draw_text("TRIAL OVER", x=TRIAL_OVER_TEXT_DISPLAY_POSITION[0], y=TRIAL_OVER_TEXT_DISPLAY_POSITION[1], font_size=TRIAL_OVER_TEXT_FONTSIZE, color=TRIAL_OVER_TEXT_COLOR, anchor_y=TRIAL_OVER_TEXT_Y_ANCHOR, bold=True)
+
     def render(self, mode='human'):
         if self.viewer is None:
             self.viewer = Viewer(VIEWPORT_W, VIEWPORT_H)
@@ -409,7 +413,7 @@ class ModeInferenceEnv(object):
         #draw robot direction indicator after the robot has been drawn.
         self._render_robot_direction_indicators()
         #render waypoints
-        # self._render_waypoints()
+        self._render_waypoints()
         #render path
         self._render_path()
         #render virtual mode display
@@ -418,6 +422,9 @@ class ModeInferenceEnv(object):
         self._render_mode_display_text()
         #render timer
         self._render_timer_text()
+
+        if self.current_time >= 50: #TODO change this time limit to a param
+            self._render_trial_over_text()
 
         return self.viewer.render(False)
 
