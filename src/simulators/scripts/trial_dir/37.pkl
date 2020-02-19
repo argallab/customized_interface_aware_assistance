@@ -56,12 +56,12 @@ aF1.5707963267948966
 aa(lp29
 S'start_mode'
 p30
-aS'y'
+aS't'
 p31
 aa(lp32
 S'location_of_turn'
 p33
-aI1
+aI3
 aatp34
 Rp35
 aatp36
