@@ -613,4 +613,5 @@ class ModeInferenceEnv(object):
         is_done = False
         if self.current_discrete_state[0] == self.LOCATIONS[-1]: #reached the last location
             is_done = True
-        return self.robot.get_position(), self.robot.get_angle(), self.current_discrete_state, is_done
+
+        return self.robot.get_position(), self.robot.get_angle(), [user_vel[0], user_vel[1]], -user_vel[2], self.current_discrete_state, is_done #slightly hacky for velocities. TODO fix this. for some reason getters for velocities were not working properly

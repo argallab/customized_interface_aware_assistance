@@ -54,6 +54,9 @@ add_message_files(
   DIRECTORY msg
   FILES
   Command.msg
+  DiscreteState.msg
+  State.msg
+
 )
 
 ## Generate services in the 'srv' folder

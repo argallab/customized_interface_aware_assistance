@@ -20,7 +20,7 @@ class ModeSwitchInferenceAndCorrection(object):
     def __init__(self):
         rospy.init_node('mode_switch_inference_and_correction', anonymous=True)
         self.subject_id = rospy.get_param('subject_id', 0)
-        self.distribution_directory_path = os.getcwd() + 'distribution_directory'
+        self.distribution_directory_path = os.getcwd() + 'distribution_directory' #TODO chnage this to point to an absolute path for distribution director
         self.P_UI_GIVEN_A = None
         self.P_UM_GIVEN_UI = None
         self.DEFAULT_UI_GIVEN_A_NOISE = 0.01

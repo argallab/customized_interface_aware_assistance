@@ -50,7 +50,8 @@ class SNPMapping(object):
 
     # Initialize publisher and subscribers
     rospy.Subscriber('/joy', Joy, self.joy_callback)
-    self.pub = rospy.Publisher('joy_sip_puff', Joy, queue_size = 1)
+    self.before_inference_pub = rospy.Publisher('joy_sip_puff_before', Joy, queue_size=1)
+    self.after_inference_pub = rospy.Publisher('joy_sip_puff', Joy, queue_size = 1)
 
     # Published velocity message
     self.send_msg = Joy()
@@ -58,6 +59,12 @@ class SNPMapping(object):
     self.send_msg.header.frame_id = "Zero Band"
     self.send_msg.axes = np.zeros(1)  # pressure ([-1, 1])
     self.send_msg.buttons = np.zeros(4) # hard puff, soft puff, soft sip, hard sip
+
+    self.before_send_msg = Joy()
+    self.before_send_msg.header.stamp = rospy.Time.now()
+    self.before_send_msg.header.frame_id = "Zero Band"
+    self.before_send_msg.axes = np.zeros(1)  # pressure ([-1, 1])
+    self.before_send_msg.buttons = np.zeros(4) # hard puff, soft puff, soft sip, hard sip
 
     self.assistance_type = rospy.get_param('assistance_type', 2)
 
@@ -119,8 +126,12 @@ class SNPMapping(object):
     # rospy.loginfo("Before")
     # rospy.loginfo(self.send_msg.header.frame_id)
 
+    self.before_send_msg.header.frame_id = self.send_msg.header.frame_id
+    self.before_send_msg.buttons = self.send_msg.buttons
+    self.before_inference_pub.publish(self.before_send_msg)
+
     self.update_assistance_type()
-    # print self.assistance_type  
+    # print self.assistance_type
     if self.assistance_type != AssistanceType.No_Assistance and self.send_msg.header.frame_id != "Zero Band" and self.send_msg.header.frame_id != "Soft-Hard Puff Deadband" and self.send_msg.header.frame_id != "Soft-Hard Sip Deadband" and self.send_msg.header.frame_id != "Input Stopped":
       request = InferCorrectRequest()
       request.um = self.send_msg.header.frame_id
@@ -156,14 +167,14 @@ class SNPMapping(object):
   #     self.send_msg.buttons = np.zeros(4)
     # else:
     self.checkLimits(msg.axes[1])
-    self.pub.publish(self.send_msg)
+    self.after_inference_pub.publish(self.send_msg)
 
     # prevent robot arm moving after done blowing, zero out velocities
     if msg.buttons[0] is 0 and msg.buttons[1] is 0: # the last input in each blow is 0 for buttons
       self._ignore_input_counter = 0 # the constraints get
       self.send_msg.header.frame_id = "input stopped"
       self.send_msg.buttons = np.zeros(4)
-      self.pub.publish(self.send_msg)
+      self.after_inference_pub.publish(self.send_msg)
       # if self._lock_input is True:
       #   self._lock_input = False
 

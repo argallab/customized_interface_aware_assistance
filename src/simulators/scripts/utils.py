@@ -163,13 +163,13 @@ class RobotSE2(object):
         return (self.robot.position[0], self.robot.position[1]), (self.robot.position[0] + 2*self.radius*math.cos(self.robot.angle), self.robot.position[1] + 2*self.radius*math.sin(self.robot.angle))
 
     def get_position(self):
-        return self.robot.position
+        return [self.robot.position[0], self.robot.position[1]]
 
     def get_angle(self):
         return self.robot.angle
-
+		
 	def get_linear_velocity(self):
-		return self.robot.linearVelocity
+		return [self.robot.linearVelocity[0], self.robot.linearVelocity[1]]
 
 	def get_angular_velocity(self):
 		return self.robot.angularVelocity

@@ -8,6 +8,7 @@ from envs.mode_inference_env import ModeInferenceEnv
 from std_msgs.msg import Float32MultiArray
 from std_msgs.msg import MultiArrayDimension, String
 from teleop_nodes.msg import CartVelCmd
+from simulators.msg import State
 from teleop_nodes.srv import SetMode, SetModeRequest, SetModeResponse
 from pyglet.window import key
 import numpy as np
@@ -28,6 +29,11 @@ class Simulator(object):
 		rospy.on_shutdown(self.shutdown_hook)
 		self.called_shutdown = False
 		self.shutdown_pub = rospy.Publisher('/shutdown', String, queue_size=1)
+		self.trial_marker_pub = rospy.Publisher('/trial_marker', String, queue_size=1)
+		self.robot_state_pub = rospy.Publisher('/robot_state', State, queue_size=1)
+
+
+		self.robot_state = State()
 		# rospy.Subscriber('/joy', Joy, self.joy_callback)
 		self.dim = dim
 		user_vel = CartVelCmd()
@@ -118,6 +124,7 @@ class Simulator(object):
 
 		self.env.reset()
 		self.env.render()
+		self.trial_marker_pub.publish('start')
 		self.env.viewer.window.on_key_press = self.key_press
 
 		r = rospy.Rate(100)
@@ -132,6 +139,7 @@ class Simulator(object):
 			if (time.time() - self.trial_start_time) > self.max_time:
 				if not self.training:
 					print("Move to NEXT TRIAL")
+					self.trial_marker_pub.publish('end')
 					time.sleep(3.0) #sleep before the next trial happens
 					self.trial_index += 1
 					if self.trial_index == len(self.metadata_index):
@@ -155,6 +163,7 @@ class Simulator(object):
 					self.env.update_params(self.env_params)
 					self.env.reset()
 					self.env.render()
+					self.trial_marker_pub.publish('start')
 					self.trial_start_time = time.time()
 					is_done = False
 					self.is_restart = False
@@ -165,6 +174,7 @@ class Simulator(object):
 			if is_done:
 				if not self.training:
 					print("TRIAL DONE")
+					self.trial_marker_pub.publish('end')
 					is_done = False
 					time.sleep(3.0)
 					self.trial_index += 1
@@ -189,6 +199,7 @@ class Simulator(object):
 					self.env.update_params(self.env_params)
 					self.env.reset()
 					self.env.render()
+					self.trial_marker_pub.publish('start')
 					self.trial_start_time = time.time()
 				else:
 					self.shutdown_hook('Reached end of training. End of session')
@@ -197,6 +208,7 @@ class Simulator(object):
 			if self.restart:
 				if not self.training:
 					print("RESTART INITIATED")
+					self.trial_marker_pub.publish('restart')
 					self.restart = False
 					time.sleep(3.0)
 					#TODO should I be incrementing trial index here or should I just restart the same trial?
@@ -220,11 +232,24 @@ class Simulator(object):
 					self.env.update_params(self.env_params)
 					self.env.reset()
 					self.env.render()
+					self.trial_marker_pub.publish('start')
 					self.trial_start_time = time.time()
 					is_done = False
 
 
-			robot_continuous_position, robot_continuous_orientation, robot_discrete_state, is_done = self.env.step(self.input_action)
+			robot_continuous_position, robot_continuous_orientation, robot_linear_velocity, robot_angular_velocity, robot_discrete_state, is_done = self.env.step(self.input_action)
+
+			self.robot_state.header.stamp = rospy.Time.now()
+			self.robot_state.robot_continuous_position = robot_continuous_position
+			self.robot_state.robot_continuous_orientation = robot_continuous_orientation
+			self.robot_state.robot_linear_velocity = robot_linear_velocity
+			self.robot_state.robot_angular_velocity = robot_angular_velocity
+
+			self.robot_state.robot_discrete_state.discrete_location = robot_discrete_state[0]
+			self.robot_state.robot_discrete_state.discrete_orientation = robot_discrete_state[1]
+			self.robot_state.robot_discrete_state.mode = robot_discrete_state[2]
+
+			self.robot_state_pub.publish(self.robot_state)
 
 			if self.terminate:
 				self.shutdown_hook('Session terminated')
