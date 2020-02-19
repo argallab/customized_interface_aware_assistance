@@ -409,7 +409,7 @@ class ModeInferenceEnv(object):
         #draw robot direction indicator after the robot has been drawn.
         self._render_robot_direction_indicators()
         #render waypoints
-        # self._render_waypoints()
+        self._render_waypoints()
         #render path
         self._render_path()
         #render virtual mode display

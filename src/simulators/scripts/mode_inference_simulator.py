@@ -84,7 +84,7 @@ class Simulator(object):
 
 			assert 'env_params' in trial_info_dict
 			self.env_params = trial_info_dict['env_params']
-			print self.env_params['assistance_type']
+			print 'ASSISTANCE_TYPE', self.env_params['assistance_type']
 		else:
 			if not self.training:
 				self.env_params = dict()
@@ -109,7 +109,7 @@ class Simulator(object):
 
 				assert 'env_params' in trial_info_dict
 				self.env_params = trial_info_dict['env_params']
-				print self.env_params['assistance_type']
+				print  'ASSISTANCE_TYPE', self.env_params['assistance_type']
 
 		rospy.set_param('assistance_type', self.env_params['assistance_type'])
 		rospy.loginfo("Waiting for teleop_node ")
@@ -157,7 +157,7 @@ class Simulator(object):
 
 					assert 'env_params' in trial_info_dict
 					self.env_params = trial_info_dict['env_params']
-					print self.env_params['assistance_type']
+					print 'ASSISTANCE_TYPE', self.env_params['assistance_type']
 
 					rospy.set_param('assistance_type', self.env_params['assistance_type'])
 					self.set_mode_request = SetModeRequest()
@@ -194,7 +194,7 @@ class Simulator(object):
 
 					assert 'env_params' in trial_info_dict
 					self.env_params = trial_info_dict['env_params']
-					print self.env_params['assistance_type']
+					print 'ASSISTANCE_TYPE', self.env_params['assistance_type']
 
 					rospy.set_param('assistance_type', self.env_params['assistance_type'])
 					self.set_mode_request = SetModeRequest()
@@ -228,7 +228,7 @@ class Simulator(object):
 						trial_info_dict = pickle.load(fp)
 					assert 'env_params' in trial_info_dict
 					self.env_params = trial_info_dict['env_params']
-					print self.env_params['assistance_type']
+					print 'ASSISTANCE_TYPE', self.env_params['assistance_type']
 
 					rospy.set_param('assistance_type', self.env_params['assistance_type'])
 					self.set_mode_request = SetModeRequest()
