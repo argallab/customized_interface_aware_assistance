@@ -1,0 +1,6 @@
+string optimal_a
+string u_intended
+float64 normalized_h
+string u_corrected
+bool is_corrected_or_filtered
+bool is_u_intended_equals_um

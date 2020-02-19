@@ -6,6 +6,7 @@ import pickle
 import os
 import numpy as np
 from envs.srv import OptimalAction, OptimalActionRequest, OptimalActionResponse
+from inference_and_correction.msg import InferCorrectInfo
 from teleop_nodes.srv import InferCorrect, InferCorrectRequest, InferCorrectResponse
 import collections
 from IPython import embed
@@ -22,6 +23,9 @@ class ModeSwitchInferenceAndCorrection(object):
         self.subject_id = subject_id
         self.distribution_directory_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'personalized_distributions')
 
+        self.infer_correct_info_pub = rospy.Publisher('/infer_correct_info', InferCorrectInfo, queue_size=1)
+
+        self.infer_correct_info_msg = InferCorrectInfo()
         self.P_UI_GIVEN_A = None
         self.P_UM_GIVEN_UI = None
         self.DEFAULT_UI_GIVEN_A_NOISE = 0.01
@@ -80,11 +84,19 @@ class ModeSwitchInferenceAndCorrection(object):
             # print ("U_INTENDED", u_intended)
             normalized_h_of_p_ui_given_um = self.compute_entropy_of_p_ui_given_um()
             # print("ENTROPY", normalized_h_of_p_ui_given_um)
-            u_corrected, is_corrected_or_filtered = self.correct_or_pass_um(um, u_intended, normalized_h_of_p_ui_given_um)
+            u_corrected, is_corrected_or_filtered, is_u_intended_equals_um = self.correct_or_pass_um(um, u_intended, normalized_h_of_p_ui_given_um)
             # print ("U_CORRECTED", u_corrected, is_corrected_or_filtered)
             response.u_corrected = u_corrected
             response.is_corrected_or_filtered = is_corrected_or_filtered
             response.status = True
+
+            self.infer_correct_info_msg.optimal_a = optimal_a #string
+            self.infer_correct_info_msg.u_intended = u_intended #string
+            self.infer_correct_info_msg.normalized_h = normalized_h_of_p_ui_given_um #float
+            self.infer_correct_info_msg.u_corrected = u_corrected
+            self.infer_correct_info_msg.is_corrected_or_filtered = is_corrected_or_filtered
+            self.infer_correct_info_msg.is_u_intended_equals_um = is_u_intended_equals_um
+            self.infer_correct_info_pub.publish(self.infer_correct_info_msg)
         else:
             response.u_corrected = 'Zero Band'
             response.status = True
@@ -124,11 +136,11 @@ class ModeSwitchInferenceAndCorrection(object):
                 elif self.ASSISTANCE_TYPE == AssistanceType.Corrective:
                     u_corrected = u_intended
             else:
-                return um, False
+                return um, False, False
         else:
-            return um, False
+            return um, False, True
 
-        return u_corrected, True
+        return u_corrected, True, False
 
     def compute_p_ui_given_um(self, optimal_a, current_mode, um):
         for ui in LOW_LEVEL_COMMANDS:
