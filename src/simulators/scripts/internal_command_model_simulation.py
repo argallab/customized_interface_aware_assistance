@@ -5,19 +5,11 @@
 # model personalized distributions for p(u_m|a) from user data
 
 import rospy
-import time
-from sensor_msgs.msg import Joy
-from std_msgs.msg import String
 from simulators.msg import Command
 from envs.action_to_command_mapping_env import ActionEnv
-from utils import LOW_LEVEL_COMMANDS, EXPERIMENT_START_COUNTDOWN
-import pyglet
 import sys
 from random import randrange
-import threading
-
-
-
+from pyglet.window import key
 
 class ActionCommandModelling(object):
     def __init__(self, iterations=1, blocks=1):
@@ -26,7 +18,7 @@ class ActionCommandModelling(object):
         rospy.init_node("action_to_command_modelling")
         rospy.on_shutdown(self.shutdown_hook)
 
-        self.initialize_subscribers()
+        # self.initialize_subscribers()
 
         self.iterations = iterations
         self.blocks = blocks
@@ -50,24 +42,14 @@ class ActionCommandModelling(object):
 
         r = rospy.Rate(100)
 
+        self.env.initialize_viewer()
+        self.env.viewer.window.on_key_press = self.key_press_callback
+
         while not rospy.is_shutdown(): 
             self.env.step()
             self.env.render()
             r.sleep()
 
-    def initialize_subscribers(self):
-        rospy.Subscriber('/keyboard_entry', String, self.keyboard_callback)
-
-    # start experiment
-    def keyboard_callback(self, msg): 
-        # Start experiment 
-        if msg.data == 's':            
-            self.env.env_params['start_prompt'] = True        
-            self.env.reset()
-
-        # # User input used to turn on radio buttons
-        # if msg.data == '1' or msg.data == '2' or msg.data == '3' or msg.data == '4': 
-        #     self.env.env_params['user_input'] = msg.data 
 
     # randomize actions
     def generate_action_list(self): 
@@ -78,6 +60,26 @@ class ActionCommandModelling(object):
                 self.action_list.append(actions[rand_ind])
                 actions.pop(rand_ind)
         self.env.env_params['action_prompts'] = self.action_list[:]
+        self.env.reset()
+
+    def key_press_callback(self, k, mode): 
+        if k==key.S: 
+            self.env.env_params['start_prompt'] = True
+            print 'started key'
+
+        if k==49: 
+            self.env.env_params['next_prompt'] = True
+
+        if k==50:
+            self.env.env_params['next_prompt'] = True
+
+        if k==51:
+            self.env.env_params['next_prompt'] = True
+
+        if k==52: 
+            self.env.env_params['next_prompt'] = True
+
+
         self.env.reset()
 
     def shutdown_hook(self):
