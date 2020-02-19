@@ -147,14 +147,16 @@ class ModeInferenceEnv(object):
                 elif position_on_line == PositionOnLine.END:
                     return self.WAYPOINTS_TO_LOCATION_DICT[tuple(pt)], True
             elif turn_id == self.location_of_turn:
-                if abs(current_orientation - PI/2) > 0.1: #hasn't turned or is turning
+                if abs(current_orientation - self.goal_orientation) > 0.1: #hasn't turned or is turning
                     return self.WAYPOINTS_TO_LOCATION_DICT[tuple(p)], False
-                elif abs(current_orientation - PI/2) < 0.1: #finished turning
+                elif abs(current_orientation - self.goal_orientation) < 0.1: #finished turning
                     position_on_line =  self._check_continuous_position_on_line_joining_waypoints(p, pt, current_position)
                     if position_on_line == PositionOnLine.START or position_on_line == PositionOnLine.BETWEEN:
                         return self.WAYPOINTS_TO_LOCATION_DICT[tuple(p)], False
                     elif position_on_line == PositionOnLine.END:
                         return self.WAYPOINTS_TO_LOCATION_DICT[tuple(pt)], True
+
+
 
         return self.WAYPOINTS_TO_LOCATION_DICT[tuple(self.waypoints[-1])], True
 
@@ -163,11 +165,19 @@ class ModeInferenceEnv(object):
         Retrieves discrete orientation from continuous orientation
         '''
         current_orientation = self.robot.get_angle()
-        assert current_orientation >= 0.0 and current_orientation <= (PI/2 + 0.1)
-        if abs(current_orientation - PI/2) > 0.1:
-            return 0.0, False
-        else:
-            return PI/2, True
+        # assert current_orientation >= 0.0 and current_orientation <= (PI/2 + 0.1)
+        if self.goal_orientation == PI/2:
+            assert current_orientation >= 0.0 and current_orientation <= (PI/2 + 0.1)
+            if abs(current_orientation - self.goal_orientation) > 0.1:
+                return 0.0, False
+            else:
+                return self.goal_orientation, True
+        elif self.goal_orientation == -PI/2:
+            assert current_orientation >= (-PI/2 - 0.1) and current_orientation <= 0.0
+            if abs(current_orientation - self.goal_orientation) > 0.1:
+                return 0.0, False
+            else:
+                return self.goal_orientation, True
 
     def _retrieve_current_allowed_mode(self):
         '''
@@ -230,7 +240,10 @@ class ModeInferenceEnv(object):
             sign_of_motion = np.sign(diff_vector[motion_dimension_index])[0] #determine the sign of the vector (that is if it is y, should the robot be moving up or down?)
             self.ALLOWED_DIRECTIONS_OF_MOTION[loc_p] = [sign_of_motion]
             if i == self.location_of_turn:
-                self.ALLOWED_DIRECTIONS_OF_MOTION[loc_p].append(-1.0) #append direction indicator for rotation. counterclockwise is 1.0
+                if self.goal_orientation == PI/2:
+                    self.ALLOWED_DIRECTIONS_OF_MOTION[loc_p].append(-1.0) #append direction indicator for rotation. counterclockwise is 1.0
+                else:
+                    self.ALLOWED_DIRECTIONS_OF_MOTION[loc_p].append(1.0)
 
         self.ALLOWED_DIRECTIONS_OF_MOTION[self.LOCATIONS[-1]] = [self.ALLOWED_DIRECTIONS_OF_MOTION[self.LOCATIONS[-2]][0]] #copy the direction of the linear dimension of the second last waypoint.
 
@@ -251,21 +264,22 @@ class ModeInferenceEnv(object):
                     self.STATE_TRANSITION_MODEL[s][u] = (s[0], s[1], s[2]) #by default store the same state as next state. Because if no motion happens, the resultant state is also the same state
                     for m in allowed_modes_for_motion:
                         if m == s[2]: #make sure that the allowed mode matches the mode in the state s. If it doesn't no motion will happen
-    						if m != 't': #allowed motion mode is a linear mode, x or y.
-    							if TRANSITION_FOR_ACTION[rgc][u][m] == 'next':
-    								new_loc_next = self.LOCATIONS[min(self.LOCATIONS.index(s[0]) + 1, len(self.LOCATIONS)-1 )]
-    								self.STATE_TRANSITION_MODEL[s][u] = (new_loc_next, s[1], s[2])
-    							elif TRANSITION_FOR_ACTION[rgc][u][m] == 'prev':
-    								new_loc_prev = self.LOCATIONS[max(self.LOCATIONS.index(s[0]) - 1, 0 )]
-    								self.STATE_TRANSITION_MODEL[s][u] = (new_loc_prev, s[1], s[2])
-    						elif m == 't':# if allowed mode is rotation mode, rotate the angle properly.
-    							new_theta = s[1]
-    							if TRANSITION_FOR_ACTION[rgc][u][m] == 'next' and s[1] == 0:
-    								new_theta = min(PI/2, s[1] + PI/2) #max angle allowed is PI/2
-    							elif TRANSITION_FOR_ACTION[rgc][u][m] == 'prev' and s[1] == PI/2:
-    								new_theta = max(0, s[1] - PI/2) #min angle allowed is 0.0
+                            if m != 't': #allowed motion mode is a linear mode, x or y.
+                                if TRANSITION_FOR_ACTION[rgc][u][m] == 'next':
+                                    new_loc_next = self.LOCATIONS[min(self.LOCATIONS.index(s[0]) + 1, len(self.LOCATIONS)-1 )]
+                                    self.STATE_TRANSITION_MODEL[s][u] = (new_loc_next, s[1], s[2])
+                                elif TRANSITION_FOR_ACTION[rgc][u][m] == 'prev':
+                                    new_loc_prev = self.LOCATIONS[max(self.LOCATIONS.index(s[0]) - 1, 0 )]
+                                    if m == self.MODES_MOTION_ALLOWED[new_loc_prev][0]:
+                                        self.STATE_TRANSITION_MODEL[s][u] = (new_loc_prev, s[1], s[2])
+                            elif m == 't':# if allowed mode is rotation mode, rotate the angle properly.
+                                new_theta = s[1]
+                                if TRANSITION_FOR_ACTION[rgc][u][m] == 'next':
+                                    new_theta = min(PI/2, s[1] + PI/2) #max angle allowed is PI/2
+                                elif TRANSITION_FOR_ACTION[rgc][u][m] == 'prev':
+                                    new_theta = max(-PI/2, s[1] - PI/2) #min angle allowed is 0.0
 
-    							self.STATE_TRANSITION_MODEL[s][u] = (s[0], new_theta, s[2])
+                                self.STATE_TRANSITION_MODEL[s][u] = (s[0], new_theta, s[2])
 
     def _create_optimal_next_state_dict(self):
 
@@ -280,7 +294,7 @@ class ModeInferenceEnv(object):
                     self.OPTIMAL_NEXT_STATE_DICT[s] = (self.LOCATIONS[min(self.LOCATIONS.index(s[0])+1, self.num_locations)], s[1], s[2])
             elif self.LOCATIONS.index(s[0]) == self.location_of_turn:
                 if s[2] != 't':
-                    if s[1] == 0:
+                    if s[1] == self.goal_orientation:
                         self.OPTIMAL_NEXT_STATE_DICT[s] = (s[0], s[1], 't')
                     else:
                         if s[2] == self.MODES_MOTION_ALLOWED[s[0]][0]:
@@ -288,8 +302,13 @@ class ModeInferenceEnv(object):
                         else:
                             self.OPTIMAL_NEXT_STATE_DICT[s] = (s[0], s[1], self.MODES_MOTION_ALLOWED[s[0]][0])
                 else:
-                    if s[1] != PI/2:
-                        self.OPTIMAL_NEXT_STATE_DICT[s] = (s[0], s[1] + PI/2, s[2])
+                    if s[1] != self.goal_orientation:
+                        diff_orientation = self.goal_orientation - s[1]
+                        if diff_orientation > 0:
+                            diff_orientation = min(PI/2, diff_orientation)
+                        else:
+                            diff_orientation = max(-PI/2, diff_orientation)
+                        self.OPTIMAL_NEXT_STATE_DICT[s] = (s[0], s[1] + diff_orientation, s[2])
                     else:
                         if s[2] == self.MODES_MOTION_ALLOWED[s[0]][0]:
                             self.OPTIMAL_NEXT_STATE_DICT[s] = (self.LOCATIONS[min(self.LOCATIONS.index(s[0]) + 1, self.num_locations)], s[1], s[2])
@@ -423,7 +442,7 @@ class ModeInferenceEnv(object):
         #render timer
         self._render_timer_text()
 
-        if self.current_time >= 50: #TODO change this time limit to a param
+        if self.current_time >= self.max_time: #TODO change this time limit to a param
             self._render_trial_over_text()
 
         return self.viewer.render(False)
@@ -501,6 +520,7 @@ class ModeInferenceEnv(object):
         self.robot_orientation = self.env_params['robot_orientation']
         self.goal_position = self.env_params['goal_position']
         self.goal_orientation = self.env_params['goal_orientation']
+        print 'goal_orientation', self.goal_orientation
         self.r_to_g_relative_orientation = self.env_params['r_to_g_relative_orientation'] #top right, top left, bottom, right, bottom left. relative position of the goal with respect to starting position of robot
         self.start_direction = self.env_params['start_direction']
         self.start_mode = self.env_params['start_mode']
@@ -508,7 +528,7 @@ class ModeInferenceEnv(object):
         self.num_locations = self.num_turns + 2 #num turns + start + end point
 
         self.LOCATIONS = ['p' +str(i) for i in range(self.num_locations)] #create location id. p0, p1, p2....pN
-        self.ORIENTATIONS = [0, PI/2] #discrete set of rotations. 0 and pi/2
+        self.ORIENTATIONS = [0, PI/2, -PI/2] #discrete set of rotations. 0 and pi/2
         self.DIMENSIONS = ['x', 'y', 't'] #set of dimensions or modes
         self.DIMENSION_INDICES = np.array([0,1,2]) #set of mode indices (needed for look up)
         self.STATES = [s for s in itertools.product(self.LOCATIONS, self.ORIENTATIONS, self.DIMENSIONS)] #list of all discrete states for the given configuration
@@ -576,6 +596,7 @@ class ModeInferenceEnv(object):
         self.timer_thread = threading.Thread(target=self._render_timer, args=(self.period,))
         self.lock = threading.Lock()
         self.current_time = 0
+        self.max_time = 50
         print 'START'
 
 
@@ -616,6 +637,10 @@ class ModeInferenceEnv(object):
         rospy.set_param('current_discrete_state', self.current_discrete_state)
         self.robot.robot.linearVelocity = b2Vec2(user_vel[0], user_vel[1]) #update robot velocity
         self.robot.robot.angularVelocity = -user_vel[2]
+        if self.current_time >= self.max_time:
+            self.robot.robot.linearVelocity = b2Vec2(0.0, 0.0)
+            self.robot.robot.angularVelocity = 0.0
+
         self.world.Step(1.0/FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS) #call box2D step function
         is_done = False
         if self.current_discrete_state[0] == self.LOCATIONS[-1]: #reached the last location
