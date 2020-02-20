@@ -41,7 +41,7 @@ def generate_p_um_given_a_trials(args):
         os.makedirs(metadata_dir)
 
     index = 0
-    for a in ACTIONS:
+    for a in ACTIONS:#ACTIONS consist of all 12 possible actions. 
         trial_info_dict = collections.OrderedDict()
         trial_info_dict['env_params'] = collections.OrderedDict()
         trial_info_dict['env_params']['robot_position'] = (VIEWPORT_WS/2, VIEWPORT_HS/2)
@@ -50,21 +50,22 @@ def generate_p_um_given_a_trials(args):
         trial_info_dict['env_params']['is_mode_switch'] = False
         trial_info_dict['env_params']['mode_config'] = None
 
-        if a == 'COUNTERCLOCKWISE' or a == 'CLOCKWISE':
+        if a == 'COUNTERCLOCKWISE' or a == 'CLOCKWISE': #turning trials
             trial_info_dict['env_params']['is_rotation'] = True
             trial_info_dict['env_params']['allowed_mode_index'] = 't'
             trial_info_dict['env_params']['goal_orientation']
             trial_info_dict['env_params']['goal_orientation'] = ANGLES[a]
         else:
+            #non turning trials
             trial_info_dict['env_params']['is_rotation'] = False
             trial_info_dict['env_params']['allowed_mode_index'] = ALLOWED_MODE_INDEX_DICT[trial_info_dict['env_params']['start_direction']]
             trial_info_dict['env_params']['goal_orientation'] = 0.0
 
-        if a in MODE_TRANSITIONS:
+        if a in MODE_TRANSITIONS: #mode switch 
             trial_info_dict['env_params']['is_mode_switch'] = True
             mode_config = collections.OrderedDict()
-            mode_config['start_mode'] = a[0]
-            mode_config['target_mode'] = a[1]
+            mode_config['start_mode'] = a[0] #the first mode from the string. For example 'x' in 'xy' or 't' in tx'
+            mode_config['target_mode'] = a[1] #the second mode from the string. For example 'y' in 'xy' or 'x' in tx'
             trial_info_dict['env_params']['mode_config'] = mode_config
 
         for j in range(num_reps_per_condition):
