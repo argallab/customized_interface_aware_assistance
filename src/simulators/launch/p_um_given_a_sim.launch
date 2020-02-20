@@ -13,7 +13,7 @@
 
   <node pkg="simulators" output="screen" type="p_um_given_a_simulator.py" name="p_um_given_a_simulator"  args="$(arg subject_id)"/>
 
-  <!-- <include file="$(find teleop_nodes)/launch/teleop_nodes.launch">
+  <include file="$(find teleop_nodes)/launch/teleop_nodes.launch">
     <arg name="JOY" value="$(arg JOY)"/>
     <arg name="HA" value="$(arg HA)"/>
     <arg name="SNP" value="$(arg SNP)"/>
@@ -21,6 +21,6 @@
     <arg name="blending" value="$(arg blending)"/>
     <arg name="PS3" value="$(arg PS3)"/>
     <arg name="JOINT" value="$(arg JOINT)"/>
-  </include> -->
+  </include>
 
 </launch>
