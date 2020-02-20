@@ -22,8 +22,8 @@ class DataParser(object):
 		super(DataParser, self).__init__()
 
 		results_files = os.listdir(file_dir) 
-		action_prompt_file = os.path.join(file_dir, '_slash_action_prompt.csv') 
-		user_response_file = os.path.join(file_dir, '_slash_user_response.csv') 
+		action_prompt_file = os.path.join(file_dir, '_action_prompt.csv') 
+		user_response_file = os.path.join(file_dir, '_user_response.csv') 
 
 		self.action_prompt_df = self.read_csv_files(action_prompt_file)
 		self.user_response_df = self.read_csv_files(user_response_file)
@@ -176,7 +176,8 @@ class IntendedCommandGivenActionAnalysis(object):
 				for ind, key in enumerate(keys): 
 					p_um[mode][action][key] = prob[ind]
 
-		pickle.dump(p_um, open(self.id+'_p_um_given_a.pkl', "wb")) 
+		personalized_distributions_dir = os.path.join(rospkg.RosPack().get_path('inference_and_correction'), 'personalized_distributions')
+		pickle.dump(p_um, open(os.path.join(personalized_distributions_dir,self.id+'_p_um_given_a.pkl'), "wb"))
 
 
 if __name__ == '__main__': 
