@@ -13,6 +13,9 @@ import pickle
 import itertools
 import collections 
 import bisect
+import rospkg
+sys.path.append(os.path.join(rospkg.RosPack().get_path('simulators'), 'scripts'))
+from utils import TRUE_ACTION_TO_COMMAND
 
 class DataParser(object): 
 	def __init__(self, file_dir):
@@ -63,8 +66,8 @@ class IntendedCommandGivenActionAnalysis(object):
 	def get_user_response_block_indices(self, time_s, time_e, user_input):
 
 		assert 'rosbagTimestamp' in user_input
-		time_u, index_of_time_u = self.get_nearest_time_stamp(time_s, user_input.rosbagTimestamp)
-		# time_e_u, index_of_time_e_u = self.get_nearest_time_stamp(time_e, user_input.rosbagTimestamp)
+		time_s_u, index_of_time_s_u = self.get_nearest_time_stamp(time_s, user_input.rosbagTimestamp)
+		time_e_u, index_of_time_e_u = self.get_nearest_time_stamp(time_e, user_input.rosbagTimestamp)
 
 		# assert time_u <= time_e 
 		# assert time_u => time_s #sanity checks
@@ -79,17 +82,18 @@ class IntendedCommandGivenActionAnalysis(object):
 		# 	user_response_block_indice = index_of_time_s_u
 
 		# return user_response_block_indice
-		assert time_u <= time_e 
-		assert time_u => time_s #sanity checks
 		
 		if index_of_time_e_u == index_of_time_s_u:  #sanity check
 			user_response_block_indice = index_of_time_s_u
 
-		elif time_s_u < time_s: 
-			user_response_block_indice = [] # no user response (it's from previous)
+		elif time_s_u < time_s and time_e_u < time_e: 
+			user_response_block_indice = index_of_time_e_u 
+
+		elif time_s_u > time_s and time_e_u > time_e: 
+			user_response_block_indice = index_of_time_s_u
 
 		else: 
-			user_response_block_indice = index_of_time_s_u
+			user_response_block_indice = [] # no user response (it's from previous)
 
 		return user_response_block_indice
 
@@ -106,6 +110,7 @@ class IntendedCommandGivenActionAnalysis(object):
 		
 	def build_distributions(self): 
 
+		# create dictionary to map user input to the low level commands for the final p_ui_given_a dict
 		USER_RESPONSE_DICT = {'1': 'Hard Puff', '2': 'Hard Sip', '3': 'Soft Puff', '4': 'Soft Sip'}
 		
 		# hard puff, hard sip, soft puff, soft sip
@@ -122,43 +127,85 @@ class IntendedCommandGivenActionAnalysis(object):
 		mode_l_y = np.zeros(4)
 		mode_l_t = np.zeros(4)
 
-		# self.ensure_ascending_time(self.data.action_prompt_df)
-		# embed(banner1='hi')
-		# self.ensure_ascending_time(self.data.user_response_df)
+		# because there are x2 as many prmpts (the actual command and the empty command after)
+		# and 12 total actions, so the remaining is the number of times each action was shown since all shown equally
+		iters_per_action = len(self.data.action_prompt_df)/24
 
+		# dictionary for mapping action prompts to the arrays we want to fill
 		ACTION_TO_ARRAY_DICT = {'up': up, 'down': down, 'left': left, 'right': right, 'clockwise': cw, 'counterclockwise': ccw, 
 								'mode_switch_right_1': mode_r_x, 'mode_switch_right_2': mode_r_y, 'mode_switch_right_3': mode_r_t, 
 								'mode_switch_left_1': mode_l_x, 'mode_switch_left_2': mode_l_y, 'mode_switch_left_3': mode_l_t}
 
+		# keep dict of lengths, to reduce normalizer if person missed input
+		ACTION_TO_ARRAY_NORMALIZER_DICT = {'up': iters_per_action, 'down': iters_per_action, 'left': iters_per_action, 'right': iters_per_action, 'clockwise': iters_per_action, 'counterclockwise': iters_per_action, 
+								'mode_switch_right_1': iters_per_action, 'mode_switch_right_2': iters_per_action, 'mode_switch_right_3': iters_per_action, 
+								'mode_switch_left_1': iters_per_action, 'mode_switch_left_2': iters_per_action, 'mode_switch_left_3': iters_per_action}
+
+		# for every action prompt, get the user response (if they did respond)						
 		for i in range(0, len(self.data.action_prompt_df)-1, 2): 
 			
 			key = self.data.action_prompt_df.at[i, 'command'].replace('"', '')
 
 			prompt_t_s = self.data.action_prompt_df.at[i, 'rosbagTimestamp']
-
-			if i==len(self.data.action_prompt_df)-1: 
-				prompt_t_e = self.data.action_prompt_df.at[i+1, 'rosbagTimestamp']
-			else: 
-				prompt_t_e = self.data.action_prompt_df.at[i+2, 'rosbagTimestamp']
-			# prompt_t_e = self.data.action_prompt_df.at[i+1, 'rosbagTimestamp']
+			prompt_t_e = self.data.action_prompt_df.at[i+1, 'rosbagTimestamp']
 
 			user_response_block_indices = self.get_user_response_block_indices(prompt_t_s, prompt_t_e, self.data.user_response_df)
-			print i, user_response_block_indices 
 
 			if user_response_block_indices != []: # if they gave a response
 				user_response = int(self.data.user_response_df['command'][user_response_block_indices].replace('"', ''))
 				ACTION_TO_ARRAY_DICT[key][user_response-1] += 1
 
+			else: 
+				ACTION_TO_ARRAY_NORMALIZER_DICT[key] -= 1
+
+
 		# normalize
 		for k, v in ACTION_TO_ARRAY_DICT.items(): 
-			v = v/(len(self.data.action_prompt_df)/24) # because there are x2 as many prmpts (the actual command and the empty command after)
-			ACTION_TO_ARRAY_DICT[k] = v 			# and 12 total actions, so the remaining is the number of times each action was shown since all shown equally
+			v = v/ACTION_TO_ARRAY_NORMALIZER_DICT[k]
+			ACTION_TO_ARRAY_DICT[k] = v 			
 
-		embed(banner1='end of loop')
 		self.create_p_ui_given_a(ACTION_TO_ARRAY_DICT)
 
 	def create_p_ui_given_a(self, probabilities): 
-		pass
+		keys = ['Hard Puff', 'Hard Sip', 'Soft Puff', 'Soft Sip']
+		p_um = collections.OrderedDict()
+		for mode in TRUE_ACTION_TO_COMMAND.keys():
+			p_um[mode] = collections.OrderedDict()
+			for action in TRUE_ACTION_TO_COMMAND[mode].keys(): 
+				p_um[mode][action] = collections.OrderedDict()
+				if mode == 'x': 
+					if action == 'move_p': 
+						prob = probabilities['right']
+					if action == 'move_n': 
+						prob = probabilities['left']
+					if action == 'mode_r': 
+						prob = probabilities['mode_switch_right_1']
+					if action == 'mode_l': 
+						prob = probabilities['mode_switch_left_1']
+				if mode == 'y': 
+					if action == 'move_p': 
+						prob = probabilities['up']
+					if action == 'move_n': 
+						prob = probabilities['down']
+					if action == 'mode_r': 
+						prob = probabilities['mode_switch_right_2']
+					if action == 'mode_l':
+						prob = probabilities['mode_switch_left_2']
+				if mode == 'l': 
+					if action == 'move_p': 
+						prob = probabilities['counterclockwise']
+					if action == 'move_n': 
+						prob = probabilities['clockwise']
+					if action == 'mode_r':
+						prob = probabilities['mode_switch_right_3'] 
+					if action == 'mode_l':
+						prob = probabilities['mode_switch_left_3']
+
+				for ind, key in enumerate(keys): 
+					p_um[mode][action][key] = prob[ind]
+
+		pickle.dump(p_um, open(self.id+'_p_um_given_a.pkl', "wb")) 
+
 
 if __name__ == '__main__': 
 	parser = argparse.ArgumentParser()
