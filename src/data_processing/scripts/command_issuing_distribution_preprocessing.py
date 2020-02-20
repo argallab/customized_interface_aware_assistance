@@ -9,9 +9,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import bisect
 from IPython import embed
-import pickle  
+import pickle
+import sys
+import os
+import rospkg
 import itertools
-import collections 
+import collections
 
 
 def build_parser():
@@ -32,11 +35,11 @@ def read_csv_files(path, command_prompt, user_input, output):
 	user_input_df = pd.read_csv(user_input_file, header = 0)
 	return command_prompt_df, user_input_df
 
-def ensure_ascending_time(time_stamp_array): 
-	for t_array in time_stamp_array: 
+def ensure_ascending_time(time_stamp_array):
+	for t_array in time_stamp_array:
 		previous = t_array.rosbagTimestamp[0]
-		for number in t_array.rosbagTimestamp: 
-			if number < previous: 
+		for number in t_array.rosbagTimestamp:
+			if number < previous:
 				sys.exit('Times are not in ascending order. Fix data before proceeding')
 			previous = number
     	plt.plot(range(0,len(t_array.rosbagTimestamp)), t_array.rosbagTimestamp)
@@ -72,50 +75,69 @@ def get_user_response_block_indices(time_s, time_e, user_input):
 	user_response_block_indices = range(index_of_time_s_u, index_of_time_e_u) #list of indices for lookup
 	return user_response_block_indices
 
-def populate_probabilities_from_count(user_input): 
-	LABEL_TO_ARRAY_DICT = {'"Hard Puff"': 0, '"Hard Sip"': 1, '"Soft Puff"': 2, '"Soft Sip"':3, '"Zero Band"': 4, '"Soft-Hard Puff Deadband"': 5, '"Soft-Hard Sip Deadband"': 6  }
-	
-	counts_array = np.zeros(7)
+def populate_probabilities_from_count(user_input):
+	LABEL_TO_ARRAY_DICT = {'"Hard Puff"': 0, '"Hard Sip"': 1, '"Soft Puff"': 2, '"Soft Sip"':3, '"Soft-Hard Puff Deadband"': 4, '"Soft-Hard Sip Deadband"': 5} #,  '"Zero Band"': 4, }
+
+	counts_array = np.zeros(len(LABEL_TO_ARRAY_DICT))
 	length = 0
-	for label in user_input: 
-		if label == '"input stopped"': 
-			pass
-		else: 
+
+	for label in user_input:
+		if label in LABEL_TO_ARRAY_DICT:
 			counts_array[LABEL_TO_ARRAY_DICT[label]] += 1
 			length += 1
+	# for label in user_input:
+	# 	if label == '"input stopped"':
+	# 		pass
+	# 	else:
+	# 		counts_array[LABEL_TO_ARRAY_DICT[label]] += 1
+	# 		length += 1
 
 	norm_counts_array = counts_array/length
 
 	return norm_counts_array
 
-def _combine_probabilities(command_probs): 
-	for i in command_probs: 
-		command_probs[i][0] = command_probs[i][0]+command_probs[i][5]
-		command_probs[i][1] = command_probs[i][1]+command_probs[i][6]
-		my_list = list(command_probs[i])
-		my_list.pop(6)
-		my_list.pop(5)
-		command_probs[i] = np.array(my_list)
-	return command_probs
+def _combine_probabilities(command_to_array_dict, combination_pairs):
+	for key in command_to_array_dict:
+		for cp in combination_pairs:
+			command_to_array_dict[key][cp[0]] = command_to_array_dict[key][cp[0]] + command_to_array_dict[key][cp[1]]
+		temp_list_for_popping_combined_index = list(command_to_array_dict[key])
+		indices_to_be_popped = [cp[1] for cp in combination_pairs]
+		indices_to_be_popped = sorted(indices_to_be_popped, reverse=True)
+		for ind in indices_to_be_popped:
+			temp_list_for_popping_combined_index.pop(ind)
+		command_to_array_dict[key] = np.array(temp_list_for_popping_combined_index)
+
+	return command_to_array_dict
+#
+# def _combine_probabilities(command_probs, combination_pairs):
+# 	for i in command_probs:
+# 		command_probs[i][0] = command_probs[i][0]+command_probs[i][5]
+# 		command_probs[i][1] = command_probs[i][1]+command_probs[i][6]
+# 		my_list = list(command_probs[i])
+# 		my_list.pop(6)
+# 		my_list.pop(5)
+# 		command_probs[i] = np.array(my_list)
+# 	return command_probs
 
 def _init_p_um_given_ui(commands, keys, subject_id):
 
 	p_um = collections.OrderedDict()
-	for i in commands: 
+	for i in commands:
 		p_um[i] = collections.OrderedDict()
-		for index, name in enumerate(keys): 
+		for index, name in enumerate(keys):
 			p_um[i][name] = commands[i][index]
 	# embed(banner1="u_m")
-	pickle.dump(p_um, open(subject_id+'_p_um_given_ui.pkl', "wb"))
+	personalized_distributions_dir = os.path.join(rospkg.RosPack().get_path('inference_and_correction'), 'personalized_distributions')
+	pickle.dump(p_um, open(os.path.join(personalized_distributions_dir,subject_id+'_p_um_given_ui.pkl'), "wb"))
 
 
 def build_probabilities(command_prompt, user_input, subject_id):
 
-	# h_p, h_s, s_p, s_s, zero, s-h_p, s-h_s
-	u_hp = np.zeros(7)
-	u_hs = np.zeros(7)
-	u_sp = np.zeros(7)
-	u_ss = np.zeros(7)
+	# h_p, h_s, s_p, s_s, s-h_p, s-h_s
+	u_hp = np.zeros(6) #TODO avoid hard coding the dimensionality of these array
+	u_hs = np.zeros(6)
+	u_sp = np.zeros(6)
+	u_ss = np.zeros(6)
 
 	u_hp_profile = []
 	u_hs_profile = []
@@ -124,41 +146,50 @@ def build_probabilities(command_prompt, user_input, subject_id):
 
 	COMMAND_TO_ARRAY_DICT = collections.OrderedDict()
 	COMMAND_TO_ARRAY_DICT = {'Hard Puff': u_hp, 'Hard Sip': u_hs, 'Soft Puff': u_sp, 'Soft Sip': u_ss}
-	COMMAND_TO_PROFILE_ARRAY_DICT = {'Hard Puff': u_hp_profile, 'Hard Sip': u_hs_profile, 'Soft Puff': u_sp_profile, 'Soft Sip': u_ss_profile}
+	# COMMAND_TO_PROFILE_ARRAY_DICT = {'Hard Puff': u_hp_profile, 'Hard Sip': u_hs_profile, 'Soft Puff': u_sp_profile, 'Soft Sip': u_ss_profile}
+	NUM_TIMES_COMMAND_PROMPT_SHOWN = {'Hard Puff': 0, 'Hard Sip': 0, 'Soft Puff': 0, 'Soft Sip': 0}
 	for i in range(0,len(command_prompt)-1,2):
-		key =  command_prompt.at[i, 'command'].replace('"','')
-		comm_start_t =  command_prompt.at[i, 'rosbagTimestamp']
-		comm_end_t =  command_prompt.at[i+1, 'rosbagTimestamp']
+		key =  command_prompt.at[i, 'command'].replace('"','') #get the actual text shown on the screen.
+		comm_start_t =  command_prompt.at[i, 'rosbagTimestamp'] #timestamp at which the text was shown on the screen
+		comm_end_t =  command_prompt.at[i+1, 'rosbagTimestamp'] #timestamp at which the text disappeared from the screen
 
 		user_response_block_indices = get_user_response_block_indices(comm_start_t, comm_end_t, user_input)
 
 		user_response_header = user_input['frame_id'][user_response_block_indices]
+		# embed(banner1='check indices')
 
 		COMMAND_TO_ARRAY_DICT[key] += populate_probabilities_from_count(user_response_header)
+		NUM_TIMES_COMMAND_PROMPT_SHOWN[key] = NUM_TIMES_COMMAND_PROMPT_SHOWN[key] + 1
 
-		a = user_input['axes'][user_response_block_indices].str.replace(r"\[", "")
-		a = a.str.replace(r"\]", "")
-		a = [float(i) for i in a]
-		COMMAND_TO_PROFILE_ARRAY_DICT[key].append(a)
+		# a = user_input['axes'][user_response_block_indices].str.replace(r"\[", "")
+		# a = a.str.replace(r"\]", "")
+		# a = [float(i) for i in a]
+		# COMMAND_TO_PROFILE_ARRAY_DICT[key].append(a)
 
-	for k, v in COMMAND_TO_ARRAY_DICT.items(): 
-		v = v/len(COMMAND_TO_PROFILE_ARRAY_DICT[k])
+
+	for k, v in COMMAND_TO_ARRAY_DICT.items():
+		v = v/NUM_TIMES_COMMAND_PROMPT_SHOWN[k]
 		COMMAND_TO_ARRAY_DICT[k] = v
+		COMMAND_TO_ARRAY_DICT[k] = v/np.sum(v) #sometimes normalization is not perfect, so do it again. 
 
-	keys = ['Hard Puff', 'Hard Sip', 'Soft Puff', 'Soft Sip', 'Zero Band', 'Soft-Hard Puff Deadband', 'Soft-Hard Sip Deadband']
+
+	# embed(banner1='check dict')
+
+	# keys = ['Hard Puff', 'Hard Sip', 'Soft Puff', 'Soft Sip', 'Zero Band', 'Soft-Hard Puff Deadband', 'Soft-Hard Sip Deadband']
 	# keys = ['Hard Puff', 'Hard Sip', 'Soft Puff', 'Soft Sip', 'Zero Band']
-	# keys = ['Hard Puff', 'Hard Sip', 'Soft Puff', 'Soft Sip']
-	# COMMAND_TO_ARRAY_DICT = _combine_probabilities(COMMAND_TO_ARRAY_DICT)
+	keys = ['Hard Puff', 'Hard Sip', 'Soft Puff', 'Soft Sip']
+	combination_pairs = [[0, 4], [1, 5]] #TODO replace it with dictionary mapping command strings to indices
+	COMMAND_TO_ARRAY_DICT = _combine_probabilities(COMMAND_TO_ARRAY_DICT, combination_pairs)
 	_init_p_um_given_ui(COMMAND_TO_ARRAY_DICT, keys, subject_id)
 
-	# for i in range(len(COMMAND_TO_PROFILE_ARRAY_DICT.keys())): 
+	# for i in range(len(COMMAND_TO_PROFILE_ARRAY_DICT.keys())):
 	# 	plot_response_curves(COMMAND_TO_PROFILE_ARRAY_DICT[i], i)
 	# plot_response_curves(u_hp_profile, 'Hard Puff')
 	# plot_response_curves(u_hs_profile, 'Hard Sip')
 	# plot_response_curves(u_sp_profile, 'Soft Puff')
 	# plot_response_curves(u_ss_profile, 'Soft Sip')
 
-	return u_hp, u_hs, u_sp, u_ss 
+	return u_hp, u_hs, u_sp, u_ss
 
 
 def plot_response_curves(user_input, title):
@@ -175,7 +206,7 @@ def plot_response_curves(user_input, title):
 	# plt.show(block=False)
 	# plt.pause(0.0001)
 
-# def plot_timestamps(): 
+# def plot_timestamps():
 
 if __name__ == '__main__':
 
@@ -194,4 +225,4 @@ if __name__ == '__main__':
 
 
 	# How to run:
-	# python command_issuing_distribution_preprocessing.py -path deepak -command_prompt _slash_command_prompt.csv -input _slash_joy_sip_puff.csv 
+	# python command_issuing_distribution_preprocessing.py -path deepak -command_prompt _slash_command_prompt.csv -input _slash_joy_sip_puff.csv

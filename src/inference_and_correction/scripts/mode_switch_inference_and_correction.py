@@ -61,7 +61,7 @@ class ModeSwitchInferenceAndCorrection(object):
             self.P_UM_GIVEN_UI = collections.OrderedDict()
             self._init_p_um_given_ui()
 
-        # print "P_UM_GIVEN_UI", self.P_UM_GIVEN_UI
+        print "P_UM_GIVEN_UI", self.P_UM_GIVEN_UI
 
 
         rospy.Service('/mode_switch_inference_and_correction/handle_unintended_commands', InferCorrect, self.handle_unintended_commands)
