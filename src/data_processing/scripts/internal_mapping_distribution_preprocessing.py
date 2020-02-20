@@ -40,10 +40,6 @@ class IntendedCommandGivenActionAnalysis(object):
 		self.id = args.id
 		self.data = DataParser(self.file_dir)
 
-
-
-
-
 	def get_nearest_time_stamp(self, tq, time_stamp_array):
 		'''
 		assumes that time_stamp_array is a sorted (ascending) list.
@@ -69,20 +65,6 @@ class IntendedCommandGivenActionAnalysis(object):
 		time_s_u, index_of_time_s_u = self.get_nearest_time_stamp(time_s, user_input.rosbagTimestamp)
 		time_e_u, index_of_time_e_u = self.get_nearest_time_stamp(time_e, user_input.rosbagTimestamp)
 
-		# assert time_u <= time_e 
-		# assert time_u => time_s #sanity checks
-		
-		# if index_of_time_e_u == index_of_time_s_u:  #sanity check
-		# 	user_response_block_indice = index_of_time_s_u
-
-		# elif time_s_u < time_s: 
-		# 	user_response_block_indice = [] # no user response (it's from previous)
-
-		# else: 
-		# 	user_response_block_indice = index_of_time_s_u
-
-		# return user_response_block_indice
-		
 		if index_of_time_e_u == index_of_time_s_u:  #sanity check
 			user_response_block_indice = index_of_time_s_u
 
@@ -97,17 +79,7 @@ class IntendedCommandGivenActionAnalysis(object):
 
 		return user_response_block_indice
 
-	# def ensure_ascending_time(self, time_stamp_array):  
-	# 	t_array = time_stamp_array		
-	# 	previous = time_stamp_array.rosbagTimestamp[0]
-	# 	for number in time_stamp_array.rosbagTimestamp: 
-	# 		if number < previous: 
-	# 			print 'not ascending'
-	# 			sys.exit('Times are not in ascending order. Fix data before proceeding')
-	# 		previous = number
- #    	# plt.plot(range(0,len(t_array.rosbagTimestamp)), t_array.rosbagTimestamp)
- #    	# plt.show()
-		
+	
 	def build_distributions(self): 
 
 		# create dictionary to map user input to the low level commands for the final p_ui_given_a dict
