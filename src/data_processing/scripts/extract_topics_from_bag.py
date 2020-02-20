@@ -5,16 +5,18 @@ import time
 import string
 import os #for file management make directory
 import shutil #for file management, copy file
+import ntpath
 
 #verify correct input arguments: 1 or 2
-if (len(sys.argv) > 2):
+if (len(sys.argv) > 3):
 	print "invalid number of arguments:   " + str(len(sys.argv))
 	print "should be 2: 'bag2csv.py' and 'bagName'"
 	print "or just 1  : 'bag2csv.py'"
 	sys.exit(1)
-elif (len(sys.argv) == 2):
+elif (len(sys.argv) == 3):
 	listOfBagFiles = [sys.argv[1]]
 	numberOfFiles = "1"
+	folder_name = sys.argv[2]
 	print "reading only 1 bagfile: " + str(listOfBagFiles[0])
 elif (len(sys.argv) == 1):
 	listOfBagFiles = [f for f in os.listdir(".") if f[-4:] == ".bag"]	#get list of only bag files in current dir.
@@ -35,17 +37,18 @@ for bagFile in listOfBagFiles:
 	#access bag
 	bag = rosbag.Bag(bagFile)
 	bagContents = bag.read_messages()
-	bagName = bag.filename
+	bagPathName = bag.filename
+	bagPath, bagName = ntpath.split(bagPathName)
 
 
 	#create a new directory
-	folder = string.rstrip(bagName, ".bag")
+	folder = os.path.join(os.path.abspath(os.path.join(os.getcwd(), os.pardir)), 'raw_data', folder_name)
+	
 	try:	#else already exists
 		os.makedirs(folder)
 	except:
 		pass
-	shutil.copyfile(bagName, folder + '/' + bagName)
-
+	shutil.copyfile(bagPathName, folder + '/' + bagName)
 
 	#get list of topics from the bag
 	listOfTopics = []
@@ -56,7 +59,7 @@ for bagFile in listOfBagFiles:
 
 	for topicName in listOfTopics:
 		#Create a new CSV file for each topic
-		filename = folder + '/' + string.replace(topicName, '/', '_slash_') + '.csv'
+		filename = folder + '/' + string.replace(topicName, '/', '_') + '.csv'
 		with open(filename, 'w+') as csvfile:
 			filewriter = csv.writer(csvfile, delimiter = ',')
 			firstIteration = True	#allows header row
@@ -86,3 +89,6 @@ for bagFile in listOfBagFiles:
 				filewriter.writerow(values)
 	bag.close()
 print "Done reading all " + numberOfFiles + " bag files."
+
+# example running: 
+# ./extract_topics_from_bag.py ~/.ros/deepak_command_issuing_2020-02-11-23-56-11.bag deepak_command_issuing
