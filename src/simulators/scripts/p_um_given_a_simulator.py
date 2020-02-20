@@ -32,7 +32,7 @@ class Simulator(object):
         self.called_shutdown = False
         self.shutdown_pub = rospy.Publisher('/shutdown', String, queue_size=1)
         self.trial_marker_pub = rospy.Publisher('/trial_marker', String, queue_size=1)
-        self.trial_index_pub = rospy.Publisher('/trial_index', String, queue_size=1)
+        self.trial_filename_pub = rospy.Publisher('/trial_index', String, queue_size=1)
 
         self.dim = 3
         user_vel = CartVelCmd()
@@ -66,7 +66,8 @@ class Simulator(object):
         if self.trial_info_dir_path is not None and os.path.exists(self.trial_info_dir_path):
             self.trial_list = os.listdir(self.trial_info_dir_path)
             random.shuffle(trial_list) #shuffle the trial list for each subject
-            trial_info_filename = self.trial_list[self.trial_index]
+            trial_info_filename = self.trial_list[self.trial_index] #already as the .pkl extensions since the list was created from os.listdir
+            #load up trial info
             trial_info_filepath = os.path.join(self.trial_info_dir_path, trial_info_filename)
             assert os.path.exists(trial_info_filepath) is not None
             with open(trial_info_filepath, 'rb') as fp:
@@ -75,12 +76,12 @@ class Simulator(object):
             assert 'env_params' in trial_info_dict
             self.env_params = trial_info_dict['env_params']
         else:
-            #if there are no trials in trials folder, use this config
-            trial_info_filename = 0
+            #if there are no trials in trials folder, use this trial info.
+            trial_info_filename = 'default.pkl' #dummy filename for publishing
             self.env_params = dict()
             self.env_params['robot_position'] = (VIEWPORT_WS/2, VIEWPORT_HS/2) #robot position will be in the center
             self.env_params['robot_orientation'] = 0.0 #robot orientation will always be 0.0
-            self.env_params['start_direction'] = StartDirection.X #which direction is the path pointing
+            self.env_params['start_direction'] = StartDirection.X #which direction is the path pointing. 
             self.env_params['is_rotation'] = False #whether this trial has rotation as opposed to linear motion
             self.env_params['is_mode_switch'] = False #whether this trial is testing hard puffs or sips.
             start_direction = self.env_params['start_direction']
@@ -101,6 +102,7 @@ class Simulator(object):
             else:
                 self.env_params['mode_config'] = None 
 
+        #Set the proper starting mode in the teleop node using the set mode service. 
         rospy.loginfo("Waiting for teleop_node ")
         rospy.wait_for_service("/teleop_node/set_mode")
         rospy.loginfo("teleop_node node service found! ")
@@ -110,20 +112,23 @@ class Simulator(object):
         self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params['allowed_mode_index']]
         status = self.set_mode_srv(self.set_mode_request)
 
+        #instantiate the environment
         self.env = PUmGivenAEnv(self.env_params)
-
         self.env.reset()
         self.env.render()
+
         self.trial_marker_pub.publish('start')
-        self.trial_index_pub.publish(trial_info_filename)
+        self.trial_filename_pub.publish(trial_info_filename)
         self.env.viewer.window.on_key_press = self.key_press
-        self.max_time = 10 #max time for showing each prompt
+        self.max_time = 10 # TODO change this for controlling max time for showing each prompt
 
         r = rospy.Rate(100)
         self.trial_start_time = time.time()
         while not rospy.is_shutdown():
             if (time.time() - self.trial_start_time) > self.max_time:
                 print("Move to NEXT TRIAL")
+                #potentially render a black screen between trials?
+                #self.env.render_black() #myabe pass an arg to self.env.render(show_blackout=True)
                 time.sleep(2.0)
                 self.trial_index += 1
                 if self.trial_index == len(self.trial_list):
@@ -145,13 +150,15 @@ class Simulator(object):
                 self.env.reset()
                 self.env.render()
                 self.trial_marker_pub.publish('start')
-                self.trial_index_pub.publish(trial_info_filename)
+                self.trial_filename_pub.publish(trial_info_filename)
                 self.trial_start_time = time.time()
                 self.restart = False
 
             if self.restart:
                 self.trial_marker_pub.publish('restart')
                 self.restart = False
+                #potentially render a black screen between trials?
+                #self.env.render_black() #myabe pass an arg to self.env.render(show_blackout=True)
                 time.sleep(2.0)
                 self.trial_index += 1
                 if self.trial_index == len(self.trial_list):
@@ -173,12 +180,11 @@ class Simulator(object):
                 self.env.reset()
                 self.env.render()
                 self.trial_marker_pub.publish('start')
-                self.trial_index_pub.publish(trial_info_filename)
+                self.trial_filename_pub.publish(trial_info_filename)
                 self.trial_start_time = time.time()
                 self.restart = False
 
             self.env.step(self.input_action)
-
 
             if self.terminate:
                 self.shutdown_hook('Session terminated')
