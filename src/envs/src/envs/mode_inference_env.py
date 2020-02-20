@@ -294,7 +294,7 @@ class ModeInferenceEnv(object):
                     self.OPTIMAL_NEXT_STATE_DICT[s] = (self.LOCATIONS[min(self.LOCATIONS.index(s[0])+1, self.num_locations)], s[1], s[2])
             elif self.LOCATIONS.index(s[0]) == self.location_of_turn:
                 if s[2] != 't':
-                    if s[1] == self.goal_orientation:
+                    if s[1] != self.goal_orientation:
                         self.OPTIMAL_NEXT_STATE_DICT[s] = (s[0], s[1], 't')
                     else:
                         if s[2] == self.MODES_MOTION_ALLOWED[s[0]][0]:
