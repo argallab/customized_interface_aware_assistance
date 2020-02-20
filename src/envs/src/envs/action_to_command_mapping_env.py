@@ -69,7 +69,7 @@ class ActionEnv(object):
 
     def initialize_publishers(self, rostopic):
         # for ros bag purposes (not being used for any code logic)
-        self.action_pub = rospy.Publisher(rostopic, Command, queue_size=1)
+        # self.action_pub = rospy.Publisher(rostopic, Command, queue_size=1)
         # To do: clean publishers: 
         self.sim_state = rospy.Publisher('sim_state', String, queue_size=1)
         
@@ -130,6 +130,8 @@ class ActionEnv(object):
 
     def step(self): 
 
+        bool_publish = False 
+
         if self.start_prompt: 
             if self.display_start_countdown: 
                 self.display_timer = False 
@@ -153,7 +155,8 @@ class ActionEnv(object):
 
                 if self.ready_for_new_prompt: 
                     self.img_prompt = self.action_prompts[self.prompt_ind]
-                    self.publish_action(self.img_prompt)
+                    # self.publish_action(self.img_prompt)
+                    bool_publish = True
                     self._set_image_path()
                     self.ready_for_new_prompt = False
                     self.ready_for_user = True 
@@ -163,10 +166,13 @@ class ActionEnv(object):
 
                 if self.clear_for_next_prompt:                     
                     # to do: make  not hardcoded
-                    if (time.time() - self.te>= 0.25): 
+                    if (time.time() - self.te>= 0.4): 
                         self.prompt_ind += 1
                         self.ready_for_new_prompt = True
                         self.clear_for_next_prompt = False 
+                        self.img_prompt = ''
+                        # self.publish_action(self.img_prompt)
+                        bool_publish = True
                         if self.prompt_ind >= len(self.action_prompts): 
                             self.img_prompt = ''
                             self.start_prompt = False                     
@@ -180,10 +186,10 @@ class ActionEnv(object):
                     self.clear_for_next_prompt = True
                     self.ready_for_user = False 
                     self.te = time.time()
-                    self.msg_prompt = ''
-                    self.img_prompt = ''
+                    self.msg_prompt = ''                    
                     self.display_timer = False 
-                    self.publish_action(self.img_prompt)
+
+                    
 
         if self.start_training: 
             self.msg_prompt = ''
@@ -191,6 +197,7 @@ class ActionEnv(object):
             self.start_timer = False 
             self.training_refresher() 
 
+        return(bool_publish, self.img_prompt)
 
     def reset(self): 
         if 'action_prompts' in self.env_params.keys(): 
@@ -226,9 +233,7 @@ class ActionEnv(object):
                 self.ready_for_user = False 
                 self.te = time.time()
                 self.msg_prompt = ''
-                self.img_prompt = ''
                 self.display_timer = False
-                self.publish_action(self.img_prompt)
 
         if 'next' in self.env_params.keys(): 
             if self.start_training: 

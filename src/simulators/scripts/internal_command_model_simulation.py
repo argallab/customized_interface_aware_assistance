@@ -47,6 +47,7 @@ class ActionCommandModelling(object):
         self.initialize_publishers()
         self.key_input_msg = Command()
         self.user_response_msg = Command()
+        self.action_msg = Command()
 
         self.generate_action_list()
 
@@ -56,7 +57,9 @@ class ActionCommandModelling(object):
         self.env.viewer.window.on_key_press = self.key_press_callback
 
         while not rospy.is_shutdown(): 
-            self.env.step()
+            b, msg = self.env.step()
+            if b: 
+                self.publish_action(msg)
             self.env.render()
             r.sleep()
 
@@ -75,6 +78,7 @@ class ActionCommandModelling(object):
     def initialize_publishers(self): 
         self.user_input_pub = rospy.Publisher('keyboard_entry', Command, queue_size = 1)
         self.user_response_pub = rospy.Publisher('user_response', Command, queue_size = 1)
+        self.action_pub = rospy.Publisher('action_prompt', Command, queue_size=1)
 
     def publish_keyboard_input(self, msg): 
         self.key_input_msg.header.stamp = rospy.Time.now()
@@ -85,6 +89,11 @@ class ActionCommandModelling(object):
         self.user_response_msg.header.stamp = rospy.Time.now()
         self.user_response_msg.command = msg
         self.user_response_pub.publish(self.user_response_msg)
+
+    def publish_action(self, msg):
+        self.action_msg.header.stamp = rospy.Time.now()
+        self.action_msg.command = msg
+        self.action_pub.publish(self.action_msg)
 
     def key_press_callback(self, k, mode): 
 

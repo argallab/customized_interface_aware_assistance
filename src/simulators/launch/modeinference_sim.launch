@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 
 <launch>
-  <arg name="subject_id" default="mahdieh" doc="Unique string identifier for the subject"/>
-	<arg name="assistance_block" default="no_assistance" doc="Assistance type for the testing block. For loading up the appropriate trial block file"/>
+  <arg name="subject_id" default="test" doc="Unique string identifier for the subject"/>
+	<arg name="assistance_block" default="no" doc="Assistance type for the testing block. For loading up the appropriate trial block file"/>
   <arg name="block_id" default="0" doc="block_id for the assistance type for the testing block"/>
   <arg name="training" default="0" doc="bool string indicating whether the simulator is run in training mode or not"/>
 
