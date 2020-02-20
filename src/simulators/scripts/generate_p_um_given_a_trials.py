@@ -15,7 +15,8 @@ from IPython import embed
 ROBOT_RADIUS_S = ROBOT_RADIUS/SCALE
 GOAL_RADIUS_S = GOAL_RADIUS/SCALE
 
-ACTIONS = ['UP', 'DOWN', 'RIGHT', 'LEFT', 'COUNTERCLOCKWISE', 'CLOCKWISE', 'MODE_R', 'MODE_L']
+ACTIONS = ['UP', 'DOWN', 'RIGHT', 'LEFT', 'COUNTERCLOCKWISE', 'CLOCKWISE', 'xy', 'xt', 'yx', 'yt', 'tx', 'ty']
+MODE_TRANSITIONS = ['xy', 'xt', 'yx', 'yt', 'tx', 'ty']
 
 START_DIRECTION = {'UP': [StartDirection.Y],
                    'DOWN': [StartDirection.Y],
@@ -40,23 +41,15 @@ def generate_p_um_given_a_trials(args):
         os.makedirs(metadata_dir)
 
     index = 0
-
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--trial_dir', dest='trial_dir',default=os.path.join(os.getcwd(), 'p_um_given_a_trial_dir'), help="The directory where trials will be stored are")
-    parser.add_argument('--metadata_dir', dest='metadata_dir',default=os.path.join(os.getcwd(), 'metadata_dir'), help="The directory where metadata of trials will be stored")
-    parser.add_argument('--num_reps_per_condition', action='store', type=int, default=3, help="number of repetetions for single combination of conditions ")
-    args = parser.parse_args()
-    generate_experiment_trials(args)
-
     for a in ACTIONS:
         trial_info_dict = collections.OrderedDict()
         trial_info_dict['env_params'] = collections.OrderedDict()
         trial_info_dict['env_params']['robot_position'] = (VIEWPORT_WS/2, VIEWPORT_HS/2)
         trial_info_dict['env_params']['robot_orientation'] = 0.0
         trial_info_dict['env_params']['start_direction'] = random.choice(START_DIRECTION[a])
+        trial_info_dict['env_params']['is_mode_switch'] = False
+        trial_info_dict['env_params']['mode_config'] = None
+
         if a == 'COUNTERCLOCKWISE' or a == 'CLOCKWISE':
             trial_info_dict['env_params']['is_rotation'] = True
             trial_info_dict['env_params']['allowed_mode_index'] = 't'
@@ -67,10 +60,26 @@ if __name__ == '__main__':
             trial_info_dict['env_params']['allowed_mode_index'] = ALLOWED_MODE_INDEX_DICT[trial_info_dict['env_params']['start_direction']]
             trial_info_dict['env_params']['goal_orientation'] = 0.0
 
-        if a == 'MODE_L' or a =='MODE_R':
+        if a in MODE_TRANSITIONS:
             trial_info_dict['env_params']['is_mode_switch'] = True
-        else:
-            trial_info_dict['env_params']['is_mode_switch'] = False
-            trial_info_dict['env_params']['mode_switch_config'] = None
+            mode_config = collections.OrderedDict()
+            mode_config['start_mode'] = a[0]
+            mode_config['target_mode'] = a[1]
+            trial_info_dict['env_params']['mode_config'] = mode_config
 
-        trial_info_dict['env_params']
+        for j in range(num_reps_per_condition):
+            with open(os.path.join(trial_dir, str(index) + '.pkl'), 'wb') as fp:
+                pickle.dump(trial_info_dict, fp)
+            index += 1
+            print 'Trial Index', index
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--trial_dir', dest='trial_dir',default=os.path.join(os.getcwd(), 'p_um_given_a_trial_dir'), help="The directory where trials will be stored are")
+    parser.add_argument('--metadata_dir', dest='metadata_dir',default=os.path.join(os.getcwd(), 'metadata_dir'), help="The directory where metadata of trials will be stored")
+    parser.add_argument('--num_reps_per_condition', action='store', type=int, default=4, help="number of repetetions for single combination of conditions ")
+    args = parser.parse_args()
+    generate_experiment_trials(args)
+
+
