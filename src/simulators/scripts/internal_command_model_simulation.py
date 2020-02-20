@@ -106,23 +106,32 @@ class ActionCommandModelling(object):
 
         if k==key._1: 
             self.env.env_params['next_prompt'] = True
-            self.publish_user_response('1')
-            self.env._get_user_input()
+            # self.publish_user_response('1')
+            b = self.env._get_user_input() # if user was allowed to give a response (i.e. during prompt)
+            if b: 
+                self.publish_user_response('1')
 
         if k==key._2:
             self.env.env_params['next_prompt'] = True
-            self.publish_user_response('2')
-            self.env._get_user_input()
+            # self.publish_user_response('2')
+            b = self.env._get_user_input()
+            if b: 
+                self.publish_user_response('2')
+
 
         if k==key._3:
             self.env.env_params['next_prompt'] = True
-            self.publish_user_response('3')
-            self.env._get_user_input()
+            # self.publish_user_response('3')
+            b = self.env._get_user_input()
+            if b: 
+                self.publish_user_response('3')
 
         if k==key._4: 
             self.env.env_params['next_prompt'] = True
-            self.publish_user_response('4')
-            self.env._get_user_input()
+            # self.publish_user_response('4')
+            b = self.env._get_user_input()
+            if b: 
+                self.publish_user_response('4')
 
         if k==key.LEFT: 
             self.env.env_params['back'] = True
