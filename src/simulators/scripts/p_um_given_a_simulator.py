@@ -23,7 +23,6 @@ from utils import ROBOT_RADIUS, GOAL_RADIUS, GOAL_SHAPES, GOAL_COLORS, PI, HUMAN
 from utils import RGOrient, StartDirection, AssistanceType
 from IPython import embed
 
-
 class Simulator(object):
     def __init__(self, subject_id):
         super(Simulator, self).__init__()
@@ -65,7 +64,7 @@ class Simulator(object):
 
         if self.trial_info_dir_path is not None and os.path.exists(self.trial_info_dir_path):
             self.trial_list = os.listdir(self.trial_info_dir_path)
-            random.shuffle(trial_list) #shuffle the trial list for each subject
+            random.shuffle(self.trial_list) #shuffle the trial list for each subject
             trial_info_filename = self.trial_list[self.trial_index] #already as the .pkl extensions since the list was created from os.listdir
             #load up trial info
             trial_info_filepath = os.path.join(self.trial_info_dir_path, trial_info_filename)
@@ -75,6 +74,7 @@ class Simulator(object):
 
             assert 'env_params' in trial_info_dict
             self.env_params = trial_info_dict['env_params']
+
         else:
             #if there are no trials in trials folder, use this trial info.
             trial_info_filename = 'default.pkl' #dummy filename for publishing
