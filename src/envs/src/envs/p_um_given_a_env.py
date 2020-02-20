@@ -260,7 +260,7 @@ class PUmGivenAEnv(object):
             self.path_points[i][0] = self.waypoints[i] + (r*math.cos(left_edge_angle), r*math.sin(left_edge_angle))
             self.path_points[i][1] = self.waypoints[i] + (r*math.cos(right_edge_angle), r*math.sin(right_edge_angle))
 
-    def _generate_way_points(self):
+    def _generate_way_points(self): # initialize waypoints for each trial (two points, start and end)
         self.waypoints[0] = self.robot_position
         self.waypoints[-1] = self.goal_position
 
@@ -273,16 +273,16 @@ class PUmGivenAEnv(object):
     def reset(self):
         self._destroy()
 
-        self.robot_position = self.env_params['robot_position']
-        self.robot_orientation = self.env_params['robot_orientation']
+        self.robot_position = self.env_params['robot_position'] # starting position
+        self.robot_orientation = self.env_params['robot_orientation'] # starting orientation
         self.goal_position = self.env_params['goal_position']
         self.goal_orientation = self.env_params['goal_orientation']
-        self.is_rotation = self.env_params['is_rotation']
-        self.is_mode_switch = self.env_params['is_mode_switch']
-        self.start_direction = self.env_params['start_direction']
-        self.allowed_mode_index = self.env_params['allowed_mode_index']
-        self.mode_config = self.env_params['mode_config']
-        if self.is_mode_switch:
+        self.is_rotation = self.env_params['is_rotation'] # testing for rotation vs linear motion
+        self.is_mode_switch = self.env_params['is_mode_switch'] # boolean indicates whether about changing modes or moving robot, if true, bypass regular rendering
+        self.start_direction = self.env_params['start_direction'] # orientation of path in y or x (even if rotation, it'll be either x or y but will rotate in place) 
+        self.allowed_mode_index = self.env_params['allowed_mode_index'] # (whcih mode is active) if have vertical segment, only mode in which motion is allowed is y, etc. 
+        self.mode_config = self.env_params['mode_config'] # only useful if trial is testing for mode switch 
+        if self.is_mode_switch: # if mode switch trial, specify start and target mode
             self.start_mode = self.mode_config['start_mode']
             self.current_mode = self.start_mode
             self.target_mode = self.mode_config['target_mode']
@@ -291,17 +291,17 @@ class PUmGivenAEnv(object):
             self.current_mode = None
             self.target_mode = None
 
-        self.num_locations = 2
-        self.waypoints = np.zeros((self.num_locations, 2)) # above and below the robot or right and left of the robot
-        self.path_points = np.zeros((self.num_locations,2,2)) #points to draw the outline of the path.
+        self.num_locations = 2 # one segment of path, location refers to start and end of segment
+        self.waypoints = np.zeros((self.num_locations, 2)) # (start and end position of segment ) above and below the robot or right and left of the robot
+        self.path_points = np.zeros((self.num_locations,2,2)) # (outer border of path, just for visualization purposes) points to draw the outline of the path.
         
         self.LOCATIONS = ['p' +str(i) for i in range(self.num_locations)] #create location id. p0, p1, p2....pN
         self.DIMENSIONS = ['x', 'y', 't'] #set of dimensions or modes
         self.DIMENSION_INDICES = np.array([0,1,2]) #set of mode indices (needed for look up)
         
-        self._generate_way_points()
-        self._generate_path()
-        self._init_allowed_directions_of_motion()
+        self._generate_way_points() # generate waypoints (start and edn)
+        self._generate_path() # generate outer border 
+        self._init_allowed_directions_of_motion() # c
         
 
         self.robot = RobotSE2(self.world, position=self.robot_position, orientation=self.robot_orientation, robot_color=ROBOT_COLOR_WHEN_COMMAND_REQUIRED, radius=ROBOT_RADIUS/SCALE)

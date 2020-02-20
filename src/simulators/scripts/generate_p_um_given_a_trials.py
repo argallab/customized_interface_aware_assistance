@@ -23,11 +23,9 @@ START_DIRECTION = {'UP': [StartDirection.Y],
                    'RIGHT':[StartDirection.X],
                    'LEFT': [StartDirection.X],
                    'COUNTERCLOCKWISE': [StartDirection.X, StartDirection.Y],
-                   'CLOCKWISE': [StartDirection.X, StartDirection.Y],
-                   'MODE_R': [StartDirection.X], #these last two are inconsequential
-                   'MODE_L': [StartDirection.X]}
+                   'CLOCKWISE': [StartDirection.X, StartDirection.Y]}
 
-ALLOWED_MODE_INDEX_DICT = {StartDirection.X: 'x', StartDirection.Y, 'y'}
+ALLOWED_MODE_INDEX_DICT = {StartDirection.X: 'x', StartDirection.Y: 'y'}
 ANGLES = {'COUNTERCLOCKWISE': PI/2, 'CLOCKWISE': -PI/2}
 
 def generate_p_um_given_a_trials(args):
@@ -41,32 +39,37 @@ def generate_p_um_given_a_trials(args):
         os.makedirs(metadata_dir)
 
     index = 0
-    for a in ACTIONS:#ACTIONS consist of all 12 possible actions. 
+    for a in ACTIONS:#ACTIONS consist of all 12 possible actions.
+
         trial_info_dict = collections.OrderedDict()
         trial_info_dict['env_params'] = collections.OrderedDict()
         trial_info_dict['env_params']['robot_position'] = (VIEWPORT_WS/2, VIEWPORT_HS/2)
         trial_info_dict['env_params']['robot_orientation'] = 0.0
-        trial_info_dict['env_params']['start_direction'] = random.choice(START_DIRECTION[a])
-        trial_info_dict['env_params']['is_mode_switch'] = False
-        trial_info_dict['env_params']['mode_config'] = None
 
-        if a == 'COUNTERCLOCKWISE' or a == 'CLOCKWISE': #turning trials
-            trial_info_dict['env_params']['is_rotation'] = True
-            trial_info_dict['env_params']['allowed_mode_index'] = 't'
-            trial_info_dict['env_params']['goal_orientation']
-            trial_info_dict['env_params']['goal_orientation'] = ANGLES[a]
-        else:
-            #non turning trials
-            trial_info_dict['env_params']['is_rotation'] = False
-            trial_info_dict['env_params']['allowed_mode_index'] = ALLOWED_MODE_INDEX_DICT[trial_info_dict['env_params']['start_direction']]
-            trial_info_dict['env_params']['goal_orientation'] = 0.0
-
-        if a in MODE_TRANSITIONS: #mode switch 
+        if a in MODE_TRANSITIONS:  # mode switch trial
             trial_info_dict['env_params']['is_mode_switch'] = True
+            trial_info_dict['env_params']['start_direction'] = None # mode transition, so start direction doesn't matter
             mode_config = collections.OrderedDict()
             mode_config['start_mode'] = a[0] #the first mode from the string. For example 'x' in 'xy' or 't' in tx'
             mode_config['target_mode'] = a[1] #the second mode from the string. For example 'y' in 'xy' or 'x' in tx'
             trial_info_dict['env_params']['mode_config'] = mode_config
+           
+        else: # motion trial
+            trial_info_dict['env_params']['start_direction'] = random.choice(START_DIRECTION[a])            
+            trial_info_dict['env_params']['is_mode_switch'] = False
+            trial_info_dict['env_params']['mode_config'] = None
+
+            if a == 'COUNTERCLOCKWISE' or a == 'CLOCKWISE': #turning trials
+                trial_info_dict['env_params']['is_rotation'] = True
+                trial_info_dict['env_params']['allowed_mode_index'] = 't'
+                # trial_info_dict['env_params']['goal_orientation']
+                trial_info_dict['env_params']['goal_orientation'] = ANGLES[a]
+            else:
+                #non turning trials
+                trial_info_dict['env_params']['is_rotation'] = False
+                trial_info_dict['env_params']['allowed_mode_index'] = ALLOWED_MODE_INDEX_DICT[trial_info_dict['env_params']['start_direction']]
+                trial_info_dict['env_params']['goal_orientation'] = 0.0
+
 
         for j in range(num_reps_per_condition):
             with open(os.path.join(trial_dir, str(index) + '.pkl'), 'wb') as fp:
@@ -81,6 +84,6 @@ if __name__ == '__main__':
     parser.add_argument('--metadata_dir', dest='metadata_dir',default=os.path.join(os.getcwd(), 'metadata_dir'), help="The directory where metadata of trials will be stored")
     parser.add_argument('--num_reps_per_condition', action='store', type=int, default=4, help="number of repetetions for single combination of conditions ")
     args = parser.parse_args()
-    generate_experiment_trials(args)
+    generate_p_um_given_a_trials(args)
 
 
