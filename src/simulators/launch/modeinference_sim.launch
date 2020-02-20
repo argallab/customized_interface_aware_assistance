@@ -15,7 +15,9 @@
   <arg name="PS3" default="false" doc="Set to false if don't want to use ps3 controller."/>
 
   <node pkg="simulators" output="screen" type="mode_inference_simulator.py" name="mode_inference_simulator"  args="$(arg subject_id) $(arg assistance_block) $(arg block_id) $(arg training)"/>
+
   <node pkg="inference_and_correction" output="screen" type="mode_switch_inference_and_correction.py" name="mode_switch_inference_and_correction"  args="$(arg subject_id)"/>
+  
   <include file="$(find teleop_nodes)/launch/teleop_nodes.launch">
     <arg name="JOY" value="$(arg JOY)"/>
     <arg name="HA" value="$(arg HA)"/>

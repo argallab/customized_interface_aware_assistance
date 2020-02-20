@@ -34,16 +34,16 @@ class PUmGivenAEnv(object):
         self.env_params = env_params
         assert self.env_params is not None
 
-        assert 'robot_position' in self.env_params
-        assert 'goal_position' in self.env_params
-        assert 'robot_orientation' in self.env_params
-        assert 'goal_orientation' in self.env_params
-        assert 'start_direction' in self.env_params
-        assert 'is_rotation' in self.env_params
-        assert 'is_mode_switch' in self.env_params
+        assert 'robot_position' in self.env_params      # starting position of robot
+        assert 'goal_position' in self.env_params       # goal position 
+        assert 'robot_orientation' in self.env_params   # starting orientation of robot
+        assert 'goal_orientation' in self.env_params    # goal orientation
+        assert 'start_direction' in self.env_params     # orientation of path in y or x (even if rotation, it'll be either x or y but will rotate in place) 
+        assert 'is_rotation' in self.env_params         # whether testing for rotation vs linear motion
+        assert 'is_mode_switch' in self.env_params      # boolean indicates whether about changing modes or moving robot, if true, bypass regular rendering
 
         self.WAYPOINTS_TO_LOCATION_DICT = None
-        self.waypoints = None
+        self.waypoints = None                          
         self.robot = None
         self.path_points = None
         self.robot_position = None
@@ -244,8 +244,10 @@ class PUmGivenAEnv(object):
         return self.viewer.render(False)
 
     def _init_allowed_directions_of_motion(self):
+        embed()
         #depending on direction of motion and relative position of the goal with respect to the robot make sure only moves in the correct direction
-        pass
+        # for i, (loc_p, loc_n) in enumerate(zip(self.LOCATIONS[:-1], self.LOCATIONS[1:])): 
+        #     diff_vector = np.array(self.WAYPOINTS_TO_LOCATION_DICT)
 
     def _generate_path(self):
         if self.start_direction == StartDirection.X:
@@ -301,15 +303,19 @@ class PUmGivenAEnv(object):
         
         self._generate_way_points() # generate waypoints (start and edn)
         self._generate_path() # generate outer border 
-        self._init_allowed_directions_of_motion() # c
+        self._init_allowed_directions_of_motion() # for each trial mode/dimension there is a proper direction in which the velocity should be
         
 
         self.robot = RobotSE2(self.world, position=self.robot_position, orientation=self.robot_orientation, robot_color=ROBOT_COLOR_WHEN_COMMAND_REQUIRED, radius=ROBOT_RADIUS/SCALE)
 
     def step(self, input_action):
         assert 'human' in input_action.keys()
-        user_vel = np.array([input_action['human'].velocity.data[0], input_action['human'].velocity.data[1], input_action['human'].velocity.data[2]]) #numpyify the velocity data. note the negative sign on the 3rd component.To account for proper counterclockwise motion
-        user_vel[np.setdiff1d(self.DIMENSION_INDICES, self.allowed_mode_index)] = 0.0
+        user_vel = np.array([input_action['human'].velocity.data[0], input_action['human'].velocity.data[1], input_action['human'].velocity.data[2]]) #numpyify the velocity data. 
+        user_vel[np.setdiff1d(self.DIMENSION_INDICES, self.allowed_mode_index)] = 0.0 #zero out all velocities except the ones for the allowed mode
+        
+        # check if the direction of user_vel is correct as well. for each location in the allowed mode/dimension there is a proper direction in which the velocity should be
+
+
         self.robot.robot.linearVelocity = b2Vec2(user_vel[0], user_vel[1]) #update robot velocity
-        self.robot.robot.angularVelocity = -user_vel[2]
+        self.robot.robot.angularVelocity = -user_vel[2] # note the negative sign on the 3rd component to account for proper counterclockwise motion
         self.world.Step(1.0/FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS) #call box2D step function

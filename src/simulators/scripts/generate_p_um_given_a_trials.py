@@ -15,6 +15,9 @@ from IPython import embed
 ROBOT_RADIUS_S = ROBOT_RADIUS/SCALE
 GOAL_RADIUS_S = GOAL_RADIUS/SCALE
 
+CENTER_X = VIEWPORT_WS/2
+CENTER_Y = VIEWPORT_HS/2
+
 ACTIONS = ['UP', 'DOWN', 'RIGHT', 'LEFT', 'COUNTERCLOCKWISE', 'CLOCKWISE', 'xy', 'xt', 'yx', 'yt', 'tx', 'ty']
 MODE_TRANSITIONS = ['xy', 'xt', 'yx', 'yt', 'tx', 'ty']
 
@@ -24,6 +27,13 @@ START_DIRECTION = {'UP': [StartDirection.Y],
                    'LEFT': [StartDirection.X],
                    'COUNTERCLOCKWISE': [StartDirection.X, StartDirection.Y],
                    'CLOCKWISE': [StartDirection.X, StartDirection.Y]}
+
+GOAL_CONFIGURATIONS = {'UP': [CENTER_X, CENTER_Y + CENTER_Y/2],
+                   'DOWN': [CENTER_X, CENTER_Y - CENTER_Y/2],
+                   'RIGHT':[CENTER_X + CENTER_X/2, CENTER_Y],
+                   'LEFT': [CENTER_X - CENTER_X/2, CENTER_Y], 
+                   'CLOCKWISE': [CENTER_X, CENTER_Y],
+                   'COUNTERCLOCKWISE': [CENTER_X, CENTER_Y]}
 
 ALLOWED_MODE_INDEX_DICT = {StartDirection.X: 'x', StartDirection.Y: 'y'}
 ANGLES = {'COUNTERCLOCKWISE': PI/2, 'CLOCKWISE': -PI/2}
@@ -48,28 +58,31 @@ def generate_p_um_given_a_trials(args):
 
         if a in MODE_TRANSITIONS:  # mode switch trial
             trial_info_dict['env_params']['is_mode_switch'] = True
-            trial_info_dict['env_params']['start_direction'] = None # mode transition, so start direction doesn't matter
+            trial_info_dict['env_params']['start_direction'] = random.choice(list(START_DIRECTION.values()))[0] # mode transition, so start direction doesn't matter
             mode_config = collections.OrderedDict()
             mode_config['start_mode'] = a[0] #the first mode from the string. For example 'x' in 'xy' or 't' in tx'
             mode_config['target_mode'] = a[1] #the second mode from the string. For example 'y' in 'xy' or 'x' in tx'
             trial_info_dict['env_params']['mode_config'] = mode_config
+            # trial_info_dict['env_params']['goal_position'] =  None # doesn't matter for mode switch, has it's target mode
            
         else: # motion trial
-            trial_info_dict['env_params']['start_direction'] = random.choice(START_DIRECTION[a])            
             trial_info_dict['env_params']['is_mode_switch'] = False
+            trial_info_dict['env_params']['start_direction'] = random.choice(START_DIRECTION[a])  
             trial_info_dict['env_params']['mode_config'] = None
+            trial_info_dict['env_params']['goal_position'] =  GOAL_CONFIGURATIONS[a]
+            
+        if a == 'COUNTERCLOCKWISE' or a == 'CLOCKWISE': #turning trials
+            trial_info_dict['env_params']['is_rotation'] = True
+            trial_info_dict['env_params']['allowed_mode_index'] = 't'
+            trial_info_dict['env_params']['goal_orientation'] = ANGLES[a]
 
-            if a == 'COUNTERCLOCKWISE' or a == 'CLOCKWISE': #turning trials
-                trial_info_dict['env_params']['is_rotation'] = True
-                trial_info_dict['env_params']['allowed_mode_index'] = 't'
-                # trial_info_dict['env_params']['goal_orientation']
-                trial_info_dict['env_params']['goal_orientation'] = ANGLES[a]
-            else:
-                #non turning trials
-                trial_info_dict['env_params']['is_rotation'] = False
-                trial_info_dict['env_params']['allowed_mode_index'] = ALLOWED_MODE_INDEX_DICT[trial_info_dict['env_params']['start_direction']]
-                trial_info_dict['env_params']['goal_orientation'] = 0.0
-
+        else:
+            #non turning trials
+            trial_info_dict['env_params']['is_rotation'] = False
+            trial_info_dict['env_params']['allowed_mode_index'] = ALLOWED_MODE_INDEX_DICT[trial_info_dict['env_params']['start_direction']]
+            trial_info_dict['env_params']['goal_orientation'] = 0.0
+            
+        
 
         for j in range(num_reps_per_condition):
             with open(os.path.join(trial_dir, str(index) + '.pkl'), 'wb') as fp:
