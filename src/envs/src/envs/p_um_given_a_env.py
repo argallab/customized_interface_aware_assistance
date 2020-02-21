@@ -233,6 +233,7 @@ class PUmGivenAEnv(object):
             self._render_waypoints()
             #render path
             self._render_path()
+
         else:
             self._render_mode_display()
             self._render_mode_display_text()
@@ -240,14 +241,22 @@ class PUmGivenAEnv(object):
         # self._render_mode_display()
         #render dimension text
         # self._render_mode_display_text()
-
+ 
         return self.viewer.render(False)
 
+    
+
     def _init_allowed_directions_of_motion(self):
-        embed()
         #depending on direction of motion and relative position of the goal with respect to the robot make sure only moves in the correct direction
-        # for i, (loc_p, loc_n) in enumerate(zip(self.LOCATIONS[:-1], self.LOCATIONS[1:])): 
-        #     diff_vector = np.array(self.WAYPOINTS_TO_LOCATION_DICT)
+        embed()   
+        if self.allowed_mode_index == 't': 
+            allowed_direction_of_motion = -1*get_sign_of_number(self.goal_orientation) # opposite sign for pyglet positive motion
+        else: 
+            allowed_direction_of_motion = get_sign_of_number(self.goal_position[self.start_direction.value ]-self.robot_position[self.start_direction.value ])
+
+        return allowed_direction_of_motion
+
+
 
     def _generate_path(self):
         if self.start_direction == StartDirection.X:
@@ -303,7 +312,7 @@ class PUmGivenAEnv(object):
         
         self._generate_way_points() # generate waypoints (start and edn)
         self._generate_path() # generate outer border 
-        self._init_allowed_directions_of_motion() # for each trial mode/dimension there is a proper direction in which the velocity should be
+        self.allowed_direction_of_motion = self._init_allowed_directions_of_motion() # for each trial mode/dimension there is a proper direction in which the velocity should be
         
 
         self.robot = RobotSE2(self.world, position=self.robot_position, orientation=self.robot_orientation, robot_color=ROBOT_COLOR_WHEN_COMMAND_REQUIRED, radius=ROBOT_RADIUS/SCALE)
@@ -311,10 +320,15 @@ class PUmGivenAEnv(object):
     def step(self, input_action):
         assert 'human' in input_action.keys()
         user_vel = np.array([input_action['human'].velocity.data[0], input_action['human'].velocity.data[1], input_action['human'].velocity.data[2]]) #numpyify the velocity data. 
-        user_vel[np.setdiff1d(self.DIMENSION_INDICES, self.allowed_mode_index)] = 0.0 #zero out all velocities except the ones for the allowed mode
-        
-        # check if the direction of user_vel is correct as well. for each location in the allowed mode/dimension there is a proper direction in which the velocity should be
+        allowed_mode_index = DIM_TO_MODE_INDEX[self.allowed_mode_index] #0,1,2 #get the mode index of the allowed mode of motion
+        user_vel[np.setdiff1d(self.DIMENSION_INDICES, allowed_mode_index)] = 0.0 #zero out all velocities except the ones for the allowed mode
+        print user_vel
 
+        
+        # allowed_direction_of_motion = self._init_allowed_directions_of_motion()
+        # only allowing velocities in allowed mode. now also check if the direction of user_vel is correct as well.
+        if get_sign_of_number(user_vel[allowed_mode_index]) != self.allowed_direction_of_motion: 
+            user_vel[allowed_mode_index] = 0.0  # if not, zero that velocity
 
         self.robot.robot.linearVelocity = b2Vec2(user_vel[0], user_vel[1]) #update robot velocity
         self.robot.robot.angularVelocity = -user_vel[2] # note the negative sign on the 3rd component to account for proper counterclockwise motion
