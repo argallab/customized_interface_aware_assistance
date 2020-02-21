@@ -124,7 +124,7 @@ class Simulator(object):
         self.publish_action(self.env_params['action'])
         self.trial_filename_pub.publish(trial_info_filename)
         self.env.viewer.window.on_key_press = self.key_press
-        self.max_time = 10 # TODO change this for controlling max time for showing each prompt
+        self.max_time = 5 # TODO change this for controlling max time for showing each prompt
 
         r = rospy.Rate(100)
         self.trial_start_time = time.time()
@@ -133,9 +133,11 @@ class Simulator(object):
             if (time.time() - self.trial_start_time) > self.max_time or is_done:
                 print("Move to NEXT TRIAL")
                 self.trial_marker_pub.publish('end')
-                #potentially render a black screen between trials?
-                self.env.render_clear() #myabe pass an arg to self.env.render(show_blackout=True)
-                time.sleep(2.0)
+                #clear screen
+                if self.env_params['is_mode_switch']: 
+                    time.sleep(0.5)
+                self.env.render_clear('Loading next trial...')
+                time.sleep(1.0)
                 self.trial_index += 1
                 if self.trial_index == len(self.trial_list):
                     self.shutdown_hook('Reached end of trial list. End of Session')
@@ -213,6 +215,9 @@ class Simulator(object):
         if not self.called_shutdown:
             self.called_shutdown = True
             self.shutdown_pub.publish("shutdown")
+            #clear screen
+            self.env.render_clear('End of trial...')    
+            self.env.close_window()
             print('Shutting down')
 
     def key_press(self, k, mode):
