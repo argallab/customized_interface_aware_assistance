@@ -197,7 +197,6 @@ class ModeInferenceEnv(object):
         '''
         For a given discrete state, retrieves the direction in which motion is allowed in the allowed mode
         '''
-        embed()
         location = self.current_discrete_state[0]
         orientation = self.current_discrete_state[1]
         if location != self.LOCATIONS[self.location_of_turn]:

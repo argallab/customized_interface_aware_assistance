@@ -18,8 +18,7 @@ GOAL_RADIUS_S = GOAL_RADIUS/SCALE
 CENTER_X = VIEWPORT_WS/2
 CENTER_Y = VIEWPORT_HS/2
 
-ACTIONS = ['UP', 'DOWN', 'RIGHT', 'LEFT', 'COUNTERCLOCKWISE', 'CLOCKWISE']
-# ACTIONS = ['UP', 'DOWN', 'RIGHT', 'LEFT', 'COUNTERCLOCKWISE', 'CLOCKWISE', 'xy', 'xt', 'yx', 'yt', 'tx', 'ty']
+ACTIONS = ['UP', 'DOWN', 'RIGHT', 'LEFT', 'COUNTERCLOCKWISE', 'CLOCKWISE', 'xy', 'xt', 'yx', 'yt', 'tx', 'ty']
 
 MODE_TRANSITIONS = ['xy', 'xt', 'yx', 'yt', 'tx', 'ty']
 
@@ -57,6 +56,7 @@ def generate_p_um_given_a_trials(args):
         trial_info_dict['env_params'] = collections.OrderedDict()
         trial_info_dict['env_params']['robot_position'] = (VIEWPORT_WS/2, VIEWPORT_HS/2)
         trial_info_dict['env_params']['robot_orientation'] = 0.0
+        trial_info_dict['env_params']['action'] = a
 
         if a in MODE_TRANSITIONS:  # mode switch trial
             trial_info_dict['env_params']['is_mode_switch'] = True
@@ -66,12 +66,14 @@ def generate_p_um_given_a_trials(args):
             mode_config['target_mode'] = a[1] #the second mode from the string. For example 'y' in 'xy' or 'x' in tx'
             trial_info_dict['env_params']['mode_config'] = mode_config
             trial_info_dict['env_params']['goal_position'] =  [CENTER_X, CENTER_Y] # doesn't matter for mode switch, has it's target mode
+            trial_info_dict['env_params']['allowed_mode_index'] = a[0] # just for setting the start mode 
            
         else: # motion trial
             trial_info_dict['env_params']['is_mode_switch'] = False
             trial_info_dict['env_params']['start_direction'] = random.choice(START_DIRECTION[a])  
             trial_info_dict['env_params']['mode_config'] = None
             trial_info_dict['env_params']['goal_position'] =  GOAL_CONFIGURATIONS[a]
+            trial_info_dict['env_params']['allowed_mode_index'] = ALLOWED_MODE_INDEX_DICT[trial_info_dict['env_params']['start_direction']]
             
         if a == 'COUNTERCLOCKWISE' or a == 'CLOCKWISE': #turning trials
             trial_info_dict['env_params']['is_rotation'] = True
@@ -80,8 +82,7 @@ def generate_p_um_given_a_trials(args):
 
         else:
             #non turning trials
-            trial_info_dict['env_params']['is_rotation'] = False
-            trial_info_dict['env_params']['allowed_mode_index'] = ALLOWED_MODE_INDEX_DICT[trial_info_dict['env_params']['start_direction']]
+            trial_info_dict['env_params']['is_rotation'] = False            
             trial_info_dict['env_params']['goal_orientation'] = 0.0
             
         

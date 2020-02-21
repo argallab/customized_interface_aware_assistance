@@ -11,10 +11,10 @@
 
 	<!-- record bags -->
   <!-- bag file name parameters -->
-  <arg name="id" default="test" doc="trial identifier string"/>
+  <arg name="subject_id" default="test" doc="trial identifier string"/>
   <group if="$(arg save)">
     <include file="$(find simulators)/launch/record.launch">
-      <arg name="bag_prefix" value="$(arg id)_internal_model"/>
+      <arg name="bag_prefix" value="$(arg subject_id)_internal_model"/>
     </include>    
   </group>
 

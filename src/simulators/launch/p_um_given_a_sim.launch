@@ -1,6 +1,8 @@
 <?xml version="1.0"?>
 
 <launch>
+
+  <arg name="save" default="false" doc="Set to true if you wanted save bag file of trial"/>
   <arg name="subject_id" default="test" doc="Unique string identifier for the subject"/>
 
   <arg name="JOY" default="false" doc="Set to true if using 3-axis joystick to control arm."/>
@@ -22,5 +24,14 @@
     <arg name="PS3" value="$(arg PS3)"/>
     <arg name="JOINT" value="$(arg JOINT)"/>
   </include>
+
+  <!-- record bags -->
+  <!-- bag file name parameters -->
+  <group if="$(arg save)">
+    <include file="$(find simulators)/launch/record.launch">
+      <arg name="bag_prefix" value="$(arg subject_id)_p_um_given_a"/>
+    </include>    
+  </group>
+
 
 </launch>
