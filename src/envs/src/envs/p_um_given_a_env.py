@@ -53,8 +53,8 @@ class PUmGivenAEnv(object):
         self.goal_orientation = None
         self.start_direction = None
 
-        self.orientaion_thresh = 0.2
-        self.position_thresh = 1
+        self.orientaion_thresh = 0.7
+        self.position_thresh = [3.5, 2.5]
 
     def update_params(self, env_params):
         self.env_params = env_params
@@ -220,11 +220,14 @@ class PUmGivenAEnv(object):
     def _render_text(self):
         self.viewer.draw_text(self.msg_prompt, x=COMMAND_DISPLAY_POSITION[0], y=COMMAND_DISPLAY_POSITION[1], font_size=TRIAL_OVER_TEXT_FONTSIZE, color=COMMAND_TEXT_COLOR, bold=True)
 
-    def render_clear(self): 
+    def render_clear(self, msg): 
         self.viewer.window.clear()
-        self.msg_prompt = 'Loading next trial...'
+        self.msg_prompt = msg
         self._render_text()
         return self.viewer.render(False)
+
+    def close_window(self):
+        self.viewer.close()
 
     def render(self, mode='human'):
         if self.viewer is None:
@@ -277,7 +280,7 @@ class PUmGivenAEnv(object):
                 is_done = True 
 
         else: 
-            if np.abs(self.goal_position[self.start_direction.value]-self.robot.get_position()[self.start_direction.value]) < self.position_thresh:  
+            if np.abs(self.goal_position[self.start_direction.value]-self.robot.get_position()[self.start_direction.value]) < self.position_thresh[self.start_direction.value]: 
                 is_done = True
 
         return is_done
