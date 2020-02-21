@@ -1,6 +1,9 @@
 <?xml version="1.0"?>
 
 <launch>
+
+  <arg name="save" default="false" doc="Set to true if you wanted save bag file of trial"/>
+  
   <arg name="subject_id" default="test" doc="Unique string identifier for the subject"/>
 	<arg name="assistance_block" default="no" doc="Assistance type for the testing block. For loading up the appropriate trial block file"/>
   <arg name="block_id" default="0" doc="block_id for the assistance type for the testing block"/>
@@ -27,5 +30,13 @@
     <arg name="PS3" value="$(arg PS3)"/>
     <arg name="JOINT" value="$(arg JOINT)"/>
   </include>
+
+  <!-- record bags -->
+  <!-- bag file name parameters -->
+  <group if="$(arg save)">
+    <include file="$(find simulators)/launch/record.launch">
+      <arg name="bag_prefix" value="$(arg subject_id)_$(arg assistance_block)_assistance_$(arg block_id)_mode_inference"/>
+    </include>    
+  </group>
 
 </launch>

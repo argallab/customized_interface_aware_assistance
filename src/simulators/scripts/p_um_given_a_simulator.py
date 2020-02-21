@@ -4,6 +4,7 @@
 import rospy
 import time
 from sensor_msgs.msg import Joy
+from simulators.msg import Command
 from envs.p_um_given_a_env import PUmGivenAEnv
 from std_msgs.msg import Float32MultiArray
 from std_msgs.msg import MultiArrayDimension, String, Int8
@@ -30,9 +31,7 @@ class Simulator(object):
         rospy.init_node("Simulator")
         rospy.on_shutdown(self.shutdown_hook)
         self.called_shutdown = False
-        self.shutdown_pub = rospy.Publisher('/shutdown', String, queue_size=1)
-        self.trial_marker_pub = rospy.Publisher('/trial_marker', String, queue_size=1)
-        self.trial_filename_pub = rospy.Publisher('/trial_index', String, queue_size=1)
+        
 
         self.dim = 3
         user_vel = CartVelCmd()
@@ -44,6 +43,8 @@ class Simulator(object):
         user_vel.velocity.data = np.zeros(self.dim)
         user_vel.header.stamp = rospy.Time.now()
         user_vel.header.frame_id = 'human_control'
+
+        self.action_msg = Command()
 
         self.trial_info_dir_path = os.path.join(os.path.dirname(__file__), 'p_um_given_a_trial_dir') #this directory will be populated by generate_p_um_given_a_trials.py
         self.metadata_dir = os.path.join(os.path.dirname(__file__), 'metadata_dir')
@@ -61,8 +62,8 @@ class Simulator(object):
         self.goal_location_relative_to_robot_location = {StartDirection.X: {'positive':[VIEWPORT_WS/4, 0], 'negative':[-VIEWPORT_WS/4, 0]},
                                                          StartDirection.Y: {'positive':[0, VIEWPORT_HS/4], 'negative':[0, -VIEWPORT_HS/4]}}
 
-        rospy.Subscriber('/user_vel', CartVelCmd, self.joy_callback)
-        rospy.Subscriber('/mode_switches', ModeSwitch, self.mode_switch_callback)
+        self.initialize_publishers()
+        self.initialize_subscribers()        
 
         if self.trial_info_dir_path is not None and os.path.exists(self.trial_info_dir_path):
             self.trial_list = os.listdir(self.trial_info_dir_path)
@@ -76,6 +77,7 @@ class Simulator(object):
 
             assert 'env_params' in trial_info_dict
             self.env_params = trial_info_dict['env_params']
+
         else:
             #if there are no trials in trials folder, use this trial info.
             trial_info_filename = 'default.pkl' #dummy filename for publishing
@@ -119,6 +121,7 @@ class Simulator(object):
         self.env.render()
 
         self.trial_marker_pub.publish('start')
+        self.publish_action(self.env_params['action'])
         self.trial_filename_pub.publish(trial_info_filename)
         self.env.viewer.window.on_key_press = self.key_press
         self.max_time = 10 # TODO change this for controlling max time for showing each prompt
@@ -129,8 +132,9 @@ class Simulator(object):
         while not rospy.is_shutdown():
             if (time.time() - self.trial_start_time) > self.max_time or is_done:
                 print("Move to NEXT TRIAL")
+                self.trial_marker_pub.publish('end')
                 #potentially render a black screen between trials?
-                #self.env.render_black() #myabe pass an arg to self.env.render(show_blackout=True)
+                self.env.render_clear() #myabe pass an arg to self.env.render(show_blackout=True)
                 time.sleep(2.0)
                 self.trial_index += 1
                 if self.trial_index == len(self.trial_list):
@@ -141,10 +145,10 @@ class Simulator(object):
                 assert os.path.exists(trial_info_filepath) is not None
                 with open(trial_info_filepath, 'rb') as fp:
                     trial_info_dict = pickle.load(fp)
-
                 assert 'env_params' in trial_info_dict
                 self.env_params = trial_info_dict['env_params']
                 self.set_mode_request = SetModeRequest()
+                
                 self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params['allowed_mode_index']]
                 status = self.set_mode_srv(self.set_mode_request)
 
@@ -152,6 +156,7 @@ class Simulator(object):
                 self.env.reset()
                 self.env.render()
                 self.trial_marker_pub.publish('start')
+                self.publish_action(self.env_params['action'])
                 self.trial_filename_pub.publish(trial_info_filename)
                 self.trial_start_time = time.time()
                 self.restart = False
@@ -182,6 +187,7 @@ class Simulator(object):
                 self.env.reset()
                 self.env.render()
                 self.trial_marker_pub.publish('start')
+                self.publish_action(self.env_params['action'])
                 self.trial_filename_pub.publish(trial_info_filename)
                 self.trial_start_time = time.time()
                 self.restart = False
@@ -199,8 +205,9 @@ class Simulator(object):
         self.input_action['human'] = msg
 
     def mode_switch_callback(self, msg): 
-        if msg.mode != DIM_TO_MODE_INDEX[self.env_params['allowed_mode_index']]: 
-            status = self.set_mode_srv(self.set_mode_request)
+        if not self.env_params['is_mode_switch']:  
+            if msg.mode != DIM_TO_MODE_INDEX[self.env_params['allowed_mode_index']]: 
+                status = self.set_mode_srv(self.set_mode_request)
 
     def shutdown_hook(self, msg_string='DONE'):
         if not self.called_shutdown:
@@ -213,6 +220,22 @@ class Simulator(object):
             self.terminate = True
         if k == key.R:
             self.restart = True
+
+    def initialize_publishers(self): 
+        self.shutdown_pub = rospy.Publisher('/shutdown', String, queue_size=1)
+        self.trial_marker_pub = rospy.Publisher('/trial_marker', String, queue_size=1)
+        self.trial_filename_pub = rospy.Publisher('/trial_index', String, queue_size=1)
+        self.action_pub = rospy.Publisher('/action_prompt', Command, queue_size=1)
+
+    def initialize_subscribers(self): 
+        rospy.Subscriber('/user_vel', CartVelCmd, self.joy_callback)
+        rospy.Subscriber('/mode_switches', ModeSwitch, self.mode_switch_callback)
+
+    def publish_action(self, msg):
+        self.action_msg.header.stamp = rospy.Time.now()
+        self.action_msg.command = msg
+        self.action_pub.publish(self.action_msg)
+
 
 if __name__ == '__main__':
     #TODO parse num turns from launch file

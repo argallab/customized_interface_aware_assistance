@@ -11,6 +11,7 @@ from utils import WP_RADIUS, INFLATION_FACTOR, PATH_HALF_WIDTH, MODE_INDEX_TO_DI
 from utils import RGOrient, StartDirection, PositionOnLine
 from utils import get_sign_of_number
 from utils import LOW_LEVEL_COMMANDS, HIGH_LEVEL_ACTIONS, TRUE_ACTION_TO_COMMAND, TRUE_COMMAND_TO_ACTION, MODE_SWITCH_TRANSITION, TRANSITION_FOR_ACTION
+from utils import COMMAND_TEXT_COLOR, COMMAND_DISPLAY_POSITION, COMMAND_DISPLAY_FONTSIZE 
 import csv
 import math
 import numpy as np
@@ -201,9 +202,9 @@ class PUmGivenAEnv(object):
         for i, d in enumerate(self.DIMENSIONS):
             t = Transform(translation=(MODE_DISPLAY_CIRCLE_START_POSITION_S[0] + i*MODE_DISPLAY_CIRCLE_X_OFFSET_S, MODE_DISPLAY_CIRCLE_START_POSITION_S[1]))
             if d == self.current_mode:
-                self.viewer.draw_circle(MODE_DISPLAY_RADIUS/SCALE, 30, True, color=ACTIVE_MODE_COLOR).add_attr(t)
+                self.viewer.draw_circle(MODE_DISPLAY_RADIUS/SCALE, 30, True, color=TARGET_MODE_COLOR).add_attr(t) # just so coloring is consistent with motions (red is current, green is goal)
             elif d == self.target_mode:
-                self.viewer.draw_circle(MODE_DISPLAY_RADIUS/SCALE, 30, True, color=TARGET_MODE_COLOR).add_attr(t)
+                self.viewer.draw_circle(MODE_DISPLAY_RADIUS/SCALE, 30, True, color=ACTIVE_MODE_COLOR).add_attr(t)
             else:
                 self.viewer.draw_circle(MODE_DISPLAY_RADIUS/SCALE, 30, True, color=NONACTIVE_MODE_COLOR).add_attr(t)
 
@@ -216,12 +217,20 @@ class PUmGivenAEnv(object):
         self.viewer.draw_text("Y", x=MODE_DISPLAY_TEXT_START_POSITION[0] + MODE_DISPLAY_TEXT_X_OFFSET, y=MODE_DISPLAY_TEXT_START_POSITION[1], font_size=MODE_DISPLAY_TEXT_FONTSIZE, color=MODE_DISPLAY_TEXT_COLOR, anchor_y=MODE_DISPLAY_TEXT_Y_ANCHOR)
         self.viewer.draw_text("T", x=MODE_DISPLAY_TEXT_START_POSITION[0] + 2*MODE_DISPLAY_TEXT_X_OFFSET, y=MODE_DISPLAY_TEXT_START_POSITION[1], font_size=MODE_DISPLAY_TEXT_FONTSIZE, color=MODE_DISPLAY_TEXT_COLOR, anchor_y=MODE_DISPLAY_TEXT_Y_ANCHOR)
 
+    def _render_text(self):
+        self.viewer.draw_text(self.msg_prompt, x=COMMAND_DISPLAY_POSITION[0], y=COMMAND_DISPLAY_POSITION[1], font_size=TRIAL_OVER_TEXT_FONTSIZE, color=COMMAND_TEXT_COLOR, bold=True)
+
+    def render_clear(self): 
+        self.viewer.window.clear()
+        self.msg_prompt = 'Loading next trial...'
+        self._render_text()
+        return self.viewer.render(False)
+
     def render(self, mode='human'):
         if self.viewer is None:
             self.viewer = Viewer(VIEWPORT_W, VIEWPORT_H)
             self.viewer.set_bounds(0, VIEWPORT_W/SCALE, 0, VIEWPORT_H/SCALE)
             self.viewer.window.set_location(1650, 300)
-
 
         #render location for turning
         # self._render_turn_location()
@@ -312,7 +321,7 @@ class PUmGivenAEnv(object):
         if self.is_mode_switch: # if mode switch trial, specify start and target mode
             self.start_mode = self.mode_config['start_mode']
             self.current_mode = self.start_mode
-            self.target_mode = self.mode_config['target_mode']
+            self.target_mode = self.mode_config['target_mode']            
         else:
             self.start_mode = None
             self.current_mode = None
@@ -326,33 +335,43 @@ class PUmGivenAEnv(object):
         self.DIMENSIONS = ['x', 'y', 't'] #set of dimensions or modes
         self.DIMENSION_INDICES = np.array([0,1,2]) #set of mode indices (needed for look up)
         
-        self._generate_way_points() # generate waypoints (start and edn)
-        self._generate_path() # generate outer border 
-        self.allowed_direction_of_motion = self._init_allowed_directions_of_motion() # for each trial mode/dimension there is a proper direction in which the velocity should be
-        
+        if not self.is_mode_switch: 
+            self._generate_way_points() # generate waypoints (start and edn)
+            self._generate_path() # generate outer border 
+            self.allowed_direction_of_motion = self._init_allowed_directions_of_motion() # for each trial mode/dimension there is a proper direction in which the velocity should be
+            
 
         self.robot = RobotSE2(self.world, position=self.robot_position, orientation=self.robot_orientation, robot_color=ROBOT_COLOR_WHEN_COMMAND_REQUIRED, radius=ROBOT_RADIUS/SCALE)
 
     def step(self, input_action):
         assert 'human' in input_action.keys()
-        user_vel = np.array([input_action['human'].velocity.data[0], input_action['human'].velocity.data[1], input_action['human'].velocity.data[2]]) #numpyify the velocity data. 
-        allowed_mode_index = DIM_TO_MODE_INDEX[self.allowed_mode_index] #0,1,2 #get the mode index of the allowed mode of motion
-        user_vel[np.setdiff1d(self.DIMENSION_INDICES, allowed_mode_index)] = 0.0 #zero out all velocities except the ones for the allowed mode
-        # print user_vel
 
-        # allowed_direction_of_motion = self._init_allowed_directions_of_motion()
-        # only allowing velocities in allowed mode. now also check if the direction of user_vel is correct as well.
-        if get_sign_of_number(user_vel[allowed_mode_index]) != self.allowed_direction_of_motion: 
-            user_vel[allowed_mode_index] = 0.0  # if not, zero that velocity
+        if self.is_mode_switch: 
 
-        # if close enough to the goal position/orientation, then move onto next trial.
-        is_done = self._is_goal_reached()
+            self.current_mode_index = rospy.get_param('mode')
+            self.current_mode = MODE_INDEX_TO_DIM[self.current_mode_index]       
 
-        print user_vel
-        print is_done
+            is_done = False 
+            if self.current_mode == self.target_mode: 
+                is_done = True 
+            
 
-        self.robot.robot.linearVelocity = b2Vec2(user_vel[0], user_vel[1]) #update robot velocity
-        self.robot.robot.angularVelocity = -user_vel[2] # note the negative sign on the 3rd component to account for proper counterclockwise motion
+        else: 
+            user_vel = np.array([input_action['human'].velocity.data[0], input_action['human'].velocity.data[1], input_action['human'].velocity.data[2]]) #numpyify the velocity data. 
+            allowed_mode_index = DIM_TO_MODE_INDEX[self.allowed_mode_index] #0,1,2 #get the mode index of the allowed mode of motion
+            user_vel[np.setdiff1d(self.DIMENSION_INDICES, allowed_mode_index)] = 0.0 #zero out all velocities except the ones for the allowed mode
+
+            # allowed_direction_of_motion = self._init_allowed_directions_of_motion()
+            # only allowing velocities in allowed mode. now also check if the direction of user_vel is correct as well.
+            if get_sign_of_number(user_vel[allowed_mode_index]) != self.allowed_direction_of_motion: 
+                user_vel[allowed_mode_index] = 0.0  # if not, zero that velocity
+
+            # if close enough to the goal position/orientation, then move onto next trial.
+            is_done = self._is_goal_reached()            
+
+            self.robot.robot.linearVelocity = b2Vec2(user_vel[0], user_vel[1]) #update robot velocity
+            self.robot.robot.angularVelocity = -user_vel[2] # note the negative sign on the 3rd component to account for proper counterclockwise motion
+
         self.world.Step(1.0/FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS) #call box2D step function
 
         return is_done
