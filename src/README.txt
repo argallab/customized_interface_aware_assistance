@@ -36,10 +36,13 @@ d) create personalized distribution:
 cd /home/corrective_mode_switch_assistance/src/data_processing/scripts
 python extract_topics_from_bag.py ~/.ros/bag_name NAME-Of-SUBJECT_p_um_given_a
 python p_um_given_a_distribution_preprocessing.py -path subject-id_p_um_given_a -id subject-id
+python p_um_given_a_distribution_preprocessing.py -path ../raw_data/mahdieh_p_um_given_a/ -id mahdieh
 
 Phase 3: 
-create experiment blocks for subject: 
+a) create experiment blocks for subject: 
 python create_experiment_blocks --subject_id name_of_subject 
+
+b) run experiment: 
 
 Post Task Survey: 
 
