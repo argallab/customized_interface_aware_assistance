@@ -8,6 +8,7 @@ from envs.p_um_given_a_env import PUmGivenAEnv
 from std_msgs.msg import Float32MultiArray
 from std_msgs.msg import MultiArrayDimension, String, Int8
 from teleop_nodes.msg import CartVelCmd
+from teleop_nodes.msg import ModeSwitch
 from simulators.msg import State
 from teleop_nodes.srv import SetMode, SetModeRequest, SetModeResponse
 from pyglet.window import key
@@ -61,6 +62,7 @@ class Simulator(object):
                                                          StartDirection.Y: {'positive':[0, VIEWPORT_HS/4], 'negative':[0, -VIEWPORT_HS/4]}}
 
         rospy.Subscriber('/user_vel', CartVelCmd, self.joy_callback)
+        rospy.Subscriber('/mode_switches', ModeSwitch, self.mode_switch_callback)
 
         if self.trial_info_dir_path is not None and os.path.exists(self.trial_info_dir_path):
             self.trial_list = os.listdir(self.trial_info_dir_path)
@@ -193,8 +195,12 @@ class Simulator(object):
             self.env.render()
             r.sleep()
 
-    def joy_callback(self, msg):
+    def joy_callback(self, msg):        
         self.input_action['human'] = msg
+
+    def mode_switch_callback(self, msg): 
+        if msg.mode != DIM_TO_MODE_INDEX[self.env_params['allowed_mode_index']]: 
+            status = self.set_mode_srv(self.set_mode_request)
 
     def shutdown_hook(self, msg_string='DONE'):
         if not self.called_shutdown:
