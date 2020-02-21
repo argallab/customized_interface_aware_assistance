@@ -74,7 +74,6 @@ class Simulator(object):
 
             assert 'env_params' in trial_info_dict
             self.env_params = trial_info_dict['env_params']
-
         else:
             #if there are no trials in trials folder, use this trial info.
             trial_info_filename = 'default.pkl' #dummy filename for publishing

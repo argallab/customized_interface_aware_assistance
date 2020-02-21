@@ -18,7 +18,9 @@ GOAL_RADIUS_S = GOAL_RADIUS/SCALE
 CENTER_X = VIEWPORT_WS/2
 CENTER_Y = VIEWPORT_HS/2
 
-ACTIONS = ['UP', 'DOWN', 'RIGHT', 'LEFT', 'COUNTERCLOCKWISE', 'CLOCKWISE', 'xy', 'xt', 'yx', 'yt', 'tx', 'ty']
+ACTIONS = ['UP', 'DOWN', 'RIGHT', 'LEFT', 'COUNTERCLOCKWISE', 'CLOCKWISE']
+# ACTIONS = ['UP', 'DOWN', 'RIGHT', 'LEFT', 'COUNTERCLOCKWISE', 'CLOCKWISE', 'xy', 'xt', 'yx', 'yt', 'tx', 'ty']
+
 MODE_TRANSITIONS = ['xy', 'xt', 'yx', 'yt', 'tx', 'ty']
 
 START_DIRECTION = {'UP': [StartDirection.Y],
@@ -63,7 +65,7 @@ def generate_p_um_given_a_trials(args):
             mode_config['start_mode'] = a[0] #the first mode from the string. For example 'x' in 'xy' or 't' in tx'
             mode_config['target_mode'] = a[1] #the second mode from the string. For example 'y' in 'xy' or 'x' in tx'
             trial_info_dict['env_params']['mode_config'] = mode_config
-            # trial_info_dict['env_params']['goal_position'] =  None # doesn't matter for mode switch, has it's target mode
+            trial_info_dict['env_params']['goal_position'] =  [CENTER_X, CENTER_Y] # doesn't matter for mode switch, has it's target mode
            
         else: # motion trial
             trial_info_dict['env_params']['is_mode_switch'] = False

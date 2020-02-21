@@ -14,6 +14,8 @@ from utils import AssistanceType
 
 npa = np.array
 
+from IPython import embed
+
 '''Reads raw sip_and_puff joy data, does thresholding and buffering
  and returns data as hard puff, soft puff, soft sip, hard sip.
  Input and output are both /sensor_msgs/joy'''
@@ -66,8 +68,8 @@ class SNPMapping(object):
     self.before_send_msg.axes = np.zeros(1)  # pressure ([-1, 1])
     self.before_send_msg.buttons = np.zeros(4) # hard puff, soft puff, soft sip, hard sip
 
-    self.assistance_type = rospy.get_param('assistance_type', 2)
-
+    self.assistance_type = rospy.get_param('/assistance_type', 2)
+    # embed()
     if self.assistance_type == 0:
         self.assistance_type = AssistanceType.Filter
     elif self.assistance_type == 1:
@@ -90,7 +92,7 @@ class SNPMapping(object):
   # labels hard and soft sips and puffs, buffers out
   def update_assistance_type(self):
       #TODO maybe replace with service
-      self.assistance_type =  rospy.get_param('assistance_type')
+      self.assistance_type =  rospy.get_param('assistance_type', 2)
       if self.assistance_type == 0:
           self.assistance_type = AssistanceType.Filter
       elif self.assistance_type == 1:
