@@ -123,8 +123,9 @@ class Simulator(object):
 
         r = rospy.Rate(100)
         self.trial_start_time = time.time()
+        is_done = False 
         while not rospy.is_shutdown():
-            if (time.time() - self.trial_start_time) > self.max_time:
+            if (time.time() - self.trial_start_time) > self.max_time or is_done:
                 print("Move to NEXT TRIAL")
                 #potentially render a black screen between trials?
                 #self.env.render_black() #myabe pass an arg to self.env.render(show_blackout=True)
@@ -183,7 +184,7 @@ class Simulator(object):
                 self.trial_start_time = time.time()
                 self.restart = False
 
-            self.env.step(self.input_action)
+            is_done = self.env.step(self.input_action)
 
             if self.terminate:
                 self.shutdown_hook('Session terminated')

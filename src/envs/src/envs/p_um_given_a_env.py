@@ -52,6 +52,9 @@ class PUmGivenAEnv(object):
         self.goal_orientation = None
         self.start_direction = None
 
+        self.orientaion_thresh = 0.2
+        self.position_thresh = 1
+
     def update_params(self, env_params):
         self.env_params = env_params
         assert self.env_params is not None
@@ -248,7 +251,6 @@ class PUmGivenAEnv(object):
 
     def _init_allowed_directions_of_motion(self):
         #depending on direction of motion and relative position of the goal with respect to the robot make sure only moves in the correct direction
-        embed()   
         if self.allowed_mode_index == 't': 
             allowed_direction_of_motion = -1*get_sign_of_number(self.goal_orientation) # opposite sign for pyglet positive motion
         else: 
@@ -256,6 +258,20 @@ class PUmGivenAEnv(object):
 
         return allowed_direction_of_motion
 
+    def _is_goal_reached(self): 
+        # if close enough to goal (based on threshold), then signal that it is done so can move to next trial
+        # NOTICE absolute value: assumes direction is already taken care of
+        is_done = False 
+
+        if self.allowed_mode_index == 't': 
+            if np.abs(self.goal_orientation - self.robot.get_angle()) < self.orientaion_thresh: 
+                is_done = True 
+
+        else: 
+            if np.abs(self.goal_position[self.start_direction.value]-self.robot.get_position()[self.start_direction.value]) < self.position_thresh:  
+                is_done = True
+
+        return is_done
 
 
     def _generate_path(self):
@@ -322,14 +338,21 @@ class PUmGivenAEnv(object):
         user_vel = np.array([input_action['human'].velocity.data[0], input_action['human'].velocity.data[1], input_action['human'].velocity.data[2]]) #numpyify the velocity data. 
         allowed_mode_index = DIM_TO_MODE_INDEX[self.allowed_mode_index] #0,1,2 #get the mode index of the allowed mode of motion
         user_vel[np.setdiff1d(self.DIMENSION_INDICES, allowed_mode_index)] = 0.0 #zero out all velocities except the ones for the allowed mode
-        print user_vel
+        # print user_vel
 
-        
         # allowed_direction_of_motion = self._init_allowed_directions_of_motion()
         # only allowing velocities in allowed mode. now also check if the direction of user_vel is correct as well.
         if get_sign_of_number(user_vel[allowed_mode_index]) != self.allowed_direction_of_motion: 
             user_vel[allowed_mode_index] = 0.0  # if not, zero that velocity
 
+        # if close enough to the goal position/orientation, then move onto next trial.
+        is_done = self._is_goal_reached()
+
+        print user_vel
+        print is_done
+
         self.robot.robot.linearVelocity = b2Vec2(user_vel[0], user_vel[1]) #update robot velocity
         self.robot.robot.angularVelocity = -user_vel[2] # note the negative sign on the 3rd component to account for proper counterclockwise motion
         self.world.Step(1.0/FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS) #call box2D step function
+
+        return is_done
