@@ -67,8 +67,8 @@ class IntendedCommandGivenActionAnalysis(object):
 		time_s_u, index_of_time_s_u = self.get_nearest_time_stamp(time_s, user_input.rosbagTimestamp)
 		time_e_u, index_of_time_e_u = self.get_nearest_time_stamp(time_e, user_input.rosbagTimestamp)
 
-		assert time_e_u > time_s_u #sanity checks
-		assert index_of_time_e_u > index_of_time_s_u #sanity check
+		assert time_e_u >= time_s_u #sanity checks
+		assert index_of_time_e_u >= index_of_time_s_u #sanity check
 
 		user_response_block_indices = range(index_of_time_s_u, index_of_time_e_u) #list of indices for lookup
 		return user_response_block_indices
@@ -85,7 +85,10 @@ class IntendedCommandGivenActionAnalysis(object):
 				counts_array[LABEL_TO_ARRAY_DICT[label]] += 1
 				length += 1
 
-		norm_counts_array = counts_array/length
+		if length != 0:
+			norm_counts_array = counts_array/length
+		else: 
+			norm_counts_array = counts_array = np.zeros(len(LABEL_TO_ARRAY_DICT))
 
 		return norm_counts_array
 	

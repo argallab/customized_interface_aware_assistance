@@ -16,6 +16,9 @@ press 's' to start
 
 c) create personalized distribution: 
 
+extract 
+python command_issuing_distribution_preprocessing.py -path ../raw_data/dan_p_um_given_ui/ -command_prompt _command_prompt.csv -input _joy_sip_puff.csv -id dan
+
 
 Phase 2: 
 
@@ -27,7 +30,7 @@ https://northwesterneng.az1.qualtrics.com/jfe/form/SV_5biu1XSbex3VKVn
 b) p_um_given_a sim training: 
 
 Get familiar with the test environment: 
-roslaunch simulators p_um_given_a_sim.launch subject_id:=NAME-OF-SUBJECT SNP:=true save:=false
+roslaunch simulators p_um_given_a_sim.launch subject_id:=NAME-OF-SUBJECT SNP:=true save:=falsels
 
 c) p_um_given_a test: 
 roslaunch simulators p_um_given_a_sim.launch subject_id:=NAME-OF-SUBJECT SNP:=true save:=false
