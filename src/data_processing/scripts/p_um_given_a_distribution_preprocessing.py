@@ -35,7 +35,7 @@ class DataParser(object):
 		df = pd.read_csv(file_path, header = 0)
 		return df 
 
-class IntendedCommandGivenActionAnalysis(object): 
+class MeasuredCommandGivenActionAnalysis(object): 
 	def __init__(self, args):
 
 		self.file_dir = args.path
@@ -176,7 +176,7 @@ class IntendedCommandGivenActionAnalysis(object):
 		keys = ['Hard Puff', 'Hard Sip', 'Soft Puff', 'Soft Sip']
 		combination_pairs = [[0, 4], [1, 5]] #TODO replace it with dictionary mapping command strings to indices
 		ACTION_TO_ARRAY_DICT = self._combine_probabilities(ACTION_TO_ARRAY_DICT, combination_pairs)
-		self.create_p_ui_given_a(ACTION_TO_ARRAY_DICT)
+		self.create_p_um_given_a(ACTION_TO_ARRAY_DICT)
 
 
 		# 	if user_response_block_indices != []: # if they gave a response
@@ -194,7 +194,7 @@ class IntendedCommandGivenActionAnalysis(object):
 
 		# self.create_p_ui_given_a(ACTION_TO_ARRAY_DICT)
 
-	def create_p_ui_given_a(self, probabilities): 
+	def create_p_um_given_a(self, probabilities): 
 		keys = ['Hard Puff', 'Hard Sip', 'Soft Puff', 'Soft Sip']
 		p_um = collections.OrderedDict()
 		for mode in TRUE_ACTION_TO_COMMAND.keys():
@@ -242,7 +242,7 @@ if __name__ == '__main__':
 	parser.add_argument('-id', help='subject id', type=str)
 	args = parser.parse_args()
 	# embed(banner1="before initialization")
-	puia = IntendedCommandGivenActionAnalysis(args)
+	puia = MeasuredCommandGivenActionAnalysis(args)
 	puia.build_distributions()
 
 	# python internal_mapping_distribution_preprocessing.py -path mahdieh_internal_model -id mahdieh
