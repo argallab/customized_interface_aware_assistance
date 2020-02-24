@@ -11,7 +11,7 @@ from utils import WP_RADIUS, INFLATION_FACTOR, PATH_HALF_WIDTH, MODE_INDEX_TO_DI
 from utils import RGOrient, StartDirection, PositionOnLine
 from utils import get_sign_of_number
 from utils import LOW_LEVEL_COMMANDS, HIGH_LEVEL_ACTIONS, TRUE_ACTION_TO_COMMAND, TRUE_COMMAND_TO_ACTION, MODE_SWITCH_TRANSITION, TRANSITION_FOR_ACTION
-from utils import COMMAND_TEXT_COLOR, COMMAND_DISPLAY_POSITION, COMMAND_DISPLAY_FONTSIZE 
+from utils import COMMAND_TEXT_COLOR, COMMAND_DISPLAY_POSITION, COMMAND_DISPLAY_FONTSIZE, ACTION_DISPLAY_POSITION
 from utils import EXPERIMENT_START_COUNTDOWN    
 import csv
 import math
@@ -134,7 +134,6 @@ class PUmGivenAEnv(object):
                         return self.WAYPOINTS_TO_LOCATION_DICT[tuple(pt)], True
 
 
-
         return self.WAYPOINTS_TO_LOCATION_DICT[tuple(self.waypoints[-1])], True
 
     def _transform_continuous_orientation_to_discrete_orientation(self):
@@ -222,13 +221,13 @@ class PUmGivenAEnv(object):
         self.viewer.draw_text("Y", x=MODE_DISPLAY_TEXT_START_POSITION[0] + MODE_DISPLAY_TEXT_X_OFFSET, y=MODE_DISPLAY_TEXT_START_POSITION[1], font_size=MODE_DISPLAY_TEXT_FONTSIZE, color=MODE_DISPLAY_TEXT_COLOR, anchor_y=MODE_DISPLAY_TEXT_Y_ANCHOR)
         self.viewer.draw_text("T", x=MODE_DISPLAY_TEXT_START_POSITION[0] + 2*MODE_DISPLAY_TEXT_X_OFFSET, y=MODE_DISPLAY_TEXT_START_POSITION[1], font_size=MODE_DISPLAY_TEXT_FONTSIZE, color=MODE_DISPLAY_TEXT_COLOR, anchor_y=MODE_DISPLAY_TEXT_Y_ANCHOR)
 
-    def _render_text(self):
-        self.viewer.draw_text(self.msg_prompt, x=COMMAND_DISPLAY_POSITION[0], y=COMMAND_DISPLAY_POSITION[1], font_size=TRIAL_OVER_TEXT_FONTSIZE, color=COMMAND_TEXT_COLOR, bold=True)
+    def _render_text(self, text_position):
+        self.viewer.draw_text(self.msg_prompt, x=text_position[0], y=text_position[1], font_size=TRIAL_OVER_TEXT_FONTSIZE, color=COMMAND_TEXT_COLOR, bold=True)
 
     def render_clear(self, msg): 
         self.viewer.window.clear()
         self.msg_prompt = msg
-        self._render_text()
+        self._render_text(COMMAND_DISPLAY_POSITION)
         return self.viewer.render(False)
 
     def close_window(self):
@@ -249,7 +248,7 @@ class PUmGivenAEnv(object):
         if (time.time() - self.ts) >= self.text_display_delay: 
             self.ready_for_new_prompt = True 
 
-        self._render_text()
+        self._render_text(COMMAND_DISPLAY_POSITION)
         self.viewer.render(False)
 
         if self.start_msg_ind == len(EXPERIMENT_START_COUNTDOWN): 
@@ -284,7 +283,7 @@ class PUmGivenAEnv(object):
         # self._render_mode_display()
         #render dimension text
         # self._render_mode_display_text()
- 
+        self._render_text(ACTION_DISPLAY_POSITION)
         return self.viewer.render(False)
 
     
@@ -353,10 +352,17 @@ class PUmGivenAEnv(object):
         self.start_direction = self.env_params['start_direction'] # orientation of path in y or x (even if rotation, it'll be either x or y but will rotate in place) 
         self.allowed_mode_index = self.env_params['allowed_mode_index'] # (whcih mode is active) if have vertical segment, only mode in which motion is allowed is y, etc. 
         self.mode_config = self.env_params['mode_config'] # only useful if trial is testing for mode switch 
+        self.action = self.env_params['action']
+        # generate command prompt text:         
+        if self.is_rotation: 
+            self.msg_prompt = 'TURN ' + self.action
+        else:
+            self.msg_prompt = 'MOVE ' + self.action
         if self.is_mode_switch: # if mode switch trial, specify start and target mode
             self.start_mode = self.mode_config['start_mode']
             self.current_mode = self.start_mode
-            self.target_mode = self.mode_config['target_mode']            
+            self.target_mode = self.mode_config['target_mode']  
+            self.msg_prompt = 'SWITCH MODE TO '+self.target_mode        
         else:
             self.start_mode = None
             self.current_mode = None
@@ -375,7 +381,7 @@ class PUmGivenAEnv(object):
             self._generate_path() # generate outer border 
             self.allowed_direction_of_motion = self._init_allowed_directions_of_motion() # for each trial mode/dimension there is a proper direction in which the velocity should be
             
-
+          
         self.robot = RobotSE2(self.world, position=self.robot_position, orientation=self.robot_orientation, robot_color=ROBOT_COLOR_WHEN_COMMAND_REQUIRED, radius=ROBOT_RADIUS/SCALE)
 
     def step(self, input_action):
