@@ -238,6 +238,7 @@ class PUmGivenAEnv(object):
             self.viewer = Viewer(VIEWPORT_W, VIEWPORT_H)
             self.viewer.set_bounds(0, VIEWPORT_W/SCALE, 0, VIEWPORT_H/SCALE)
             self.viewer.window.set_location(1650, 300)
+            self.timer_thread.start()
 
     def start_countdown(self): 
         if self.ready_for_new_prompt: 
@@ -255,6 +256,30 @@ class PUmGivenAEnv(object):
             return 1
         else:
             return 0 
+
+    def _render_timer_text(self): 
+        if self.current_time < TIMER_WARNING_THRESHOLD:
+            self.viewer.draw_text(str(self.current_time), x=TIMER_DISPLAY_POSITION[0], y=TIMER_DISPLAY_POSITION[1], font_size=TIMER_DISPLAY_FONTSIZE, color=TIMER_COLOR_NEUTRAL, anchor_y=TIMER_DISPLAY_TEXT_Y_ANCHOR, bold=True)
+        elif self.current_time < TIMER_DANGER_THRESHOLD:
+            self.viewer.draw_text(str(self.current_time), x=TIMER_DISPLAY_POSITION[0], y=TIMER_DISPLAY_POSITION[1], font_size=TIMER_DISPLAY_FONTSIZE, color=TIMER_COLOR_WARNING, anchor_y=TIMER_DISPLAY_TEXT_Y_ANCHOR, bold=True)
+        else:
+            self.viewer.draw_text(str(self.current_time), x=TIMER_DISPLAY_POSITION[0], y=TIMER_DISPLAY_POSITION[1], font_size=TIMER_DISPLAY_FONTSIZE, color=TIMER_COLOR_DANGER, anchor_y=TIMER_DISPLAY_TEXT_Y_ANCHOR, bold=True)
+
+    def _render_timer(self, period):
+        while not rospy.is_shutdown():
+            start = rospy.get_rostime()
+            self.lock.acquire()
+            if self.viewer is not None:
+                # self.viewer.draw_text("   ", x = VIEWPORT_W/2, y=VIEWPORT_H/6, font_size=MODE_DISPLAY_TEXT_FONTSIZE, color=MODE_DISPLAY_TEXT_COLOR, anchor_y='top')
+                self.current_time += 1
+            else:
+                pass
+            self.lock.release()
+            end = rospy.get_rostime()
+            if end-start < period:
+                rospy.sleep(period - (end-start))
+            else:
+                rospy.loginfo('took more time')
 
     def render(self, mode='human'):
         # if self.viewer is None:
@@ -283,6 +308,7 @@ class PUmGivenAEnv(object):
         # self._render_mode_display()
         #render dimension text
         # self._render_mode_display_text()
+        self._render_timer_text()
         self._render_text(ACTION_DISPLAY_POSITION)
         return self.viewer.render(False)
 
@@ -340,6 +366,13 @@ class PUmGivenAEnv(object):
     def initialize(self): 
         self.start_session = self.env_params['start']
 
+        self.period = rospy.Duration(1.0)
+        self.timer_thread = threading.Thread(target=self._render_timer, args=(self.period,))
+        self.lock = threading.Lock()
+        self.current_time = 0
+        self.max_time = 50
+
+
     def reset(self):
         self._destroy()
         
@@ -383,6 +416,11 @@ class PUmGivenAEnv(object):
             
           
         self.robot = RobotSE2(self.world, position=self.robot_position, orientation=self.robot_orientation, robot_color=ROBOT_COLOR_WHEN_COMMAND_REQUIRED, radius=ROBOT_RADIUS/SCALE)
+
+        # self.timer_thread = threading.Thread(target=self._render_timer, args=(self.period,))
+        # self.lock = threading.Lock()
+        self.current_time = 0
+
 
     def step(self, input_action):
         assert 'human' in input_action.keys()
