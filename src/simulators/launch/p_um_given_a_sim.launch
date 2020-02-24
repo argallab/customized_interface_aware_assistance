@@ -4,6 +4,7 @@
 
   <arg name="save" default="false" doc="Set to true if you wanted save bag file of trial"/>
   <arg name="subject_id" default="test" doc="Unique string identifier for the subject"/>
+  <arg name="training" default="0" doc="bool string indicating whether the simulator is run in training mode or not"/>
 
   <arg name="JOY" default="false" doc="Set to true if using 3-axis joystick to control arm."/>
   <arg name="HA" default="false" doc="Set to true if using sip/puff to control arm."/>
@@ -13,7 +14,7 @@
 	<arg name="blending" default="false" doc="Set to true if there is not control blending."/>
   <arg name="PS3" default="false" doc="Set to false if don't want to use ps3 controller."/>
 
-  <node pkg="simulators" output="screen" type="p_um_given_a_simulator.py" name="p_um_given_a_simulator"  args="$(arg subject_id)"/>
+  <node pkg="simulators" output="screen" type="p_um_given_a_simulator.py" name="p_um_given_a_simulator"  args="$(arg subject_id) $(arg training)"/>
 
   <include file="$(find teleop_nodes)/launch/teleop_nodes.launch">
     <arg name="JOY" value="$(arg JOY)"/>
