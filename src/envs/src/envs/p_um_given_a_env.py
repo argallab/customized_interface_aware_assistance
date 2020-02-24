@@ -1,6 +1,6 @@
 from Box2D import (b2EdgeShape, b2FixtureDef, b2PolygonShape, b2Random, b2CircleShape, b2Vec2, b2Color)
 import Box2D
-from backends.rendering import Viewer, Transform
+from backends.rendering import Viewer, Transform, LineWidth
 from utils import RobotSE2, FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS, SCALE, VIEWPORT_W, VIEWPORT_H
 from utils import PI, ROBOT_RADIUS, GOAL_RADIUS, MODE_DISPLAY_RADIUS
 from utils import ROBOT_COLOR_WHEN_MOVING, ROBOT_COLOR_WHEN_COMMAND_REQUIRED, ACTIVE_MODE_COLOR, NONACTIVE_MODE_COLOR, TARGET_MODE_COLOR, TURN_LOCATION_COLOR, MODE_DISPLAY_TEXT_COLOR, MODE_DISPLAY_TEXT_FONTSIZE
@@ -161,7 +161,7 @@ class PUmGivenAEnv(object):
         t = Transform(translation=(self.goal_position[0],self.goal_position[1]))
         self.viewer.draw_circle(GOAL_RADIUS/SCALE, 30, True, color=(0.53, 1.0, 0.42)).add_attr(t)
         if self.is_rotation:
-            self.viewer.draw_line(self.goal_position, (self.goal_position[0] + 2*(GOAL_RADIUS/SCALE)*math.cos(self.goal_orientation), self.goal_position[1] + 2*(GOAL_RADIUS/SCALE)*math.sin(self.goal_orientation)) )
+            self.viewer.draw_line(self.goal_position, (self.goal_position[0] + 2*(GOAL_RADIUS/SCALE)*math.cos(self.goal_orientation), self.goal_position[1] + 2*(GOAL_RADIUS/SCALE)*math.sin(self.goal_orientation)), linewidth=3)
 
     def _render_bodies(self):
         for r in [self.robot]:
@@ -190,7 +190,7 @@ class PUmGivenAEnv(object):
 
     def _render_robot_direction_indicators(self):
         ep_markers = self.robot.get_direction_marker_end_points()
-        self.viewer.draw_line(ep_markers[0], ep_markers[1])
+        self.viewer.draw_line(ep_markers[0], ep_markers[1], linewidth=3)
 
     def _render_waypoints(self):
         #render the waypoints
