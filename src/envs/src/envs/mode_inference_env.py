@@ -6,7 +6,7 @@ from utils import PI, ROBOT_RADIUS, GOAL_RADIUS, MODE_DISPLAY_RADIUS
 from utils import ROBOT_COLOR_WHEN_MOVING, ROBOT_COLOR_WHEN_COMMAND_REQUIRED, ACTIVE_MODE_COLOR, NONACTIVE_MODE_COLOR, TURN_LOCATION_COLOR, MODE_DISPLAY_TEXT_COLOR, MODE_DISPLAY_TEXT_FONTSIZE
 from utils import MODE_DISPLAY_CIRCLE_START_POSITION_S, MODE_DISPLAY_CIRCLE_X_OFFSET_S, MODE_DISPLAY_TEXT_START_POSITION, MODE_DISPLAY_TEXT_X_OFFSET, MODE_DISPLAY_TEXT_Y_ANCHOR
 from utils import TIMER_DISPLAY_POSITION, TIMER_DISPLAY_FONTSIZE, TIMER_COLOR_NEUTRAL, TIMER_COLOR_WARNING, TIMER_COLOR_DANGER, TIMER_DISPLAY_TEXT_Y_ANCHOR, TIMER_DANGER_THRESHOLD, TIMER_WARNING_THRESHOLD
-from utils import TRIAL_OVER_TEXT_DISPLAY_POSITION, TRIAL_OVER_TEXT_FONTSIZE, TRIAL_OVER_TEXT_COLOR, TRIAL_OVER_TEXT_Y_ANCHOR
+from utils import TRIAL_OVER_TEXT_DISPLAY_POSITION, TRIAL_OVER_TEXT_FONTSIZE, TRIAL_OVER_TEXT_COLOR, TRIAL_OVER_TEXT_Y_ANCHOR, START_GOAL_TEXT_DISPLACEMENT
 from utils import WP_RADIUS, INFLATION_FACTOR, PATH_HALF_WIDTH, MODE_INDEX_TO_DIM, DIM_TO_MODE_INDEX
 from utils import RGOrient, StartDirection, PositionOnLine
 from utils import get_sign_of_number
@@ -422,6 +422,40 @@ class ModeInferenceEnv(object):
     def _render_text(self, msg, position, font_size=TRIAL_OVER_TEXT_FONTSIZE, color=COMMAND_TEXT_COLOR):
         self.viewer.draw_text(msg, x=position[0], y=position[1], font_size=font_size, color=color, bold=True)
 
+    def _render_start_end_text(self):
+
+        if self.r_to_g_relative_orientation == RGOrient.TOP_RIGHT:
+            if self.start_direction == StartDirection.X:
+                start_text_location = (self.robot_position[0]* SCALE - START_GOAL_TEXT_DISPLACEMENT, self.robot_position[1]*SCALE)
+                goal_text_location = (self.goal_position[0]* SCALE - START_GOAL_TEXT_DISPLACEMENT, self.goal_position[1]*SCALE)
+            elif self.start_direction == StartDirection.Y:
+                start_text_location = (self.robot_position[0]* SCALE - START_GOAL_TEXT_DISPLACEMENT, self.robot_position[1]*SCALE)
+                goal_text_location = (self.goal_position[0]* SCALE, self.goal_position[1]*SCALE - START_GOAL_TEXT_DISPLACEMENT)
+        elif self.r_to_g_relative_orientation == RGOrient.TOP_LEFT:
+            if self.start_direction == StartDirection.X:
+                start_text_location = (self.robot_position[0]* SCALE + START_GOAL_TEXT_DISPLACEMENT, self.robot_position[1]*SCALE)
+                goal_text_location = (self.goal_position[0]* SCALE + START_GOAL_TEXT_DISPLACEMENT, self.goal_position[1]*SCALE)
+            elif self.start_direction == StartDirection.Y:
+                start_text_location = (self.robot_position[0]* SCALE - START_GOAL_TEXT_DISPLACEMENT, self.robot_position[1]*SCALE)
+                goal_text_location = (self.goal_position[0]* SCALE - START_GOAL_TEXT_DISPLACEMENT, self.goal_position[1]*SCALE)
+        elif self.r_to_g_relative_orientation == RGOrient.BOTTOM_LEFT:
+            if self.start_direction == StartDirection.X:
+                start_text_location = (self.robot_position[0]* SCALE, self.robot_position[1]*SCALE - START_GOAL_TEXT_DISPLACEMENT)
+                goal_text_location = (self.goal_position[0]* SCALE - START_GOAL_TEXT_DISPLACEMENT, self.goal_position[1]*SCALE)
+            elif self.start_direction == StartDirection.Y:
+                start_text_location = (self.robot_position[0]* SCALE - START_GOAL_TEXT_DISPLACEMENT, self.robot_position[1]*SCALE)
+                goal_text_location = (self.goal_position[0]* SCALE - START_GOAL_TEXT_DISPLACEMENT, self.goal_position[1]*SCALE)
+        elif self.r_to_g_relative_orientation == RGOrient.BOTTOM_RIGHT:
+            if self.start_direction == StartDirection.X:
+                start_text_location = (self.robot_position[0]* SCALE - START_GOAL_TEXT_DISPLACEMENT, self.robot_position[1]*SCALE)
+                goal_text_location = (self.goal_position[0]* SCALE - START_GOAL_TEXT_DISPLACEMENT, self.goal_position[1]*SCALE)
+            elif self.start_direction == StartDirection.Y:
+                start_text_location = (self.robot_position[0]* SCALE - START_GOAL_TEXT_DISPLACEMENT , self.robot_position[1]*SCALE)
+                goal_text_location = (self.goal_position[0]* SCALE + START_GOAL_TEXT_DISPLACEMENT, self.goal_position[1]*SCALE)
+
+        self.viewer.draw_text('Start', x=start_text_location[0], y=start_text_location[1], font_size=TRIAL_OVER_TEXT_FONTSIZE-6, color=(0,0,0,255), bold=False)
+        self.viewer.draw_text('Goal', x=goal_text_location[0], y=goal_text_location[1], font_size=TRIAL_OVER_TEXT_FONTSIZE-6, color=(0,0,0,255), bold=False)
+
     def render_clear(self, msg):
         self.viewer.window.clear()
         self._render_text(msg, COMMAND_DISPLAY_POSITION)
@@ -458,13 +492,7 @@ class ModeInferenceEnv(object):
             return 0
 
     def render(self, mode='human'):
-        # if self.viewer is None:
-        #     self.viewer = Viewer(VIEWPORT_W, VIEWPORT_H)
-        #     self.viewer.set_bounds(0, VIEWPORT_W/SCALE, 0, VIEWPORT_H/SCALE)
-        #     self.viewer.window.set_location(1650, 300)
-        #     self.timer_thread.start()
-
-
+        self._render_start_end_text()
         #render location for turning
         self._render_turn_location()
         #render the goal position
