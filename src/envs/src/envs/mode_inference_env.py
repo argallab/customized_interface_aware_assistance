@@ -11,8 +11,8 @@ from utils import WP_RADIUS, INFLATION_FACTOR, PATH_HALF_WIDTH, MODE_INDEX_TO_DI
 from utils import RGOrient, StartDirection, PositionOnLine
 from utils import get_sign_of_number
 from utils import LOW_LEVEL_COMMANDS, HIGH_LEVEL_ACTIONS, TRUE_ACTION_TO_COMMAND, TRUE_COMMAND_TO_ACTION, MODE_SWITCH_TRANSITION, TRANSITION_FOR_ACTION
-from utils import COMMAND_TEXT_COLOR, COMMAND_DISPLAY_POSITION, COMMAND_DISPLAY_FONTSIZE 
-from utils import EXPERIMENT_START_COUNTDOWN   
+from utils import COMMAND_TEXT_COLOR, COMMAND_DISPLAY_POSITION, COMMAND_DISPLAY_FONTSIZE
+from utils import EXPERIMENT_START_COUNTDOWN
 import csv
 import math
 import numpy as np
@@ -70,9 +70,9 @@ class ModeInferenceEnv(object):
         self.location_of_turn = None
         self.service_initialized = False
 
-        self.ready_for_new_prompt = True 
-        self.text_display_delay = 2 
-        self.start_msg_ind = 0 
+        self.ready_for_new_prompt = True
+        self.text_display_delay = 2
+        self.start_msg_ind = 0
 
     def update_params(self, env_params):
         self.env_params = env_params
@@ -377,7 +377,7 @@ class ModeInferenceEnv(object):
     def _render_turn_location(self):
         location_of_turn_waypoint = self.waypoints[self.location_of_turn]
         t =  Transform(translation=(location_of_turn_waypoint[0], location_of_turn_waypoint[1]))
-        self.viewer.draw_circle(4*WP_RADIUS/SCALE, 4, True, color=TURN_LOCATION_COLOR).add_attr(t) # TODO Look into how to properly render a box instead of a circle with 4 points!
+        self.viewer.draw_circle(8*WP_RADIUS/SCALE, 4, True, color=TURN_LOCATION_COLOR).add_attr(t) # TODO Look into how to properly render a box instead of a circle with 4 points!
 
     def _render_mode_display(self):
         for i, d in enumerate(self.DIMENSIONS):
@@ -422,7 +422,7 @@ class ModeInferenceEnv(object):
     def _render_text(self):
         self.viewer.draw_text(self.msg_prompt, x=COMMAND_DISPLAY_POSITION[0], y=COMMAND_DISPLAY_POSITION[1], font_size=TRIAL_OVER_TEXT_FONTSIZE, color=COMMAND_TEXT_COLOR, bold=True)
 
-    def render_clear(self, msg): 
+    def render_clear(self, msg):
         self.viewer.window.clear()
         self.msg_prompt = msg
         self._render_text()
@@ -434,29 +434,29 @@ class ModeInferenceEnv(object):
     def _render_trial_over_text(self):
         self.viewer.draw_text("TRIAL OVER", x=TRIAL_OVER_TEXT_DISPLAY_POSITION[0], y=TRIAL_OVER_TEXT_DISPLAY_POSITION[1], font_size=TRIAL_OVER_TEXT_FONTSIZE, color=TRIAL_OVER_TEXT_COLOR, anchor_y=TRIAL_OVER_TEXT_Y_ANCHOR, bold=True)
 
-    def initialize_viewer(self): 
+    def initialize_viewer(self):
         if self.viewer is None:
             self.viewer = Viewer(VIEWPORT_W, VIEWPORT_H)
             self.viewer.set_bounds(0, VIEWPORT_W/SCALE, 0, VIEWPORT_H/SCALE)
             self.viewer.window.set_location(1650, 300)
             self.timer_thread.start()
 
-    def start_countdown(self): 
-        if self.ready_for_new_prompt: 
+    def start_countdown(self):
+        if self.ready_for_new_prompt:
             self.msg_prompt = EXPERIMENT_START_COUNTDOWN[self.start_msg_ind]
             self.start_msg_ind += 1
             self.ts = time.time()
-            self.ready_for_new_prompt = False 
-        if (time.time() - self.ts) >= self.text_display_delay: 
-            self.ready_for_new_prompt = True 
+            self.ready_for_new_prompt = False
+        if (time.time() - self.ts) >= self.text_display_delay:
+            self.ready_for_new_prompt = True
 
         self._render_text()
         self.viewer.render(False)
 
-        if self.start_msg_ind == len(EXPERIMENT_START_COUNTDOWN): 
+        if self.start_msg_ind == len(EXPERIMENT_START_COUNTDOWN):
             return 1
         else:
-            return 0 
+            return 0
 
     def render(self, mode='human'):
         # if self.viewer is None:
@@ -554,7 +554,7 @@ class ModeInferenceEnv(object):
         #TODO add all other initializations
         #destory time thread.
 
-    def initialize(self): 
+    def initialize(self):
         self.start_session = self.env_params['start']
 
         self.period = rospy.Duration(1.0)
