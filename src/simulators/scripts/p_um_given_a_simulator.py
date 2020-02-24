@@ -174,7 +174,7 @@ class Simulator(object):
                         #clear screen
                         if self.env_params['is_mode_switch']: 
                             time.sleep(0.5)
-                        self.env.render_clear('Loading next trial...')
+                        self.env.render_clear('Loading next trial ...')
                         time.sleep(1.0)
                         self.trial_index += 1
                         if self.trial_index == len(self.trial_list):
