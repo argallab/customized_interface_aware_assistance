@@ -171,10 +171,11 @@ class Simulator(object):
 
 				else: 
 
-					if (time.time() - self.trial_start_time) > self.max_time:
+					if (time.time() - self.trial_start_time) > self.max_time or is_done:
 						if not self.training:
 							print("Move to NEXT TRIAL")
 							self.trial_marker_pub.publish('end')
+							self.env.render_clear('Loading next trial ...')
 							time.sleep(3.0) #sleep before the next trial happens
 							self.trial_index += 1
 							if self.trial_index == len(self.metadata_index):
@@ -205,41 +206,6 @@ class Simulator(object):
 							self.is_restart = False
 						else:
 							self.shutdown_hook('Reached end of training. Training session timed out. End of session')
-							break
-
-					if is_done:
-						if not self.training:
-							print("TRIAL DONE")
-							self.trial_marker_pub.publish('end')
-							is_done = False
-							time.sleep(3.0)
-							self.trial_index += 1
-							if self.trial_index == len(self.metadata_index):
-								self.shutdown_hook('Reached end of trial list. End of session')
-								break
-							trial_info_filename_index = self.metadata_index[self.trial_index]
-							trial_info_filepath = os.path.join(self.trial_info_dir_path, str(trial_info_filename_index) +'.pkl')
-							assert os.path.exists(trial_info_filepath) is not None
-							with open(trial_info_filepath, 'rb') as fp:
-								trial_info_dict = pickle.load(fp)
-
-							assert 'env_params' in trial_info_dict
-							self.env_params = trial_info_dict['env_params']
-							print 'ASSISTANCE_TYPE', self.env_params['assistance_type']
-
-							rospy.set_param('assistance_type', self.env_params['assistance_type'])
-							self.set_mode_request = SetModeRequest()
-							self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params['start_mode']]
-							status = self.set_mode_srv(self.set_mode_request)
-
-							self.env.update_params(self.env_params)
-							self.env.reset()
-							self.env.render()
-							self.trial_marker_pub.publish('start')
-							self.trial_index_pub.publish(trial_info_filename_index)
-							self.trial_start_time = time.time()
-						else:
-							self.shutdown_hook('Reached end of training. End of session')
 							break
 
 				if self.restart:
