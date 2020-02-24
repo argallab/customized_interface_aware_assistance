@@ -26,7 +26,7 @@ from utils import RGOrient, StartDirection, AssistanceType
 from IPython import embed
 
 class Simulator(object):
-    def __init__(self, subject_id):
+    def __init__(self, subject_id, training):
 
         super(Simulator, self).__init__()
         rospy.init_node("Simulator")
@@ -55,6 +55,7 @@ class Simulator(object):
         self.trial_index = 0
         self.env_params = None
         self.subject_id = subject_id
+        self.training = training
         self.terminate = False
         self.restart = False
 
@@ -130,13 +131,16 @@ class Simulator(object):
         # self.trial_filename_pub.publish(trial_info_filename)
         # self.env.viewer.window.on_key_press = self.key_press
 
-        self.max_time = 5 # TODO change this for controlling max time for showing each prompt
-
         self.start = False
         first_trial = True 
         is_done = False
 
         r = rospy.Rate(100)       
+
+        self.max_time = 5 # TODO change this for controlling max time for showing each prompt
+        if self.training: 
+            time_check = self.max_time - 1
+
         while not rospy.is_shutdown():
 
             if not self.start: 
@@ -161,7 +165,10 @@ class Simulator(object):
 
                 else:  
 
-                    if (time.time() - self.trial_start_time) > self.max_time or is_done:
+                    if not self.training: 
+                        time_check = (time.time() - self.trial_start_time) 
+
+                    if time_check > self.max_time or is_done:
                         print("Move to NEXT TRIAL")
                         self.trial_marker_pub.publish('end')
                         #clear screen
@@ -235,6 +242,7 @@ class Simulator(object):
                     break
 
                 is_done = self.env.step(self.input_action)
+                self.env.render()
 
             r.sleep()
 
@@ -280,5 +288,6 @@ class Simulator(object):
 if __name__ == '__main__':
     #TODO parse num turns from launch file
     subject_id = sys.argv[1]
-    Simulator(subject_id)
+    training = int(sys.argv[2])
+    Simulator(subject_id, training)
     rospy.spin()
