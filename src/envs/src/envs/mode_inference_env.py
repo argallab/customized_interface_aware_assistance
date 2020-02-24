@@ -11,6 +11,8 @@ from utils import WP_RADIUS, INFLATION_FACTOR, PATH_HALF_WIDTH, MODE_INDEX_TO_DI
 from utils import RGOrient, StartDirection, PositionOnLine
 from utils import get_sign_of_number
 from utils import LOW_LEVEL_COMMANDS, HIGH_LEVEL_ACTIONS, TRUE_ACTION_TO_COMMAND, TRUE_COMMAND_TO_ACTION, MODE_SWITCH_TRANSITION, TRANSITION_FOR_ACTION
+from utils import COMMAND_TEXT_COLOR, COMMAND_DISPLAY_POSITION, COMMAND_DISPLAY_FONTSIZE 
+from utils import EXPERIMENT_START_COUNTDOWN   
 import csv
 import math
 import numpy as np
@@ -19,6 +21,7 @@ import itertools
 import rospy
 import threading
 from envs.srv import OptimalAction, OptimalActionRequest, OptimalActionResponse
+import time
 from IPython import embed
 
 class ModeInferenceEnv(object):
@@ -66,6 +69,10 @@ class ModeInferenceEnv(object):
         self.start_mode = None
         self.location_of_turn = None
         self.service_initialized = False
+
+        self.ready_for_new_prompt = True 
+        self.text_display_delay = 2 
+        self.start_msg_ind = 0 
 
     def update_params(self, env_params):
         self.env_params = env_params
@@ -412,15 +419,51 @@ class ModeInferenceEnv(object):
             else:
                 rospy.loginfo('took more time')
 
+    def _render_text(self):
+        self.viewer.draw_text(self.msg_prompt, x=COMMAND_DISPLAY_POSITION[0], y=COMMAND_DISPLAY_POSITION[1], font_size=TRIAL_OVER_TEXT_FONTSIZE, color=COMMAND_TEXT_COLOR, bold=True)
+
+    def render_clear(self, msg): 
+        self.viewer.window.clear()
+        self.msg_prompt = msg
+        self._render_text()
+        return self.viewer.render(False)
+
+    def close_window(self):
+        self.viewer.close()
+
     def _render_trial_over_text(self):
         self.viewer.draw_text("TRIAL OVER", x=TRIAL_OVER_TEXT_DISPLAY_POSITION[0], y=TRIAL_OVER_TEXT_DISPLAY_POSITION[1], font_size=TRIAL_OVER_TEXT_FONTSIZE, color=TRIAL_OVER_TEXT_COLOR, anchor_y=TRIAL_OVER_TEXT_Y_ANCHOR, bold=True)
 
-    def render(self, mode='human'):
+    def initialize_viewer(self): 
         if self.viewer is None:
             self.viewer = Viewer(VIEWPORT_W, VIEWPORT_H)
             self.viewer.set_bounds(0, VIEWPORT_W/SCALE, 0, VIEWPORT_H/SCALE)
             self.viewer.window.set_location(1650, 300)
             self.timer_thread.start()
+
+    def start_countdown(self): 
+        if self.ready_for_new_prompt: 
+            self.msg_prompt = EXPERIMENT_START_COUNTDOWN[self.start_msg_ind]
+            self.start_msg_ind += 1
+            self.ts = time.time()
+            self.ready_for_new_prompt = False 
+        if (time.time() - self.ts) >= self.text_display_delay: 
+            self.ready_for_new_prompt = True 
+
+        self._render_text()
+        self.viewer.render(False)
+
+        if self.start_msg_ind == len(EXPERIMENT_START_COUNTDOWN): 
+            return 1
+        else:
+            return 0 
+
+    def render(self, mode='human'):
+        # if self.viewer is None:
+        #     self.viewer = Viewer(VIEWPORT_W, VIEWPORT_H)
+        #     self.viewer.set_bounds(0, VIEWPORT_W/SCALE, 0, VIEWPORT_H/SCALE)
+        #     self.viewer.window.set_location(1650, 300)
+        #     self.timer_thread.start()
 
 
         #render location for turning
@@ -511,6 +554,17 @@ class ModeInferenceEnv(object):
         #TODO add all other initializations
         #destory time thread.
 
+    def initialize(self): 
+        self.start_session = self.env_params['start']
+
+        self.period = rospy.Duration(1.0)
+        self.timer_thread = threading.Thread(target=self._render_timer, args=(self.period,))
+        self.lock = threading.Lock()
+        self.current_time = 0
+        self.max_time = 50
+        print 'START'
+
+
     def reset(self):
         self._destroy()
 
@@ -592,6 +646,7 @@ class ModeInferenceEnv(object):
         if not self.service_initialized:
             rospy.Service('/mode_inference_env/get_optimal_action', OptimalAction, self.get_optimal_action)
             self.service_initialized = True
+
         self.period = rospy.Duration(1.0)
         self.timer_thread = threading.Thread(target=self._render_timer, args=(self.period,))
         self.lock = threading.Lock()
