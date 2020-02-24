@@ -12,6 +12,7 @@ from utils import RGOrient, StartDirection, PositionOnLine
 from utils import get_sign_of_number
 from utils import LOW_LEVEL_COMMANDS, HIGH_LEVEL_ACTIONS, TRUE_ACTION_TO_COMMAND, TRUE_COMMAND_TO_ACTION, MODE_SWITCH_TRANSITION, TRANSITION_FOR_ACTION
 from utils import COMMAND_TEXT_COLOR, COMMAND_DISPLAY_POSITION, COMMAND_DISPLAY_FONTSIZE 
+from utils import EXPERIMENT_START_COUNTDOWN    
 import csv
 import math
 import numpy as np
@@ -20,6 +21,7 @@ import itertools
 import rospy
 import threading
 from envs.srv import OptimalAction, OptimalActionRequest, OptimalActionResponse
+import time
 from IPython import embed
 
 class PUmGivenAEnv(object):
@@ -53,6 +55,9 @@ class PUmGivenAEnv(object):
         self.goal_orientation = None
         self.start_direction = None
 
+        self.ready_for_new_prompt = True
+        self.text_display_delay = 2 # secs
+        self.start_msg_ind = 0 
         self.orientaion_thresh = 0.7
         self.position_thresh = [3.5, 2.5]
 
@@ -229,11 +234,34 @@ class PUmGivenAEnv(object):
     def close_window(self):
         self.viewer.close()
 
-    def render(self, mode='human'):
+    def initialize_viewer(self): 
         if self.viewer is None:
             self.viewer = Viewer(VIEWPORT_W, VIEWPORT_H)
             self.viewer.set_bounds(0, VIEWPORT_W/SCALE, 0, VIEWPORT_H/SCALE)
             self.viewer.window.set_location(1650, 300)
+
+    def start_countdown(self): 
+        if self.ready_for_new_prompt: 
+            self.msg_prompt = EXPERIMENT_START_COUNTDOWN[self.start_msg_ind]
+            self.start_msg_ind += 1
+            self.ts = time.time()
+            self.ready_for_new_prompt = False 
+        if (time.time() - self.ts) >= self.text_display_delay: 
+            self.ready_for_new_prompt = True 
+
+        self._render_text()
+        self.viewer.render(False)
+
+        if self.start_msg_ind == len(EXPERIMENT_START_COUNTDOWN): 
+            return 1
+        else:
+            return 0 
+
+    def render(self, mode='human'):
+        # if self.viewer is None:
+        #     self.viewer = Viewer(VIEWPORT_W, VIEWPORT_H)
+        #     self.viewer.set_bounds(0, VIEWPORT_W/SCALE, 0, VIEWPORT_H/SCALE)
+        #     self.viewer.window.set_location(1650, 300)
 
         #render location for turning
         # self._render_turn_location()
@@ -309,9 +337,13 @@ class PUmGivenAEnv(object):
         self.robot = None
         self.waypoints = np.zeros((self.num_locations, 2))
 
+
+    def initialize(self): 
+        self.start_session = self.env_params['start']
+
     def reset(self):
         self._destroy()
-
+        
         self.robot_position = self.env_params['robot_position'] # starting position
         self.robot_orientation = self.env_params['robot_orientation'] # starting orientation
         self.goal_position = self.env_params['goal_position']
@@ -348,13 +380,14 @@ class PUmGivenAEnv(object):
 
     def step(self, input_action):
         assert 'human' in input_action.keys()
+        is_done = False 
 
+        # if self.start_session: 
         if self.is_mode_switch: 
 
             self.current_mode_index = rospy.get_param('mode')
-            self.current_mode = MODE_INDEX_TO_DIM[self.current_mode_index]       
+            self.current_mode = MODE_INDEX_TO_DIM[self.current_mode_index]    
 
-            is_done = False 
             if self.current_mode == self.target_mode: 
                 is_done = True 
             

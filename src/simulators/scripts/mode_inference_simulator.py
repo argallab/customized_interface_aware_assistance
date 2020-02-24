@@ -121,15 +121,22 @@ class Simulator(object):
 		self.set_mode_srv = rospy.ServiceProxy('/teleop_node/set_mode', SetMode)
 		self.set_mode_request = SetModeRequest()
 		self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params['start_mode']]
-
 		status = self.set_mode_srv(self.set_mode_request)
-		self.env = ModeInferenceEnv(self.env_params)
+		
 
-		self.env.reset()
-		self.env.render()
-		self.trial_marker_pub.publish('start')
-		self.trial_index_pub.publish(trial_info_filename_index)
+		# instantiate the environement
+		self.env_params['start'] = False 
+		self.env = ModeInferenceEnv(self.env_params)
+		self.env.initialize()
+		self.env.initialize_viewer()
 		self.env.viewer.window.on_key_press = self.key_press
+
+
+		# self.env.reset()
+		# self.env.render()
+		# self.trial_marker_pub.publish('start')
+		# self.trial_index_pub.publish(trial_info_filename_index)
+		
 
 		r = rospy.Rate(100)
 		self.trial_start_time = time.time()
@@ -138,134 +145,158 @@ class Simulator(object):
 		else:
 			self.max_time = 1000
 		is_done = False
+		first_trial = True
+		self.start = False 
 
 		while not rospy.is_shutdown():
-			if (time.time() - self.trial_start_time) > self.max_time:
-				if not self.training:
-					print("Move to NEXT TRIAL")
-					self.trial_marker_pub.publish('end')
-					time.sleep(3.0) #sleep before the next trial happens
-					self.trial_index += 1
-					if self.trial_index == len(self.metadata_index):
-						self.shutdown_hook('Reached end of trial list. End of session')
-						break #experiment is done
-					trial_info_filename_index = self.metadata_index[self.trial_index]
-					trial_info_filepath = os.path.join(self.trial_info_dir_path, str(trial_info_filename_index) +'.pkl')
-					assert os.path.exists(trial_info_filepath) is not None
-					with open(trial_info_filepath, 'rb') as fp:
-						trial_info_dict = pickle.load(fp)
 
-					assert 'env_params' in trial_info_dict
-					self.env_params = trial_info_dict['env_params']
-					print 'ASSISTANCE_TYPE', self.env_params['assistance_type']
+			if not self.start: 
+				self.start = self.env.start_countdown()
 
-					rospy.set_param('assistance_type', self.env_params['assistance_type'])
-					self.set_mode_request = SetModeRequest()
-					self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params['start_mode']]
-					status = self.set_mode_srv(self.set_mode_request)
+			else: 
 
-					self.env.update_params(self.env_params)
-					self.env.reset()
-					self.env.render()
+				if first_trial: 
+
+					time.sleep(2)
+
 					self.trial_marker_pub.publish('start')
 					self.trial_index_pub.publish(trial_info_filename_index)
+
+					self.env.reset()
+					self.env.render()                          
+					
 					self.trial_start_time = time.time()
-					is_done = False
-					self.is_restart = False
-				else:
-					self.shutdown_hook('Reached end of training. Training session timed out. End of session')
+					first_trial = False 
+
+
+				else: 
+
+					if (time.time() - self.trial_start_time) > self.max_time:
+						if not self.training:
+							print("Move to NEXT TRIAL")
+							self.trial_marker_pub.publish('end')
+							time.sleep(3.0) #sleep before the next trial happens
+							self.trial_index += 1
+							if self.trial_index == len(self.metadata_index):
+								self.shutdown_hook('Reached end of trial list. End of session')
+								break #experiment is done
+							trial_info_filename_index = self.metadata_index[self.trial_index]
+							trial_info_filepath = os.path.join(self.trial_info_dir_path, str(trial_info_filename_index) +'.pkl')
+							assert os.path.exists(trial_info_filepath) is not None
+							with open(trial_info_filepath, 'rb') as fp:
+								trial_info_dict = pickle.load(fp)
+
+							assert 'env_params' in trial_info_dict
+							self.env_params = trial_info_dict['env_params']
+							print 'ASSISTANCE_TYPE', self.env_params['assistance_type']
+
+							rospy.set_param('assistance_type', self.env_params['assistance_type'])
+							self.set_mode_request = SetModeRequest()
+							self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params['start_mode']]
+							status = self.set_mode_srv(self.set_mode_request)
+
+							self.env.update_params(self.env_params)
+							self.env.reset()
+							self.env.render()
+							self.trial_marker_pub.publish('start')
+							self.trial_index_pub.publish(trial_info_filename_index)
+							self.trial_start_time = time.time()
+							is_done = False
+							self.is_restart = False
+						else:
+							self.shutdown_hook('Reached end of training. Training session timed out. End of session')
+							break
+
+					if is_done:
+						if not self.training:
+							print("TRIAL DONE")
+							self.trial_marker_pub.publish('end')
+							is_done = False
+							time.sleep(3.0)
+							self.trial_index += 1
+							if self.trial_index == len(self.metadata_index):
+								self.shutdown_hook('Reached end of trial list. End of session')
+								break
+							trial_info_filename_index = self.metadata_index[self.trial_index]
+							trial_info_filepath = os.path.join(self.trial_info_dir_path, str(trial_info_filename_index) +'.pkl')
+							assert os.path.exists(trial_info_filepath) is not None
+							with open(trial_info_filepath, 'rb') as fp:
+								trial_info_dict = pickle.load(fp)
+
+							assert 'env_params' in trial_info_dict
+							self.env_params = trial_info_dict['env_params']
+							print 'ASSISTANCE_TYPE', self.env_params['assistance_type']
+
+							rospy.set_param('assistance_type', self.env_params['assistance_type'])
+							self.set_mode_request = SetModeRequest()
+							self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params['start_mode']]
+							status = self.set_mode_srv(self.set_mode_request)
+
+							self.env.update_params(self.env_params)
+							self.env.reset()
+							self.env.render()
+							self.trial_marker_pub.publish('start')
+							self.trial_index_pub.publish(trial_info_filename_index)
+							self.trial_start_time = time.time()
+						else:
+							self.shutdown_hook('Reached end of training. End of session')
+							break
+
+				if self.restart:
+					if not self.training:
+						print("RESTART INITIATED")
+						self.trial_marker_pub.publish('restart')
+						self.restart = False
+						time.sleep(3.0)
+						#TODO should I be incrementing trial index here or should I just restart the same trial?
+						if self.trial_index == len(self.metadata_index):
+							self.shutdown_hook('Reached end of trial list. End of session')
+							break
+						trial_info_filename_index = self.metadata_index[self.trial_index]
+						trial_info_filepath = os.path.join(self.trial_info_dir_path, str(trial_info_filename_index) + '.pkl')
+						assert os.path.exists(trial_info_filepath) is not None
+						with open(trial_info_filepath, 'rb') as fp:
+							trial_info_dict = pickle.load(fp)
+						assert 'env_params' in trial_info_dict
+						self.env_params = trial_info_dict['env_params']
+						print 'ASSISTANCE_TYPE', self.env_params['assistance_type']
+
+						rospy.set_param('assistance_type', self.env_params['assistance_type'])
+						self.set_mode_request = SetModeRequest()
+						self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params['start_mode']]
+						status = self.set_mode_srv(self.set_mode_request)
+
+						self.env.update_params(self.env_params)
+						self.env.reset()
+						self.env.render()
+						self.trial_marker_pub.publish('start')
+						self.trial_index_pub.publish(trial_info_filename_index)
+						self.trial_start_time = time.time()
+						is_done = False
+
+
+				robot_continuous_position, robot_continuous_orientation, robot_linear_velocity, robot_angular_velocity, robot_discrete_state, is_done = self.env.step(self.input_action)
+
+				self.robot_state.header.stamp = rospy.Time.now()
+				self.robot_state.robot_continuous_position = robot_continuous_position
+				self.robot_state.robot_continuous_orientation = robot_continuous_orientation
+				self.robot_state.robot_linear_velocity = robot_linear_velocity
+				self.robot_state.robot_angular_velocity = robot_angular_velocity
+
+				self.robot_state.robot_discrete_state.discrete_location = robot_discrete_state[0]
+				self.robot_state.robot_discrete_state.discrete_orientation = robot_discrete_state[1]
+				self.robot_state.robot_discrete_state.mode = robot_discrete_state[2]
+
+				self.robot_state_pub.publish(self.robot_state)
+
+				if self.terminate:
+					self.shutdown_hook('Session terminated')
 					break
 
-			if is_done:
-				if not self.training:
-					print("TRIAL DONE")
-					self.trial_marker_pub.publish('end')
-					is_done = False
-					time.sleep(3.0)
-					self.trial_index += 1
-					if self.trial_index == len(self.metadata_index):
-						self.shutdown_hook('Reached end of trial list. End of session')
-						break
-					trial_info_filename_index = self.metadata_index[self.trial_index]
-					trial_info_filepath = os.path.join(self.trial_info_dir_path, str(trial_info_filename_index) +'.pkl')
-					assert os.path.exists(trial_info_filepath) is not None
-					with open(trial_info_filepath, 'rb') as fp:
-						trial_info_dict = pickle.load(fp)
-
-					assert 'env_params' in trial_info_dict
-					self.env_params = trial_info_dict['env_params']
-					print 'ASSISTANCE_TYPE', self.env_params['assistance_type']
-
-					rospy.set_param('assistance_type', self.env_params['assistance_type'])
-					self.set_mode_request = SetModeRequest()
-					self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params['start_mode']]
-					status = self.set_mode_srv(self.set_mode_request)
-
-					self.env.update_params(self.env_params)
-					self.env.reset()
-					self.env.render()
-					self.trial_marker_pub.publish('start')
-					self.trial_index_pub.publish(trial_info_filename_index)
-					self.trial_start_time = time.time()
-				else:
-					self.shutdown_hook('Reached end of training. End of session')
-					break
-
-			if self.restart:
-				if not self.training:
-					print("RESTART INITIATED")
-					self.trial_marker_pub.publish('restart')
-					self.restart = False
-					time.sleep(3.0)
-					#TODO should I be incrementing trial index here or should I just restart the same trial?
-					if self.trial_index == len(self.metadata_index):
-						self.shutdown_hook('Reached end of trial list. End of session')
-						break
-					trial_info_filename_index = self.metadata_index[self.trial_index]
-					trial_info_filepath = os.path.join(self.trial_info_dir_path, str(trial_info_filename_index) + '.pkl')
-					assert os.path.exists(trial_info_filepath) is not None
-					with open(trial_info_filepath, 'rb') as fp:
-						trial_info_dict = pickle.load(fp)
-					assert 'env_params' in trial_info_dict
-					self.env_params = trial_info_dict['env_params']
-					print 'ASSISTANCE_TYPE', self.env_params['assistance_type']
-
-					rospy.set_param('assistance_type', self.env_params['assistance_type'])
-					self.set_mode_request = SetModeRequest()
-					self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params['start_mode']]
-					status = self.set_mode_srv(self.set_mode_request)
-
-					self.env.update_params(self.env_params)
-					self.env.reset()
-					self.env.render()
-					self.trial_marker_pub.publish('start')
-					self.trial_index_pub.publish(trial_info_filename_index)
-					self.trial_start_time = time.time()
-					is_done = False
-
-
-			robot_continuous_position, robot_continuous_orientation, robot_linear_velocity, robot_angular_velocity, robot_discrete_state, is_done = self.env.step(self.input_action)
-
-			self.robot_state.header.stamp = rospy.Time.now()
-			self.robot_state.robot_continuous_position = robot_continuous_position
-			self.robot_state.robot_continuous_orientation = robot_continuous_orientation
-			self.robot_state.robot_linear_velocity = robot_linear_velocity
-			self.robot_state.robot_angular_velocity = robot_angular_velocity
-
-			self.robot_state.robot_discrete_state.discrete_location = robot_discrete_state[0]
-			self.robot_state.robot_discrete_state.discrete_orientation = robot_discrete_state[1]
-			self.robot_state.robot_discrete_state.mode = robot_discrete_state[2]
-
-			self.robot_state_pub.publish(self.robot_state)
-
-			if self.terminate:
-				self.shutdown_hook('Session terminated')
-				break
-
-			self.env.render()
+				self.env.render()
 			r.sleep()
 
-		isStart = True
+		# isStart = True
 
 	def joy_callback(self, msg):
 		self.input_action['human'] = msg
@@ -274,6 +305,9 @@ class Simulator(object):
 		if not self.called_shutdown:
 			self.called_shutdown = True
 			self.shutdown_pub.publish("shutdown")
+			#clear screen
+			self.env.render_clear('End of trial...')    
+			self.env.close_window()
 			print('Shutting down')
 
 	def key_press(self, k, mode):

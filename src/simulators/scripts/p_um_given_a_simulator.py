@@ -27,12 +27,12 @@ from IPython import embed
 
 class Simulator(object):
     def __init__(self, subject_id):
+
         super(Simulator, self).__init__()
         rospy.init_node("Simulator")
         rospy.on_shutdown(self.shutdown_hook)
         self.called_shutdown = False
         
-
         self.dim = 3
         user_vel = CartVelCmd()
         _dim = [MultiArrayDimension()]
@@ -116,91 +116,126 @@ class Simulator(object):
         status = self.set_mode_srv(self.set_mode_request)
 
         #instantiate the environment
+        self.env_params['start'] = False
         self.env = PUmGivenAEnv(self.env_params)
-        self.env.reset()
-        self.env.render()
-
-        self.trial_marker_pub.publish('start')
-        self.publish_action(self.env_params['action'])
-        self.trial_filename_pub.publish(trial_info_filename)
+        self.env.initialize()
+        self.env.initialize_viewer()
         self.env.viewer.window.on_key_press = self.key_press
+
+        # self.env.reset()
+        # self.env.render()
+
+        # self.trial_marker_pub.publish('start')
+        # self.publish_action(self.env_params['action'])
+        # self.trial_filename_pub.publish(trial_info_filename)
+        # self.env.viewer.window.on_key_press = self.key_press
+
         self.max_time = 5 # TODO change this for controlling max time for showing each prompt
 
-        r = rospy.Rate(100)
-        self.trial_start_time = time.time()
-        is_done = False 
+        self.start = False
+        first_trial = True 
+        is_done = False
+
+        r = rospy.Rate(100)       
         while not rospy.is_shutdown():
-            if (time.time() - self.trial_start_time) > self.max_time or is_done:
-                print("Move to NEXT TRIAL")
-                self.trial_marker_pub.publish('end')
-                #clear screen
-                if self.env_params['is_mode_switch']: 
-                    time.sleep(0.5)
-                self.env.render_clear('Loading next trial...')
-                time.sleep(1.0)
-                self.trial_index += 1
-                if self.trial_index == len(self.trial_list):
-                    self.shutdown_hook('Reached end of trial list. End of Session')
-                    break
-                trial_info_filename = self.trial_list[self.trial_index]
-                trial_info_filepath = os.path.join(self.trial_info_dir_path, trial_info_filename)
-                assert os.path.exists(trial_info_filepath) is not None
-                with open(trial_info_filepath, 'rb') as fp:
-                    trial_info_dict = pickle.load(fp)
-                assert 'env_params' in trial_info_dict
-                self.env_params = trial_info_dict['env_params']
-                self.set_mode_request = SetModeRequest()
+
+            if not self.start: 
+                self.start = self.env.start_countdown()        
+            
+            else: 
+
+                if first_trial: 
+
+                    time.sleep(2)
+
+                    self.trial_marker_pub.publish('start')
+                    self.publish_action(self.env_params['action'])
+                    self.trial_filename_pub.publish(trial_info_filename)
+
+                    self.env.reset()
+                    self.env.render()                          
+                    
+                    self.trial_start_time = time.time()
+                    first_trial = False 
                 
-                self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params['allowed_mode_index']]
-                status = self.set_mode_srv(self.set_mode_request)
 
-                self.env.update_params(self.env_params)
-                self.env.reset()
-                self.env.render()
-                self.trial_marker_pub.publish('start')
-                self.publish_action(self.env_params['action'])
-                self.trial_filename_pub.publish(trial_info_filename)
-                self.trial_start_time = time.time()
-                self.restart = False
+                else:  
 
-            if self.restart:
-                self.trial_marker_pub.publish('restart')
-                self.restart = False
-                #potentially render a black screen between trials?
-                #self.env.render_black() #myabe pass an arg to self.env.render(show_blackout=True)
-                time.sleep(2.0)
-                self.trial_index += 1
-                if self.trial_index == len(self.trial_list):
-                    self.shutdown_hook('Reached end of trial list. End of Session')
+                    if (time.time() - self.trial_start_time) > self.max_time or is_done:
+                        print("Move to NEXT TRIAL")
+                        self.trial_marker_pub.publish('end')
+                        #clear screen
+                        if self.env_params['is_mode_switch']: 
+                            time.sleep(0.5)
+                        self.env.render_clear('Loading next trial...')
+                        time.sleep(1.0)
+                        self.trial_index += 1
+                        if self.trial_index == len(self.trial_list):
+                            self.shutdown_hook('Reached end of trial list. End of Session')
+                            break
+                        trial_info_filename = self.trial_list[self.trial_index]
+                        trial_info_filepath = os.path.join(self.trial_info_dir_path, trial_info_filename)
+                        assert os.path.exists(trial_info_filepath) is not None
+                        with open(trial_info_filepath, 'rb') as fp:
+                            trial_info_dict = pickle.load(fp)
+                        assert 'env_params' in trial_info_dict
+                        self.env_params = trial_info_dict['env_params']
+                        self.set_mode_request = SetModeRequest()
+                        
+                        self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params['allowed_mode_index']]
+                        status = self.set_mode_srv(self.set_mode_request)
+
+                        self.trial_marker_pub.publish('start')
+                        self.publish_action(self.env_params['action'])
+                        self.trial_filename_pub.publish(trial_info_filename)
+
+                        self.env.update_params(self.env_params)
+                        self.env.reset()
+                        self.env.render()
+                        
+                        self.trial_start_time = time.time()
+                        self.restart = False
+
+                if self.restart:
+                    self.trial_marker_pub.publish('restart')
+                    self.restart = False
+                    #potentially render a black screen between trials?
+                    #self.env.render_black() #myabe pass an arg to self.env.render(show_blackout=True)
+                    time.sleep(2.0)
+                    self.trial_index += 1
+                    if self.trial_index == len(self.trial_list):
+                        self.shutdown_hook('Reached end of trial list. End of Session')
+                        break
+                    trial_info_filename = self.trial_list[self.trial_index]
+                    trial_info_filepath = os.path.join(self.trial_info_dir_path, trial_info_filename)
+                    assert os.path.exists(trial_info_filepath) is not None
+                    with open(trial_info_filepath, 'rb') as fp:
+                        trial_info_dict = pickle.load(fp)
+
+                    assert 'env_params' in trial_info_dict
+                    self.env_params = trial_info_dict['env_params']
+                    self.set_mode_request = SetModeRequest()
+                    self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params['allowed_mode_index']]
+                    status = self.set_mode_srv(self.set_mode_request)
+
+                    self.trial_marker_pub.publish('start')
+                    self.publish_action(self.env_params['action'])
+                    self.trial_filename_pub.publish(trial_info_filename)
+
+                    self.env.update_params(self.env_params)
+                    self.env.reset()
+                    self.env.render()
+                    
+                    self.trial_start_time = time.time()
+                    self.restart = False
+                
+
+                if self.terminate:
+                    self.shutdown_hook('Session terminated')
                     break
-                trial_info_filename = self.trial_list[self.trial_index]
-                trial_info_filepath = os.path.join(self.trial_info_dir_path, trial_info_filename)
-                assert os.path.exists(trial_info_filepath) is not None
-                with open(trial_info_filepath, 'rb') as fp:
-                    trial_info_dict = pickle.load(fp)
 
-                assert 'env_params' in trial_info_dict
-                self.env_params = trial_info_dict['env_params']
-                self.set_mode_request = SetModeRequest()
-                self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params['allowed_mode_index']]
-                status = self.set_mode_srv(self.set_mode_request)
+                is_done = self.env.step(self.input_action)
 
-                self.env.update_params(self.env_params)
-                self.env.reset()
-                self.env.render()
-                self.trial_marker_pub.publish('start')
-                self.publish_action(self.env_params['action'])
-                self.trial_filename_pub.publish(trial_info_filename)
-                self.trial_start_time = time.time()
-                self.restart = False
-
-            is_done = self.env.step(self.input_action)
-
-            if self.terminate:
-                self.shutdown_hook('Session terminated')
-                break
-
-            self.env.render()
             r.sleep()
 
     def joy_callback(self, msg):        
