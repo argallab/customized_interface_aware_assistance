@@ -11,8 +11,9 @@ from utils import WP_RADIUS, INFLATION_FACTOR, PATH_HALF_WIDTH, MODE_INDEX_TO_DI
 from utils import RGOrient, StartDirection, PositionOnLine
 from utils import get_sign_of_number
 from utils import LOW_LEVEL_COMMANDS, HIGH_LEVEL_ACTIONS, TRUE_ACTION_TO_COMMAND, TRUE_COMMAND_TO_ACTION, MODE_SWITCH_TRANSITION, TRANSITION_FOR_ACTION
-from utils import COMMAND_TEXT_COLOR, COMMAND_DISPLAY_POSITION, COMMAND_DISPLAY_FONTSIZE
+from utils import COMMAND_TEXT_COLOR, COMMAND_DISPLAY_POSITION, COMMAND_DISPLAY_FONTSIZE, LABEL_DISPLAY_POSITION
 from utils import EXPERIMENT_START_COUNTDOWN
+from utils import ASSISTANCE_CODE_NAME
 import csv
 import math
 import numpy as np
@@ -162,7 +163,6 @@ class ModeInferenceEnv(object):
                         return self.WAYPOINTS_TO_LOCATION_DICT[tuple(p)], False
                     elif position_on_line == PositionOnLine.END:
                         return self.WAYPOINTS_TO_LOCATION_DICT[tuple(pt)], True
-
 
 
         return self.WAYPOINTS_TO_LOCATION_DICT[tuple(self.waypoints[-1])], True
@@ -419,13 +419,12 @@ class ModeInferenceEnv(object):
             else:
                 rospy.loginfo('took more time')
 
-    def _render_text(self):
-        self.viewer.draw_text(self.msg_prompt, x=COMMAND_DISPLAY_POSITION[0], y=COMMAND_DISPLAY_POSITION[1], font_size=TRIAL_OVER_TEXT_FONTSIZE, color=COMMAND_TEXT_COLOR, bold=True)
+    def _render_text(self, msg, position, font_size=TRIAL_OVER_TEXT_FONTSIZE, color=COMMAND_TEXT_COLOR):
+        self.viewer.draw_text(msg, x=position[0], y=position[1], font_size=font_size, color=color, bold=True)
 
     def render_clear(self, msg):
         self.viewer.window.clear()
-        self.msg_prompt = msg
-        self._render_text()
+        self._render_text(msg, COMMAND_DISPLAY_POSITION)
         return self.viewer.render(False)
 
     def close_window(self):
@@ -450,7 +449,7 @@ class ModeInferenceEnv(object):
         if (time.time() - self.ts) >= self.text_display_delay:
             self.ready_for_new_prompt = True
 
-        self._render_text()
+        self._render_text(self.msg_prompt, COMMAND_DISPLAY_POSITION)
         self.viewer.render(False)
 
         if self.start_msg_ind == len(EXPERIMENT_START_COUNTDOWN):
@@ -484,6 +483,8 @@ class ModeInferenceEnv(object):
         self._render_mode_display_text()
         #render timer
         self._render_timer_text()
+        #render assistance block label
+        self._render_text('Assistance Type: '+self.assistance_type, LABEL_DISPLAY_POSITION, MODE_DISPLAY_TEXT_FONTSIZE+5)
 
         if self.current_time >= self.max_time: #TODO change this time limit to a param
             self._render_trial_over_text()
@@ -578,6 +579,7 @@ class ModeInferenceEnv(object):
         self.r_to_g_relative_orientation = self.env_params['r_to_g_relative_orientation'] #top right, top left, bottom, right, bottom left. relative position of the goal with respect to starting position of robot
         self.start_direction = self.env_params['start_direction']
         self.start_mode = self.env_params['start_mode']
+        self.assistance_type = ASSISTANCE_CODE_NAME[self.env_params['assistance_type']] # label assistance type
         self.location_of_turn = self.env_params['location_of_turn'] #corresponds to the index in self.waypoints list
         self.num_locations = self.num_turns + 2 #num turns + start + end point
 
