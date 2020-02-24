@@ -332,7 +332,7 @@ class ModeInferenceEnv(object):
     def _render_goal(self):
         t = Transform(translation=(self.goal_position[0],self.goal_position[1]))
         self.viewer.draw_circle(GOAL_RADIUS/SCALE, 30, True, color=(0.53, 1.0, 0.42)).add_attr(t)
-        self.viewer.draw_line(self.goal_position, (self.goal_position[0] + 2*(GOAL_RADIUS/SCALE)*math.cos(self.goal_orientation), self.goal_position[1] + 2*(GOAL_RADIUS/SCALE)*math.sin(self.goal_orientation)) )
+        self.viewer.draw_line(self.goal_position, (self.goal_position[0] + 2*(GOAL_RADIUS/SCALE)*math.cos(self.goal_orientation), self.goal_position[1] + 2*(GOAL_RADIUS/SCALE)*math.sin(self.goal_orientation)), linewidth=3.0)
 
     def _render_bodies(self):
         for r in [self.robot]:
@@ -361,7 +361,7 @@ class ModeInferenceEnv(object):
 
     def _render_robot_direction_indicators(self):
         ep_markers = self.robot.get_direction_marker_end_points()
-        self.viewer.draw_line(ep_markers[0], ep_markers[1])
+        self.viewer.draw_line(ep_markers[0], ep_markers[1], linewidth=3.0)
 
     def _render_waypoints(self):
         #render the waypoints
