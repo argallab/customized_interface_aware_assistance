@@ -14,7 +14,7 @@ import rospkg
 
 sys.path.append(os.path.join(rospkg.RosPack().get_path('simulators'), 'scripts'))
 from utils import TRUE_ACTION_TO_COMMAND
-
+from utils import LOW_LEVEL_COMMANDS
 
 class IntendedCommandGivenActionAnalysis(object): 
     def __init__(self, args):
@@ -36,12 +36,12 @@ class IntendedCommandGivenActionAnalysis(object):
             self.P_UM_GIVEN_UI = pickle.load(fp) #assumes that the conditional probability distribution is stored as a collections.OrderedDict
 
 
-        self._compute_p_ui_given_a()
+        
 
     
-    def _compute_p_ui_given_a(self):         
+    def compute_p_ui_given_a(self):         
 
-        keys = ['Hard Puff', 'Hard Sip', 'Soft Puff', 'Soft Sip']
+        keys = LOW_LEVEL_COMMANDS
         A = np.array([self.P_UM_GIVEN_UI[keys[0]].values(), self.P_UM_GIVEN_UI[keys[1]].values(), self.P_UM_GIVEN_UI[keys[2]].values(), self.P_UM_GIVEN_UI[keys[3]].values()])
         
         p_ui = collections.OrderedDict()
@@ -58,8 +58,7 @@ class IntendedCommandGivenActionAnalysis(object):
                 for ind, key in enumerate(keys): 
                     p_ui[mode][action][key] = p_ui_given_a_dist[ind]
 
-        embed()
-        pickle.dump(p_ui, open(os.path.join(personalized_distributions_dir,self.id+'_p_ui_given_a.pkl'), "wb"))
+        pickle.dump(p_ui, open(os.path.join(self.personalized_distributions_dir, self.id+'_p_ui_given_a.pkl'), "wb"))
 
 
 if __name__ == '__main__': 
@@ -67,6 +66,5 @@ if __name__ == '__main__':
     parser.add_argument('-id', help='subject id', type=str)
     args = parser.parse_args()
     puia = IntendedCommandGivenActionAnalysis(args)
-    puia.build_distributions()
-
+    puia.compute_p_ui_given_a()
     # python p_ui_given_a_distribution_preprocessing.py -path mahdieh_internal_model -id mahdieh

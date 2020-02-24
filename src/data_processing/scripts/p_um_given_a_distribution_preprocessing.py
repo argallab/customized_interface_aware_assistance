@@ -242,7 +242,7 @@ if __name__ == '__main__':
 	parser.add_argument('-id', help='subject id', type=str)
 	args = parser.parse_args()
 	# embed(banner1="before initialization")
-	puia = MeasuredCommandGivenActionAnalysis(args)
-	puia.build_distributions()
+	puma = MeasuredCommandGivenActionAnalysis(args)
+	puma.build_distributions()
 
 	# python internal_mapping_distribution_preprocessing.py -path mahdieh_internal_model -id mahdieh
