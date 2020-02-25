@@ -54,4 +54,4 @@ if __name__ == '__main__':
     parser.add_argument('--metadata_dir', dest='metadata_dir',default=os.path.join(os.getcwd(), 'metadata_dir'), help="The directory where metadata of trials will be stored")
     parser.add_argument('--subject_id', dest='subject_id',default='deepak', help="unique_identifier for subject")
     args = parser.parse_args()
-    create_experiment_blocks(args, num_blocks=6)
+    create_experiment_blocks(args, num_blocks=12)
