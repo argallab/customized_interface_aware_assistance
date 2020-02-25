@@ -293,7 +293,7 @@ class PUmGivenAEnv(object):
         # self._render_turn_location()
         #render the goal position
         if not self.is_mode_switch:
-            self._render_goal()
+            # self._render_goal()
             #render bodies
             self._render_bodies()
             #draw robot direction indicator after the robot has been drawn.
