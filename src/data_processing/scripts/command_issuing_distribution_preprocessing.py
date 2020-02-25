@@ -29,6 +29,7 @@ def build_parser():
 	return parser
 
 def read_csv_files(path, command_prompt, user_input, output):
+	path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'raw_data', path)
 	user_input_file = path + '/' + user_input
 	command_prompt_file = path + '/' + command_prompt
 	command_prompt_df = pd.read_csv(command_prompt_file, header = 0)
@@ -170,7 +171,8 @@ def build_probabilities(command_prompt, user_input, subject_id):
 	for k, v in COMMAND_TO_ARRAY_DICT.items():
 		v = v/NUM_TIMES_COMMAND_PROMPT_SHOWN[k]
 		COMMAND_TO_ARRAY_DICT[k] = v
-		COMMAND_TO_ARRAY_DICT[k] = v/np.sum(v) #sometimes normalization is not perfect, so do it again. 
+		COMMAND_TO_ARRAY_DICT[k] = v/np.sum(v) #sometimes normalization is not perfect, so do it again.
+
 
 
 	# embed(banner1='check dict')
@@ -180,6 +182,15 @@ def build_probabilities(command_prompt, user_input, subject_id):
 	keys = ['Hard Puff', 'Hard Sip', 'Soft Puff', 'Soft Sip']
 	combination_pairs = [[0, 4], [1, 5]] #TODO replace it with dictionary mapping command strings to indices
 	COMMAND_TO_ARRAY_DICT = _combine_probabilities(COMMAND_TO_ARRAY_DICT, combination_pairs)
+	noise = 0.05
+	print(COMMAND_TO_ARRAY_DICT)
+	for k, v in COMMAND_TO_ARRAY_DICT.items():
+		v = v + noise*np.ones((4,))
+		v = v/np.sum(v)
+		COMMAND_TO_ARRAY_DICT[k] = v
+
+	# embed(banner1='check dict')
+
 	_init_p_um_given_ui(COMMAND_TO_ARRAY_DICT, keys, subject_id)
 
 	# for i in range(len(COMMAND_TO_PROFILE_ARRAY_DICT.keys())):
