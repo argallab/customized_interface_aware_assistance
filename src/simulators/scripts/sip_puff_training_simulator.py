@@ -14,6 +14,7 @@ from dynamic_reconfigure.server import Server
 from simulators.cfg import SipPuffTrainingParadigmConfig
 import sys
 from random import randrange
+from pyglet.window import key
 
 class SipPuffTraining(object):
     def __init__(self, iterations=1):
@@ -31,18 +32,20 @@ class SipPuffTraining(object):
         env_params['command'] = ''
 
         self.env = SipPuffTrainingEnv(env_params)
+        self.env.initialize_viewer()
+        self.env.viewer.window.on_key_press = self.key_press_callback
 
         r = rospy.Rate(100)
 
         while not rospy.is_shutdown():
             # self.env.reset()
-            self.env.step(self.env.env_params['command'] )
+            self.env.step(self.env.env_params['command'])
             self.env.render()
             r.sleep()
 
     def initialize_subscribers(self):
         rospy.Subscriber('/joy_sip_puff', Joy, self.joy_callback)
-        rospy.Subscriber('/keyboard_entry', String, self.keyboard_callback)
+        # rospy.Subscriber('/keyboard_entry', String, self.keyboard_callback)
 
     def initialize_services(self):
         training_paradigm_srv = Server(SipPuffTrainingParadigmConfig, self.reconfigure_cb)
@@ -52,13 +55,19 @@ class SipPuffTraining(object):
         # self.input = msg.header.frame_id
         self.env.env_params['command'] = msg.header.frame_id
 
-    def keyboard_callback(self, msg): 
-        # if in prompted training, start
-        if self.train_prompted:  
+    def key_press_callback(self, k, mode): 
+        if k==key.S: 
             print 'starting'
-            if msg.data == 's':    
-                self.env.env_params['start_prompt'] = True        
-                self.env.reset()
+            self.env.env_params['start_prompt'] = True        
+            self.env.reset()
+
+    # def keyboard_callback(self, msg): 
+    #     # if in prompted training, start
+    #     if self.train_prompted:  
+    #         print 'starting'
+    #         if msg.data == 's':    
+    #             self.env.env_params['start_prompt'] = True        
+    #             self.env.reset()
 
     # randomize commands iterations
     def generate_command_list(self):
