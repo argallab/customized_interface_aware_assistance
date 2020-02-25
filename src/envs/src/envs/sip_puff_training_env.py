@@ -27,7 +27,7 @@ class SipPuffTrainingEnv(object):
 
         self.prompt = ''
         self.start_prompt = False 
-        self.correct_count_threshold = 20
+        self.correct_count_threshold = 50
         self.clear_for_next_prompt = False
         self.time = time.time()
  
@@ -54,12 +54,13 @@ class SipPuffTrainingEnv(object):
     def _render_command_text(self):
         self.viewer.draw_text(self.prompt, x=COMMAND_DISPLAY_POSITION[0], y=COMMAND_DISPLAY_POSITION[1]/2, font_size=MODE_DISPLAY_TEXT_FONTSIZE, color=COMMAND_TEXT_COLOR, bold=self.bold)
 
-    def render(self):
+    def initialize_viewer(self): 
         if self.viewer is None:
             self.viewer = Viewer(VIEWPORT_W, VIEWPORT_H)
             self.viewer.set_bounds(0, VIEWPORT_W/SCALE, 0, VIEWPORT_H/SCALE)
             self.viewer.window.set_location(650, 300)
 
+    def render(self):
         self._render_command_display()
         self._render_command_display_text()
         self._render_command_text()
@@ -82,9 +83,11 @@ class SipPuffTrainingEnv(object):
                     self.prompt_commands.pop(0)
                     self.clear_for_next_prompt = True
                     self.time = time.time()
+            else: 
+                self.correct_count = 0 
             if self.clear_for_next_prompt: 
                 self.prompt = ''
-                if (time.time()-self.time>=0.5): 
+                if (time.time()-self.time>=0.6): 
                     self.ready_for_new_prompt = True
                     self.clear_for_next_prompt = False
                     if self.prompt_commands == []: 
