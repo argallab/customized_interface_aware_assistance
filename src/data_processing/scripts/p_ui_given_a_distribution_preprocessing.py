@@ -101,4 +101,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
     puia = IntendedCommandGivenActionAnalysis(args)
     puia.compute_p_ui_given_a()
-    # python p_ui_given_a_distribution_preprocessing.py -path mahdieh_internal_model -id mahdieh
+    # python p_ui_given_a_distribution_preprocessing.py -id mahdieh
