@@ -13,7 +13,7 @@ p6
 acutils
 RGOrient
 p7
-(I1
+(I3
 tp8
 Rp9
 aa(lp10
@@ -37,8 +37,8 @@ aa(lp19
 S'robot_position'
 p20
 a(lp21
-F22.5
-aF5.0
+F7.5
+aF15.0
 aaa(lp22
 S'robot_orientation'
 p23
@@ -47,8 +47,8 @@ aa(lp24
 S'goal_position'
 p25
 a(lp26
-F7.5
-aF15.0
+F22.5
+aF5.0
 aaa(lp27
 S'goal_orientation'
 p28
@@ -56,12 +56,12 @@ aF1.5707963267948966
 aa(lp29
 S'start_mode'
 p30
-aS'x'
+aS't'
 p31
 aa(lp32
 S'location_of_turn'
 p33
-aI1
+aI3
 aatp34
 Rp35
 aatp36

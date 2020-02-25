@@ -3,17 +3,17 @@
 import os
 from backends.rendering import Viewer
 from utils import SCALE, VIEWPORT_W, VIEWPORT_H
-from utils import COMMAND_TEXT_COLOR, COMMAND_DISPLAY_POSITION, COMMAND_DISPLAY_FONTSIZE 
+from utils import COMMAND_TEXT_COLOR, COMMAND_DISPLAY_POSITION, COMMAND_DISPLAY_FONTSIZE
 from utils import TIMER_DISPLAY_POSITION, TIMER_DISPLAY_FONTSIZE, TIMER_COLOR_NEUTRAL, TIMER_DISPLAY_TEXT_Y_ANCHOR
-from utils import EXPERIMENT_START_COUNTDOWN    
+from utils import EXPERIMENT_START_COUNTDOWN
 from simulators.msg import Command
 from std_msgs.msg import String
 import pyglet
-import collections 
+import collections
 import rospy
 import time
 from pyglet.window import key
-import random 
+import random
 import threading
 from IPython import embed
 
@@ -50,40 +50,40 @@ class ActionEnv(object):
         self.lock = threading.Lock()
         self.current_time = 0
         self.start_timer = False
-        self.start_training = False 
-        self.next = False 
-        self.back = False 
+        self.start_training = False
+        self.next = False
+        self.back = False
         self.current_block = 0
-        self.display_timer = False  
+        self.display_timer = False
         self.ready_for_user = False
 
-      
 
-    def initialize_viewer(self): 
+
+    def initialize_viewer(self):
         if self.viewer is None:
             self.viewer = Viewer(VIEWPORT_W*2, VIEWPORT_H*2)
             self.viewer.set_bounds(0, (VIEWPORT_W*2)/SCALE, 0, (VIEWPORT_H*2)/SCALE)
-            self.viewer.window.set_location(650, 300)
+            self.viewer.window.set_location(1650, 300)
             self.timer_thread.start()
-        
+
 
     def initialize_publishers(self, rostopic):
         # for ros bag purposes (not being used for any code logic)
         # self.action_pub = rospy.Publisher(rostopic, Command, queue_size=1)
-        # To do: clean publishers: 
+        # To do: clean publishers:
         self.sim_state = rospy.Publisher('sim_state', String, queue_size=1)
-        
+
 
     def publish_action(self, msg):
         self.action_msg.header.stamp = rospy.Time.now()
         self.action_msg.command = msg
         self.action_pub.publish(self.action_msg)
 
-    def publish_sim_state(self, msg): 
-        # self.sim_state_msg = msg 
+    def publish_sim_state(self, msg):
+        # self.sim_state_msg = msg
         self.sim_state.publish(msg)
 
-    def _set_image_path(self):         
+    def _set_image_path(self):
         self.file_path = os.path.abspath(os.path.join(self.file_dir, self.img_prompt+'.png'))
 
     def _render_sprite(self):
@@ -100,7 +100,7 @@ class ActionEnv(object):
             start = rospy.get_rostime()
             self.lock.acquire()
             if self.start_timer:
-                if self.current_time > 0: 
+                if self.current_time > 0:
                     self.current_time -= 1
             else:
                 pass
@@ -111,164 +111,163 @@ class ActionEnv(object):
             else:
                 rospy.loginfo('took more time')
 
-    def render(self):   
+    def render(self):
         self.viewer.window.clear()
 
-        if self.img_prompt != '': 
+        if self.img_prompt != '':
             self._render_sprite()
-        if self.display_timer: 
+        if self.display_timer:
             self._render_timer_text()
 
         self._render_text()
 
         return self.viewer.render(False)
 
-    def training_refresher(self): 
+    def training_refresher(self):
         self.img_prompt = self.training_prompts[self.msg_ind]
         # self.publish_action(self.img_prompt)
         self._set_image_path()
 
-    def step(self): 
+    def step(self):
 
-        bool_publish = False 
+        bool_publish = False
 
-        if self.start_prompt: 
-            if self.display_start_countdown: 
-                self.display_timer = False 
+        if self.start_prompt:
+            if self.display_start_countdown:
+                self.display_timer = False
                 if self.start_msg_ind < len(EXPERIMENT_START_COUNTDOWN):
-                    if self.ready_for_new_prompt: 
+                    if self.ready_for_new_prompt:
                         self.msg_prompt = EXPERIMENT_START_COUNTDOWN[self.start_msg_ind]
                         self.start_msg_ind += 1
                         self.ts = time.time()
-                        self.ready_for_new_prompt = False 
-                    if (time.time() - self.ts) >= self.text_timing_bound: 
-                        self.ready_for_new_prompt = True 
-                else: 
+                        self.ready_for_new_prompt = False
+                    if (time.time() - self.ts) >= self.text_timing_bound:
+                        self.ready_for_new_prompt = True
+                else:
                     self.msg_prompt = ''
                     self.display_start_countdown = False
                     self.clear_for_next_prompt = False
                     self.ready_for_new_prompt = True
-                    
+
                     self.publish_sim_state('start_test')
 
-            else: 
+            else:
 
-                if self.ready_for_new_prompt: 
+                if self.ready_for_new_prompt:
                     self.img_prompt = self.action_prompts[self.prompt_ind]
                     # self.publish_action(self.img_prompt)
                     bool_publish = True
                     self._set_image_path()
                     self.ready_for_new_prompt = False
-                    self.ready_for_user = True 
-                    self.display_timer = True 
+                    self.ready_for_user = True
+                    self.display_timer = True
                     self.ts = time.time()
-                    self.current_time = self.action_timing_bound                
+                    self.current_time = self.action_timing_bound
 
-                if self.clear_for_next_prompt:                     
+                if self.clear_for_next_prompt:
                     # to do: make  not hardcoded
                     if (time.time() - self.te>= 0.5): # delay for a little bit so user has some break in between trainsitions (not immediate)
                         self.prompt_ind += 1
                         self.ready_for_new_prompt = True
-                        self.clear_for_next_prompt = False 
+                        self.clear_for_next_prompt = False
                         self.img_prompt = ''
                         # self.publish_action(self.img_prompt)
                         bool_publish = True
                         if self.prompt_ind >= len(self.action_prompts): # if reached end of prompt list, if more batches left, go to training, else show end message
                             self.img_prompt = ''
-                            self.start_prompt = False                     
-                            if int(self.current_block) < int(self.blocks): 
-                                self.start_training = True 
+                            self.start_prompt = False
+                            if int(self.current_block) < int(self.blocks):
+                                self.start_training = True
                                 self.publish_sim_state('start_training')
-                            else: 
+                            else:
                                 self.msg_prompt = 'End of Test'
 
                 elif (time.time() - self.ts) >= self.action_timing_bound: # if no response from user and set time limit reached, clear for next prompt
                     self.clear_for_next_prompt = True
-                    self.ready_for_user = False 
+                    self.ready_for_user = False
                     self.te = time.time()
-                    self.msg_prompt = ''   
-                    self.img_prompt = ''                 
-                    self.display_timer = False 
+                    self.msg_prompt = ''
+                    self.img_prompt = ''
+                    self.display_timer = False
 
-                    
 
-        if self.start_training: 
+
+        if self.start_training:
             self.msg_prompt = ''
-            self.display_timer = False 
-            self.start_timer = False 
-            self.training_refresher() 
+            self.display_timer = False
+            self.start_timer = False
+            self.training_refresher()
 
         return(bool_publish, self.img_prompt)
 
-    def reset(self): 
-        if 'action_prompts' in self.env_params.keys(): 
+    def reset(self):
+        if 'action_prompts' in self.env_params.keys():
             self.action_prompts = self.env_params['action_prompts']
 
-        if 'start_prompt' in self.env_params.keys(): 
-            if self.start_prompt == False: 
+        if 'start_prompt' in self.env_params.keys():
+            if self.start_prompt == False:
                 self.start_prompt = self.env_params['start_prompt']
-                self.display_start_countdown = True                 
+                self.display_start_countdown = True
                 self.ready_for_new_prompt = True
                 self.clear_for_next_prompt = False
-                self.start_training = False 
+                self.start_training = False
                 self.prompt_ind = 0
                 self.start_msg_ind = 0
                 self.start_timer = True
                 random.shuffle(self.action_prompts)
                 self.publish_sim_state('start_countdown')
 
-        if 'training_prompts' in self.env_params.keys(): 
+        if 'training_prompts' in self.env_params.keys():
             self.training_prompts = self.env_params['training_prompts']
-            self.msg_ind = 0 
+            self.msg_ind = 0
 
-        if 'blocks' in self.env_params.keys(): 
+        if 'blocks' in self.env_params.keys():
             self.blocks = self.env_params['blocks']
             self.blocks = int(self.blocks)-1
 
-    def _get_user_input(self): 
+    def _get_user_input(self):
         # To do: Clean this up, divide to separate functions for next prompt and (next+back)
         if 'next_prompt' in self.env_params.keys(): # works only during start_prompt, if user responds with 1,2,3,4 key, will show next prompt
-            if self.ready_for_user: 
+            if self.ready_for_user:
                 self.clear_for_next_prompt = self.env_params['next_prompt']
-                self.env_params['next_prompt'] = False # reset 
-                self.ready_for_user = False 
+                self.env_params['next_prompt'] = False # reset
+                self.ready_for_user = False
                 self.te = time.time()
                 self.msg_prompt = ''
                 self.img_prompt = ''
                 self.display_timer = False
                 return True
-            
+
 
         if 'next' in self.env_params.keys(): # works only during training, if user presses -> button, will go to next image
-            if self.start_training: 
+            if self.start_training:
                 self.next = self.env_params['next']
-                if self.next:                 
-                    if self.msg_ind < len(self.training_prompts)-1: 
+                if self.next:
+                    if self.msg_ind < len(self.training_prompts)-1:
                         self.msg_ind += 1
-                    
+
                     elif self.msg_ind == len(self.training_prompts)-1:  # if at last training image and press next, start next batch again
                         self.env_params['start_prompt'] = True
                         self.current_block += 1 # increment batch/block
-                        self.start_training = False 
+                        self.start_training = False
                         self.img_prompt = ''
                         self.msg_prompt = ''
                         self.reset()
 
-                    self.env_params['next'] = False 
+                    self.env_params['next'] = False
 
-        if 'back' in self.env_params.keys(): # works only during training, if user presses <- goes to previous image 
-            if self.start_training: 
+        if 'back' in self.env_params.keys(): # works only during training, if user presses <- goes to previous image
+            if self.start_training:
                 self.back = self.env_params['back']
-                if self.back: 
-                    if self.msg_ind > 0 : 
-                        self.msg_ind -= 1 
-                    self.env_params['back'] = False 
-    
+                if self.back:
+                    if self.msg_ind > 0 :
+                        self.msg_ind -= 1
+                    self.env_params['back'] = False
 
-        return False 
-        
+
+        return False
+
 
 
 if __name__ == '__main__':
     ActionEnv()
-
