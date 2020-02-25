@@ -68,7 +68,7 @@ class Viewer(object):
     def add_onetime(self, geom):
         self.onetime_geoms.append(geom)
 
-    def add_sprite(self, sprite, x, y): 
+    def add_sprite(self, sprite, x, y):
         # self.sprites.append(sprite, x, y, batch=self.batch)
         self.sprites.append(sprite)
 
@@ -131,7 +131,7 @@ class Viewer(object):
         return geom
 
     def draw_text(self, text, x, y, color=(0,0,0,255), font_size=20, font_name='Arial', anchor_x='center', anchor_y = 'center', bold=False):
-        label = pyglet.text.Label(text, x=x, y=y, 
+        label = pyglet.text.Label(text, x=x, y=y,
                                   font_size=font_size, font_name=font_name,
                                   anchor_x=anchor_x, anchor_y=anchor_y,
                                   color=color, bold=bold
@@ -139,7 +139,7 @@ class Viewer(object):
         self.add_text_onetime(label)
         return label
 
-    def draw_sprite(self, image_file, x, y, scale=1): 
+    def draw_sprite(self, image_file, x, y, scale=1):
         img = pyglet.image.load(image_file)
         img_sprite = pyglet.sprite.Sprite(img, x, y, batch=self.batch)
         self.add_sprite(img_sprite, x, y)
@@ -309,6 +309,10 @@ class Line(Geom):
         glVertex2f(*self.start)
         glVertex2f(*self.end)
         glEnd()
+
+    def set_linewidth(self, x):
+        self.linewidth.stroke = x
+
 
 class Image(Geom):
     def __init__(self, fname, width, height):
