@@ -38,7 +38,7 @@ class ConcatenateMainStudyTopicsPerTrial(object):
 		self.sub_topics = {'infer_correct_info':['rosbagTimestamp', 'optimal_a', 'u_intended', 'normalized_h', 'u_corrected', 'is_corrected_or_filtered', 'is_u_intended_equals_um'], 
 						  'joy_sip_puff': ['rosbagTimestamp', 'frame_id', 'axes', 'buttons'],
 						  'joy_sip_puff_before': ['rosbagTimestamp', 'frame_id'], 
-						  'mode_switches':['rosbagTimestamp', 'mode'], 
+						  'mode_switches':['rosbagTimestamp', 'mode', 'frame_id'], 
 						  'robot_state': ['rosbagTimestamp', 'robot_continuous_position', 'robot_continuous_orientation', 'robot_linear_velocity', 'robot_angular_velocity', 'robot_discrete_state', 'discrete_location', 'discrete_orientation', 'mode'], 
 						  'trial_index': ['rosbagTimestamp', 'data'], 
 						  'trial_marker': ['rosbagTimestamp', 'data'], 
@@ -113,6 +113,7 @@ class ConcatenateMainStudyTopicsPerTrial(object):
 		self.df_dict['user_vel'].rename(columns={'data':'user_vel'}, inplace=True)
 		self.df_dict['trial_marker'].rename(columns={'data':'trial_marker'}, inplace=True)
 		self.df_dict['trial_index'].rename(columns={'data':'trial_index'}, inplace=True)
+		self.df_dict['mode_switches'].rename(columns={'frame_id':'mode_frame_id'}, inplace=True)
 
 		for df in self.df_dict.keys(): 
 			self.df_dict[df].rename(columns={'rosbagTimestamp':'time'}, inplace=True)
@@ -124,12 +125,15 @@ class ConcatenateMainStudyTopicsPerTrial(object):
 		self.start_ind = []
 		self.end_ind = []
 		for i in range(len(self.df_dict['trial_marker'])): 
+			# get start index
 			if self.df_dict['trial_marker'].loc[i,'trial_marker'] == 'start' and bool_start == False:
 				self.start_ind.append(self.df_dict['trial_marker'].loc[i,'time'])
 				bool_start = True 
+			# get end index
 			elif self.df_dict['trial_marker'].loc[i,'trial_marker'] == 'end' and bool_start == True:
 				self.end_ind.append(self.df_dict['trial_marker'].loc[i,'time'])
 				bool_start = False
+			# if was reset, reset start index
 			elif self.df_dict['trial_marker'].loc[i,'trial_marker'] == 'restart' and bool_start == True:
 				self.start_ind.pop() # pop out last element from start, not true start
 				bool_start = False 
@@ -175,7 +179,7 @@ class ConcatenateMainStudyTopicsPerTrial(object):
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
-	parser.add_argument('-block', help='experiment block: subject_id_type_assistance_block', type=str)
+	parser.add_argument('-b', '--block', help='experiment block: subject_id_type_assistance_block', type=str)
 	args = parser.parse_args()
 	block_to_trial = ConcatenateMainStudyTopicsPerTrial(args)
 	block_to_trial.create_csv_per_trial()
