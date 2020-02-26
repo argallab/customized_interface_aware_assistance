@@ -53,7 +53,7 @@ class SNPInput(ControlInput):
     self.gripper_vel_limit = rospy.get_param("/jaco_velocity_limits/gripper_vel_limit")
     self._vel_multiplier = self.velocity_scale*np.ones(self.robot_dim + self.finger_dim)*1
     ## HACK:
-    self._vel_multiplier[2] = 0.2*self._vel_multiplier[2]
+    self._vel_multiplier[2] = 0.4*self._vel_multiplier[2]
     self._max_cart_vel = np.ones(self.robot_dim + self.finger_dim)*rospy.get_param("/jaco_velocity_limits/max_cart_vel_mulitplier")
     if self.finger_dim > 0:
         for j in range(finger_dim):
