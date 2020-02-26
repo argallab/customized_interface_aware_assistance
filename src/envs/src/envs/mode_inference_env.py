@@ -685,7 +685,7 @@ class ModeInferenceEnv(object):
         self.timer_thread = threading.Thread(target=self._render_timer, args=(self.period,))
         self.lock = threading.Lock()
         self.current_time = 0
-        self.max_time = 5
+        self.max_time = 50
         print 'START'
 
 
