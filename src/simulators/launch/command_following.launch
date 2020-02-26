@@ -35,7 +35,7 @@
   <arg name="id" default="test" doc="trial identifier string"/>
   <group if="$(arg save)">
     <include file="$(find simulators)/launch/record.launch">
-      <arg name="bag_prefix" value="$(arg id)_command_issuing"/>
+      <arg name="bag_prefix" value="$(arg id)_p_um_given_ui"/>
     </include>    
   </group>
 
