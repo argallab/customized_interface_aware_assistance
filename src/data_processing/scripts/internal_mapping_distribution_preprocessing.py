@@ -15,7 +15,7 @@ import collections
 import bisect
 import rospkg
 sys.path.append(os.path.join(rospkg.RosPack().get_path('simulators'), 'scripts'))
-from utils import TRUE_ACTION_TO_COMMAND
+from utils import TRUE_ACTION_TO_COMMAND, LOW_LEVEL_COMMANDS
 
 class DataParser(object):
 	def __init__(self, file_dir):
@@ -109,6 +109,9 @@ class IntendedCommandGivenActionAnalysis(object):
 								'mode_switch_right_1': mode_r_x, 'mode_switch_right_2': mode_r_y, 'mode_switch_right_3': mode_r_t,
 								'mode_switch_left_1': mode_l_x, 'mode_switch_left_2': mode_l_y, 'mode_switch_left_3': mode_l_t}
 
+
+
+
 		# keep dict of lengths, to reduce normalizer if person missed input
 		ACTION_TO_ARRAY_NORMALIZER_DICT = {'up': iters_per_action, 'down': iters_per_action, 'left': iters_per_action, 'right': iters_per_action, 'clockwise': iters_per_action, 'counterclockwise': iters_per_action,
 								'mode_switch_right_1': iters_per_action, 'mode_switch_right_2': iters_per_action, 'mode_switch_right_3': iters_per_action,
@@ -140,12 +143,27 @@ class IntendedCommandGivenActionAnalysis(object):
 		self.create_p_ui_given_a(ACTION_TO_ARRAY_DICT)
 
 	def create_p_ui_given_a(self, probabilities):
+		TRUE_P_UI_GIVEN_A = collections.OrderedDict()
+		modes = ['x', 'y', 't']
+		for m in modes:
+			TRUE_P_UI_GIVEN_A[m] = collections.OrderedDict()
+			for a in TRUE_ACTION_TO_COMMAND[m].keys():
+				TRUE_P_UI_GIVEN_A[m][a] = collections.OrderedDict()
+				for ui in LOW_LEVEL_COMMANDS:
+					if ui == TRUE_ACTION_TO_COMMAND[m][a]:
+						TRUE_P_UI_GIVEN_A[m][a][ui] = 1.0
+					else:
+						TRUE_P_UI_GIVEN_A[m][a][ui] = 0.0
+
 		keys = ['Hard Puff', 'Hard Sip', 'Soft Puff', 'Soft Sip']
 		p_ui_given_a = collections.OrderedDict()
+		diff_norm_p_ui_given_a = collections.OrderedDict()
 		for mode in TRUE_ACTION_TO_COMMAND.keys():
 			p_ui_given_a[mode] = collections.OrderedDict()
+			diff_norm_p_ui_given_a[mode] = collections.OrderedDict()
 			for action in TRUE_ACTION_TO_COMMAND[mode].keys():
 				p_ui_given_a[mode][action] = collections.OrderedDict()
+
 				if mode == 'x':
 					if action == 'move_p':
 						prob = probabilities['right']
@@ -164,7 +182,7 @@ class IntendedCommandGivenActionAnalysis(object):
 						prob = probabilities['mode_switch_right_2']
 					if action == 'mode_l':
 						prob = probabilities['mode_switch_left_2']
-				if mode == 'l':
+				if mode == 't':
 					if action == 'move_p':
 						prob = probabilities['counterclockwise']
 					if action == 'move_n':
@@ -174,15 +192,25 @@ class IntendedCommandGivenActionAnalysis(object):
 					if action == 'mode_l':
 						prob = probabilities['mode_switch_left_3']
 
-				noise_level = 0.01
-				prob = prob + noise_level*np.ones((4,))
-				prob = prob/np.sum(prob)
+				# noise_level = 0.02
+				# prob = prob + noise_level*np.ones((4,))
+				# prob = prob/np.sum(prob)
 
 				for ind, key in enumerate(keys):
 					p_ui_given_a[mode][action][key] = prob[ind]
 
-				# embed(banner1='check prob')
+				diff_norm_p_ui_given_a[mode][action] = np.linalg.norm(np.array(TRUE_P_UI_GIVEN_A[mode][action].values()) - prob)
 
+				flatten = itertools.chain.from_iterable
+				list_of_all_diff_norms = [d.values() for d in diff_norm_p_ui_given_a.values()]
+				list_of_all_diff_norms = list(flatten(list_of_all_diff_norms))
+
+
+				# embed(banner1='check prob')
+		# embed(banner1='check')
+		print(max(list_of_all_diff_norms))
+		if max(list_of_all_diff_norms) > 0.22:
+			print ("NEEEEDS MORE TRAINING", max(list_of_all_diff_norms))
 		personalized_distributions_dir = os.path.join(rospkg.RosPack().get_path('inference_and_correction'), 'personalized_distributions')
 		pickle.dump(p_ui_given_a, open(os.path.join(personalized_distributions_dir,self.id+'_p_ui_given_a.pkl'), "wb"))
 
