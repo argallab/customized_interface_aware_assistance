@@ -9,22 +9,24 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from IPython import embed
-import pickle  
+import pickle
 import itertools
-import collections 
+import collections
 import bisect
 import rospkg
 sys.path.append(os.path.join(rospkg.RosPack().get_path('simulators'), 'scripts'))
 from utils import TRUE_ACTION_TO_COMMAND
 
-class DataParser(object): 
+class DataParser(object):
 	def __init__(self, file_dir):
 		super(DataParser, self).__init__()
 
-		results_files = os.listdir(file_dir) 
-		action_prompt_file = os.path.join(file_dir, '_action_prompt.csv') 
-		user_response_file = os.path.join(file_dir, '_joy_sip_puff.csv') 
-		trial_marker_file = os.path.join(file_dir, '_trial_marker.csv') 
+		# results_files = os.listdir(file_dir)
+		full_file_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'raw_data', file_dir)
+		results_files = os.listdir(full_file_dir)
+		action_prompt_file = os.path.join(full_file_dir, '_action_prompt.csv')
+		user_response_file = os.path.join(full_file_dir, '_joy_sip_puff.csv')
+		trial_marker_file = os.path.join(full_file_dir, '_trial_marker.csv')
 
 		self.action_prompt_df = self.read_csv_files(action_prompt_file)
 		self.user_response_df = self.read_csv_files(user_response_file)
@@ -33,9 +35,9 @@ class DataParser(object):
 	def read_csv_files(self, file_path):
 
 		df = pd.read_csv(file_path, header = 0)
-		return df 
+		return df
 
-class MeasuredCommandGivenActionAnalysis(object): 
+class MeasuredCommandGivenActionAnalysis(object):
 	def __init__(self, args):
 
 		self.file_dir = args.path
@@ -87,12 +89,12 @@ class MeasuredCommandGivenActionAnalysis(object):
 
 		if length != 0:
 			norm_counts_array = counts_array/length
-		else: 
+		else:
 			norm_counts_array = counts_array = np.zeros(len(LABEL_TO_ARRAY_DICT))
 
 		return norm_counts_array
-	
-	def _combine_probabilities(self, command_to_array_dict, combination_pairs): 
+
+	def _combine_probabilities(self, command_to_array_dict, combination_pairs):
 		for key in command_to_array_dict:
 			for cp in combination_pairs:
 				command_to_array_dict[key][cp[0]] = command_to_array_dict[key][cp[0]] + command_to_array_dict[key][cp[1]]
@@ -105,11 +107,11 @@ class MeasuredCommandGivenActionAnalysis(object):
 
 		return command_to_array_dict
 #
-	def build_distributions(self): 
+	def build_distributions(self):
 
 		# create dictionary to map user input to the low level commands for the final p_ui_given_a dict
 		USER_RESPONSE_DICT = {'1': 'Hard Puff', '2': 'Hard Sip', '3': 'Soft Puff', '4': 'Soft Sip'}
-		
+
 		# hard puff, hard sip, soft puff, soft sip
 		up = np.zeros(6)
 		down = np.zeros(6)
@@ -129,53 +131,57 @@ class MeasuredCommandGivenActionAnalysis(object):
 		iters_per_action = len(self.data.action_prompt_df)/24
 
 		# dictionary for mapping action prompts to the arrays we want to fill
-		ACTION_TO_ARRAY_DICT = {'UP': up, 'DOWN': down, 'LEFT': left, 'RIGHT': right, 'CLOCKWISE': cw, 'COUNTERCLOCKWISE': ccw, 
-								'xy': mode_r_x, 'yt': mode_r_y, 'tx': mode_r_t, 
+		ACTION_TO_ARRAY_DICT = {'UP': up, 'DOWN': down, 'LEFT': left, 'RIGHT': right, 'CLOCKWISE': cw, 'COUNTERCLOCKWISE': ccw,
+								'xy': mode_r_x, 'yt': mode_r_y, 'tx': mode_r_t,
 								'xt': mode_l_x, 'yx': mode_l_y, 'ty': mode_l_t}
 
 		# keep dict of lengths, to reduce normalizer if person missed input
-		ACTION_TO_ARRAY_NORMALIZER_DICT = {'UP': iters_per_action, 'DOWN': iters_per_action, 'LEFT': iters_per_action, 'RIGHT': iters_per_action, 'CLOCKWISE': iters_per_action, 'COUNTERCLOCKWISE': iters_per_action, 
-								'xy': iters_per_action, 'yt': iters_per_action, 'tx': iters_per_action, 
+		ACTION_TO_ARRAY_NORMALIZER_DICT = {'UP': iters_per_action, 'DOWN': iters_per_action, 'LEFT': iters_per_action, 'RIGHT': iters_per_action, 'CLOCKWISE': iters_per_action, 'COUNTERCLOCKWISE': iters_per_action,
+								'xy': iters_per_action, 'yt': iters_per_action, 'tx': iters_per_action,
 								'xt': iters_per_action, 'yx': iters_per_action, 'ty': iters_per_action}
 
-		NUM_TIMES_ACTION_PROMPT_SHOWN = {'UP': 0, 'DOWN': 0, 'LEFT': 0, 'RIGHT': 0, 'CLOCKWISE': 0, 'COUNTERCLOCKWISE': 0, 
-								'xy': 0, 'yt': 0, 'tx': 0, 
+		NUM_TIMES_ACTION_PROMPT_SHOWN = {'UP': 0, 'DOWN': 0, 'LEFT': 0, 'RIGHT': 0, 'CLOCKWISE': 0, 'COUNTERCLOCKWISE': 0,
+								'xy': 0, 'yt': 0, 'tx': 0,
 								'xt': 0, 'yx': 0, 'ty': 0}
 
-		# for i in range(start_ind, len(self.data.trial_marker_df)-1, 2): 
+		# for i in range(start_ind, len(self.data.trial_marker_df)-1, 2):
 
-		if self.data.trial_marker_df.at[0, 'data'] == "end": 
+		if self.data.trial_marker_df.at[0, 'data'] == "end":
 			print 'first is end:'
 			ind = 1
-		else: 
+		else:
 			ind = 0
 
-		for i in range(0, len(self.data.action_prompt_df)): 
-			
+
+		for i in range(0, len(self.data.action_prompt_df)):
+
 			key = self.data.action_prompt_df.at[i, 'command'].replace('"', '')
 
 			prompt_t_s = self.data.trial_marker_df.at[ind, 'rosbagTimestamp']
 			prompt_t_e = self.data.trial_marker_df.at[ind+1, 'rosbagTimestamp']
 
-			ind += 1
+			ind += 2
 
 			user_response_block_indices = self.get_user_response_block_indices(prompt_t_s, prompt_t_e, self.data.user_response_df)
 
 			user_response_header = self.data.user_response_df['frame_id'][user_response_block_indices]
-
-			ACTION_TO_ARRAY_DICT[key] += self.populate_probabilities_from_count(user_response_header)
-			NUM_TIMES_ACTION_PROMPT_SHOWN[key] = NUM_TIMES_ACTION_PROMPT_SHOWN[key] + 1
+			prob_count = self.populate_probabilities_from_count(user_response_header)
+			if np.sum(prob_count == np.zeros((6,))) != 6:
+				ACTION_TO_ARRAY_DICT[key] += prob_count
+				NUM_TIMES_ACTION_PROMPT_SHOWN[key] = NUM_TIMES_ACTION_PROMPT_SHOWN[key] + 1
 
 
 		for k, v in ACTION_TO_ARRAY_DICT.items():
 			v = v/NUM_TIMES_ACTION_PROMPT_SHOWN[k]
 			ACTION_TO_ARRAY_DICT[k] = v
-			ACTION_TO_ARRAY_DICT[k] = v/np.sum(v) #sometimes normalization is not perfect, so do it again. 
+			ACTION_TO_ARRAY_DICT[k] = v/np.sum(v) #sometimes normalization is not perfect, so do it again.
 
 
 		keys = ['Hard Puff', 'Hard Sip', 'Soft Puff', 'Soft Sip']
 		combination_pairs = [[0, 4], [1, 5]] #TODO replace it with dictionary mapping command strings to indices
+		# embed(banner1='check pum_given_a')
 		ACTION_TO_ARRAY_DICT = self._combine_probabilities(ACTION_TO_ARRAY_DICT, combination_pairs)
+
 		self.create_p_um_given_a(ACTION_TO_ARRAY_DICT)
 
 
@@ -183,60 +189,60 @@ class MeasuredCommandGivenActionAnalysis(object):
 		# 		user_response = int(self.data.user_response_df['command'][user_response_block_indices].replace('"', ''))
 		# 		ACTION_TO_ARRAY_DICT[key][user_response-1] += 1
 
-		# 	else: 
+		# 	else:
 		# 		ACTION_TO_ARRAY_NORMALIZER_DICT[key] -= 1
 
 
 		# # normalize
-		# for k, v in ACTION_TO_ARRAY_DICT.items(): 
+		# for k, v in ACTION_TO_ARRAY_DICT.items():
 		# 	v = v/ACTION_TO_ARRAY_NORMALIZER_DICT[k]
-		# 	ACTION_TO_ARRAY_DICT[k] = v 			
+		# 	ACTION_TO_ARRAY_DICT[k] = v
 
 		# self.create_p_ui_given_a(ACTION_TO_ARRAY_DICT)
 
-	def create_p_um_given_a(self, probabilities): 
+	def create_p_um_given_a(self, probabilities):
 		keys = ['Hard Puff', 'Hard Sip', 'Soft Puff', 'Soft Sip']
 		p_um = collections.OrderedDict()
 		for mode in TRUE_ACTION_TO_COMMAND.keys():
 			p_um[mode] = collections.OrderedDict()
-			for action in TRUE_ACTION_TO_COMMAND[mode].keys(): 
+			for action in TRUE_ACTION_TO_COMMAND[mode].keys():
 				p_um[mode][action] = collections.OrderedDict()
-				if mode == 'x': 
-					if action == 'move_p': 
+				if mode == 'x':
+					if action == 'move_p':
 						prob = probabilities['RIGHT']
-					if action == 'move_n': 
+					if action == 'move_n':
 						prob = probabilities['LEFT']
-					if action == 'mode_r': 
+					if action == 'mode_r':
 						prob = probabilities['xy']
-					if action == 'mode_l': 
+					if action == 'mode_l':
 						prob = probabilities['xt']
-				if mode == 'y': 
-					if action == 'move_p': 
+				if mode == 'y':
+					if action == 'move_p':
 						prob = probabilities['UP']
-					if action == 'move_n': 
+					if action == 'move_n':
 						prob = probabilities['DOWN']
-					if action == 'mode_r': 
+					if action == 'mode_r':
 						prob = probabilities['yt']
 					if action == 'mode_l':
 						prob = probabilities['yx']
-				if mode == 'l': 
-					if action == 'move_p': 
+				if mode == 't':
+					if action == 'move_p':
 						prob = probabilities['COUNTERCLOCKWISE']
-					if action == 'move_n': 
+					if action == 'move_n':
 						prob = probabilities['CLOCKWISE']
 					if action == 'mode_r':
-						prob = probabilities['tx'] 
+						prob = probabilities['tx']
 					if action == 'mode_l':
 						prob = probabilities['ty']
 
-				for ind, key in enumerate(keys): 
+				for ind, key in enumerate(keys):
 					p_um[mode][action][key] = prob[ind]
 
 		personalized_distributions_dir = os.path.join(rospkg.RosPack().get_path('inference_and_correction'), 'personalized_distributions')
 		pickle.dump(p_um, open(os.path.join(personalized_distributions_dir,self.id+'_p_um_given_a.pkl'), "wb"))
 
 
-if __name__ == '__main__': 
+if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-path', help = 'Path to csv files to read', type=str)
 	parser.add_argument('-id', help='subject id', type=str)
