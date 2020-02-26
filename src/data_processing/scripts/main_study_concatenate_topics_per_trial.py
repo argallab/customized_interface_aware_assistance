@@ -95,20 +95,28 @@ class ConcatenateMainStudyTopicsPerTrial(object):
     		flag = 1
     	return flag
 
+
+    def ensure_trials_marked(self): 
+    	# make sure have the right number of start and end markers
+    	num_trials = self.pd_dict['trial_index']
+
     def create_csv_per_trial(self): 
 
     	self.load_topic_csvs() # load data
     	self.rename_df_column() # prevent identical column names before merging 
 
-    	# first combine all data together using the time stamp
-    	frames = [self.pd_dict[key] for key in self.pd_dict.keys()]
+    	# get all dataframes except trial_index (doesn't need to be included, just for naming)
+    	keys = self.pd_dict.keys()
+    	keys.remove('trial_index')
+    	frames = [self.pd_dict[key] for key in keys]
 
+    	# combine all data together using the time stamp
     	frankenstein_df = frames[0]
     	for i in range(1,len(frames)):  
     		frankenstein_df = frankenstein_df.merge(frames[i], how='outer', sort=True)
 
     	assert self.ensure_ascending(frankenstein_df.time) # sanity check
-    	
+
     	embed()
 
 
