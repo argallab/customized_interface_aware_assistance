@@ -15,10 +15,11 @@ import sys
 sys.path.append(os.path.join(rospkg.RosPack().get_path('simulators'), 'scripts'))
 from utils import TRUE_ACTION_TO_COMMAND, LOW_LEVEL_COMMANDS
 from utils import AssistanceType
+from scipy.stats import entropy
 
 
 class ModeSwitchInferenceAndCorrection(object):
-    def __init__(self, subject_id):
+    def __init__(self, subject_id, optim):
         rospy.init_node('mode_switch_inference_and_correction', anonymous=True)
         self.subject_id = subject_id
         self.distribution_directory_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'personalized_distributions')
@@ -32,6 +33,7 @@ class ModeSwitchInferenceAndCorrection(object):
         self.DEFAULT_UM_GIVEN_UI_NOISE = 0.3
         self.P_UI_GIVEN_UM = collections.OrderedDict()
         self.ASSISTANCE_TYPE = rospy.get_param('assistance_type', 2)
+
         if self.ASSISTANCE_TYPE == 0:
             self.ASSISTANCE_TYPE = AssistanceType.Filter
         elif self.ASSISTANCE_TYPE == 1:
@@ -39,19 +41,29 @@ class ModeSwitchInferenceAndCorrection(object):
         elif self.ASSISTANCE_TYPE == 2:
             self.ASSISTANCE_TYPE = AssistanceType.No_Assistance
 
-        self.ENTROPY_THRESHOLD = rospy.get_param('entropy_threshold', 0.7)
+        self.ENTROPY_THRESHOLD = rospy.get_param('entropy_threshold', 0.9)
 
         for u in LOW_LEVEL_COMMANDS:
             self.P_UI_GIVEN_UM[u] = 1.0/len(LOW_LEVEL_COMMANDS)
 
-        if os.path.exists(os.path.join(self.distribution_directory_path, str(self.subject_id)+'_p_ui_given_a.pkl')):
-            print('LOADING PERSONALIZED P_UI_GIVEN_A')
-            with open(os.path.join(self.distribution_directory_path, str(self.subject_id)+'_p_ui_given_a.pkl'), 'rb') as fp:
-                self.P_UI_GIVEN_A = pickle.load(fp)#assumes that the conditional probability distribution is stored as a collections.OrderedDict conditioned on the mode
-
+        self.optim = optim
+        if self.optim:
+            if os.path.exists(os.path.join(self.distribution_directory_path, str(self.subject_id)+'_p_ui_given_a_optim.pkl')):
+                print('LOADING PERSONALIZED P_UI_GIVEN_A_OPTIM')
+                with open(os.path.join(self.distribution_directory_path, str(self.subject_id)+'_p_ui_given_a_optim.pkl'), 'rb') as fp:
+                    self.P_UI_GIVEN_A = pickle.load(fp)#assumes that the conditional probability distribution is stored as a collections.OrderedDict conditioned on the mode
+            else:
+                self.P_UI_GIVEN_A = collections.OrderedDict()
+                self._init_p_ui_given_a()
         else:
-            self.P_UI_GIVEN_A = collections.OrderedDict()
-            self._init_p_ui_given_a()
+            if os.path.exists(os.path.join(self.distribution_directory_path, str(self.subject_id)+'_p_ui_given_a.pkl')):
+                print('LOADING PERSONALIZED P_UI_GIVEN_A')
+                with open(os.path.join(self.distribution_directory_path, str(self.subject_id)+'_p_ui_given_a.pkl'), 'rb') as fp:
+                    self.P_UI_GIVEN_A = pickle.load(fp)#assumes that the conditional probability distribution is stored as a collections.OrderedDict conditioned on the mode
+            else:
+                self.P_UI_GIVEN_A = collections.OrderedDict()
+                self._init_p_ui_given_a()
+
 
         if os.path.exists(os.path.join(self.distribution_directory_path, str(self.subject_id)+'_p_um_given_ui.pkl')):
             print('LOADING PERSONALIZED P_UM_GIVEN_UI')
@@ -113,7 +125,9 @@ class ModeSwitchInferenceAndCorrection(object):
         p_ui_given_um_vector = p_ui_given_um_vector + np.finfo(p_ui_given_um_vector.dtype).tiny
         uniform_distribution = np.array([1.0/p_ui_given_um_vector.size]*p_ui_given_um_vector.size)
         max_entropy = -np.dot(uniform_distribution, np.log2(uniform_distribution))
+        # max_entropy = entropy(uniform_distribution, base=2)
         normalized_h_of_p_ui_given_um = -np.dot(p_ui_given_um_vector, np.log2(p_ui_given_um_vector))/max_entropy
+        # normalized_h_of_p_ui_given_um = entropy(p_ui_given_um_vector, base=2)/max_entropy
         return normalized_h_of_p_ui_given_um
 
     def compute_u_intended(self):
@@ -136,13 +150,16 @@ class ModeSwitchInferenceAndCorrection(object):
         # print self.ASSISTANCE_TYPE
         if u_intended != um:
             if normalized_h_of_p_ui_given_um <= self.ENTROPY_THRESHOLD:
+                print("INTERVENED")
                 if self.ASSISTANCE_TYPE == AssistanceType.Filter:
                     u_corrected = 'Zero Band' #proxy for zero. Maybe have zero-band
                 elif self.ASSISTANCE_TYPE == AssistanceType.Corrective:
                     u_corrected = u_intended
             else:
+                print("NOT INTERVENED. ENT > THRESH")
                 return um, False, False
         else:
+            print("NOT INTERVENED, UM = U_INTENDED")
             return um, False, True
 
         return u_corrected, True, False
@@ -182,5 +199,6 @@ class ModeSwitchInferenceAndCorrection(object):
 
 if __name__ == '__main__':
     subject_id = sys.argv[1]
-    s = ModeSwitchInferenceAndCorrection(subject_id)
+    optim = int(sys.argv[2])
+    s = ModeSwitchInferenceAndCorrection(subject_id, optim)
     rospy.spin()

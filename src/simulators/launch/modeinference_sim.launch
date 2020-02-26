@@ -3,11 +3,12 @@
 <launch>
 
   <arg name="save" default="false" doc="Set to true if you wanted save bag file of trial"/>
-  
+
   <arg name="subject_id" default="test" doc="Unique string identifier for the subject"/>
 	<arg name="assistance_block" default="no" doc="Assistance type for the testing block. For loading up the appropriate trial block file"/>
   <arg name="block_id" default="0" doc="block_id for the assistance type for the testing block"/>
   <arg name="training" default="0" doc="bool string indicating whether the simulator is run in training mode or not"/>
+  <arg name="optim" default="0" doc="bool string indicating whether the optimization based p ui given a should be loaded or not"/>
 
   <arg name="JOY" default="false" doc="Set to true if using 3-axis joystick to control arm."/>
   <arg name="HA" default="false" doc="Set to true if using sip/puff to control arm."/>
@@ -19,8 +20,8 @@
 
   <node pkg="simulators" output="screen" type="mode_inference_simulator.py" name="mode_inference_simulator"  args="$(arg subject_id) $(arg assistance_block) $(arg block_id) $(arg training)"/>
 
-  <node pkg="inference_and_correction" output="screen" type="mode_switch_inference_and_correction.py" name="mode_switch_inference_and_correction"  args="$(arg subject_id)"/>
-  
+  <node pkg="inference_and_correction" output="screen" type="mode_switch_inference_and_correction.py" name="mode_switch_inference_and_correction"  args="$(arg subject_id) $(arg optim)"/>
+
   <include file="$(find teleop_nodes)/launch/teleop_nodes.launch">
     <arg name="JOY" value="$(arg JOY)"/>
     <arg name="HA" value="$(arg HA)"/>
@@ -36,7 +37,7 @@
   <group if="$(arg save)">
     <include file="$(find simulators)/launch/record.launch">
       <arg name="bag_prefix" value="$(arg subject_id)_$(arg assistance_block)_assistance_$(arg block_id)_mode_inference"/>
-    </include>    
+    </include>
   </group>
 
 </launch>

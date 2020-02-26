@@ -235,6 +235,10 @@ class MeasuredCommandGivenActionAnalysis(object):
 					if action == 'mode_l':
 						prob = probabilities['ty']
 
+				# noise_level = 0.01
+				# prob = prob + noise_level*np.ones((4,))
+				# prob = prob/np.sum(prob)
+
 				for ind, key in enumerate(keys):
 					p_um[mode][action][key] = prob[ind]
 
@@ -251,4 +255,4 @@ if __name__ == '__main__':
 	puma = MeasuredCommandGivenActionAnalysis(args)
 	puma.build_distributions()
 
-	# python internal_mapping_distribution_preprocessing.py -path mahdieh_internal_model -id mahdieh
+	# python p_um_given_a_distribution_preprocessing.py -path deepak_p_um_given_a -id deepak
