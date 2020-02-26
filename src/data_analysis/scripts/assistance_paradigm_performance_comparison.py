@@ -69,6 +69,15 @@ class CompareAssistanceParadigms(object):
 			mode_switches = df[(df['mode'].notnull()) & (df['mode_frame_id']=='user')].index.tolist() # mode swithces from user or autonomy and not service calls
 		 	value = len(mode_switches)
 
+		if metric == 'corrections': 
+			if 'is_corrected_or_filtered' in df.columns: 
+				corrections = df[df['is_corrected_or_filtered'] == True].index.tolist()
+			else: 
+				corrections = [] # no assistance has no corrections
+			value = len(corrections)
+
+		# TO DO: Other things to add, entropy for corrections how many um!=ui
+
 		return value
 
 
@@ -96,16 +105,21 @@ class CompareAssistanceParadigms(object):
 				else:
 					print '[warning:] unexpected assistance type' 
 
-			embed()
-
-			self.plot_box_plot([no_assistance, filtered, corrected])
+			self.plot_box_plot([no_assistance, filtered, corrected], ['No Assistance', 'Filtered', 'Corrective'], metric)
 
 
-	def plot_box_plot(self, data):
+	def plot_box_plot(self, data, ticks, title):
 
 		plt.boxplot(data)
+		plt.xticks(range(1,len(ticks)+1), ticks, rotation=25)
+		plt.title(title)
 		plt.show() 
+		fig = plt.gcf()
+		plot_folder = os.path.join(os.path.abspath(os.path.join(os.getcwd(), os.pardir)), 'plots')
+		fig_name = os.path.join(plot_folder, title+'.png')
+		plt.savefig(fig_name)
 
+		# TO DO: add argumen to save plot
 
 
 if __name__ == '__main__':
