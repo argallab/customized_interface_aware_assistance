@@ -44,6 +44,7 @@ class IntendedCommandGivenActionAnalysis(object):
 
         keys = LOW_LEVEL_COMMANDS
         A = np.array([self.P_UM_GIVEN_UI[LOW_LEVEL_COMMANDS[0]].values(), self.P_UM_GIVEN_UI[LOW_LEVEL_COMMANDS[1]].values(), self.P_UM_GIVEN_UI[LOW_LEVEL_COMMANDS[2]].values(), self.P_UM_GIVEN_UI[LOW_LEVEL_COMMANDS[3]].values()])
+
         # embed(banner1='check dicts')
 
 
@@ -79,7 +80,10 @@ class IntendedCommandGivenActionAnalysis(object):
 
                 b = (0.0, 1.0)
                 bnds = (b,b,b,b)
-                x0 = np.array([0.25, 0.25, 0.25, 0.25])
+                # x0 = np.array([0.25, 0.25, 0.25, 0.25])
+                x0 = np.random.random((4,))
+                x0 = x0/np.sum(x0)
+                x0 = x0/np.sum(x0)
                 con1 = {'type':'eq', 'fun':constraint_1}
                 con2 = {'type':'eq', 'fun':constraint_2}
                 con3 = {'type':'eq', 'fun':constraint_3}
@@ -92,7 +96,7 @@ class IntendedCommandGivenActionAnalysis(object):
                     p_ui[mode][action][key] = p_ui_given_a_dist[ind]
 
 
-        pickle.dump(p_ui, open(os.path.join(self.personalized_distributions_dir, self.id+'_p_ui_given_a.pkl'), "wb"))
+        pickle.dump(p_ui, open(os.path.join(self.personalized_distributions_dir, self.id+'_p_ui_given_a_optim.pkl'), "wb"))
 
 
 if __name__ == '__main__':

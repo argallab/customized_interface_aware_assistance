@@ -14,7 +14,7 @@
 	<arg name="DISP_PORT" default="/dev/mode_display_arduino" />
 	<arg name="CHIN_PORT" default="/dev/chin_switch_arduino" />
 
-	<rosparam param="snp_velocity_scale">10</rosparam>
+	<rosparam param="snp_velocity_scale">13</rosparam>
 	<rosparam param="joy_velocity_scale">10</rosparam>
 
 	<!-- JOY NODES -->

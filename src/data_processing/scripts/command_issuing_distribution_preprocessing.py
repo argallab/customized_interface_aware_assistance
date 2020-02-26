@@ -182,8 +182,8 @@ def build_probabilities(command_prompt, user_input, subject_id):
 	keys = ['Hard Puff', 'Hard Sip', 'Soft Puff', 'Soft Sip']
 	combination_pairs = [[0, 4], [1, 5]] #TODO replace it with dictionary mapping command strings to indices
 	COMMAND_TO_ARRAY_DICT = _combine_probabilities(COMMAND_TO_ARRAY_DICT, combination_pairs)
-	noise = 0.05
-	print(COMMAND_TO_ARRAY_DICT)
+	noise = 0.01
+	# print(COMMAND_TO_ARRAY_DICT)
 	for k, v in COMMAND_TO_ARRAY_DICT.items():
 		v = v + noise*np.ones((4,))
 		v = v/np.sum(v)

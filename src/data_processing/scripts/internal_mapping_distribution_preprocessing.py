@@ -192,9 +192,9 @@ class IntendedCommandGivenActionAnalysis(object):
 					if action == 'mode_l':
 						prob = probabilities['mode_switch_left_3']
 
-				# noise_level = 0.02
-				# prob = prob + noise_level*np.ones((4,))
-				# prob = prob/np.sum(prob)
+				noise_level = 0.01
+				prob = prob + noise_level*np.ones((4,))
+				prob = prob/np.sum(prob)
 
 				for ind, key in enumerate(keys):
 					p_ui_given_a[mode][action][key] = prob[ind]
