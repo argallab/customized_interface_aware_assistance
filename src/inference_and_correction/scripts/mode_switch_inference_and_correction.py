@@ -44,7 +44,7 @@ class ModeSwitchInferenceAndCorrection(object):
         for u in LOW_LEVEL_COMMANDS:
             self.P_UI_GIVEN_UM[u] = 1.0/len(LOW_LEVEL_COMMANDS)
 
-        if os.path.exists(os.path.join(self.distribution_directory_path, str(self.subject_id)+'_p_ui_given_a.pkl')) and False:
+        if os.path.exists(os.path.join(self.distribution_directory_path, str(self.subject_id)+'_p_ui_given_a.pkl')):
             print('LOADING PERSONALIZED P_UI_GIVEN_A')
             with open(os.path.join(self.distribution_directory_path, str(self.subject_id)+'_p_ui_given_a.pkl'), 'rb') as fp:
                 self.P_UI_GIVEN_A = pickle.load(fp)#assumes that the conditional probability distribution is stored as a collections.OrderedDict conditioned on the mode
