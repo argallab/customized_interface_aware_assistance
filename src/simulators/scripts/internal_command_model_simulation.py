@@ -41,6 +41,9 @@ class ActionCommandModelling(object):
         env_params['file_dir'] = file_dir
         env_params['img_prompt'] = ''
         env_params['training_prompts'] = self.training[:]
+        env_params['actions'] = {}
+        env_params['actions']['motion_actions'] = self.actions[:6]
+        env_params['actions']['mode_actions'] = self.actions[6:]
         env_params['blocks'] = blocks
 
         self.env = ActionEnv(env_params)
