@@ -61,8 +61,9 @@ class Simulator(object):
 		self.assistance_block = assistance_block #pass these things from launch file
 		self.block_id = block_id
 		self.training = training
+		self.total_blocks = 12
 
-		self.testing_block_filename = self.subject_id + '_' + self.assistance_block + '_assistance_' + self.block_id + '_num_blocks_6.pkl'
+		self.testing_block_filename = self.subject_id + '_' + self.assistance_block + '_assistance_' + self.block_id + '_num_blocks_' + str(self.total_blocks) + '.pkl'
 		print "TRAINING BLOCK FILENAME and IS TRAINING MODE", self.testing_block_filename, self.training
 
 		self.terminate = False
@@ -122,10 +123,10 @@ class Simulator(object):
 		self.set_mode_request = SetModeRequest()
 		self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params['start_mode']]
 		status = self.set_mode_srv(self.set_mode_request)
-		
+
 
 		# instantiate the environement
-		self.env_params['start'] = False 
+		self.env_params['start'] = False
 		self.env = ModeInferenceEnv(self.env_params)
 		self.env.initialize()
 		self.env.initialize_viewer()
@@ -136,7 +137,7 @@ class Simulator(object):
 		# self.env.render()
 		# self.trial_marker_pub.publish('start')
 		# self.trial_index_pub.publish(trial_info_filename_index)
-		
+
 
 		r = rospy.Rate(100)
 		self.trial_start_time = time.time()
@@ -146,16 +147,16 @@ class Simulator(object):
 			self.max_time = 1000
 		is_done = False
 		first_trial = True
-		self.start = False 
+		self.start = False
 
 		while not rospy.is_shutdown():
 
-			if not self.start: 
+			if not self.start:
 				self.start = self.env.start_countdown()
 
-			else: 
+			else:
 
-				if first_trial: 
+				if first_trial:
 
 					time.sleep(2)
 
@@ -163,13 +164,13 @@ class Simulator(object):
 					self.trial_index_pub.publish(trial_info_filename_index)
 
 					self.env.reset()
-					self.env.render()                          
-					
+					self.env.render()
+
 					self.trial_start_time = time.time()
-					first_trial = False 
+					first_trial = False
 
 
-				else: 
+				else:
 
 					if (time.time() - self.trial_start_time) > self.max_time or is_done:
 						if not self.training:
@@ -272,7 +273,7 @@ class Simulator(object):
 			self.called_shutdown = True
 			self.shutdown_pub.publish("shutdown")
 			#clear screen
-			self.env.render_clear('End of trial...')    
+			self.env.render_clear('End of trial...')
 			self.env.close_window()
 			print('Shutting down')
 
