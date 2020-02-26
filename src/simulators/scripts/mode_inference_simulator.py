@@ -61,7 +61,7 @@ class Simulator(object):
 		self.assistance_block = assistance_block #pass these things from launch file
 		self.block_id = block_id
 		self.training = training
-		self.total_blocks = 12
+		self.total_blocks = 6
 
 		self.testing_block_filename = self.subject_id + '_' + self.assistance_block + '_assistance_' + self.block_id + '_num_blocks_' + str(self.total_blocks) + '.pkl'
 		print "TRAINING BLOCK FILENAME and IS TRAINING MODE", self.testing_block_filename, self.training
