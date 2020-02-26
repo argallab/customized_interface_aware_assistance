@@ -3,17 +3,26 @@
 <launch>
 
   <arg name="save" default="false" doc="Set to true if you wanted save bag file of trial"/>
+  <arg name="subject_id" default="test" doc="trial identifier string"/>
 
-  <arg name="duration" default="1.0" doc="Duration to show each command"/>
-  <arg name="iteration" default="1" doc="Number of times to display each command"/>
+  <arg name="duration" default="2.0" doc="Duration to show each command"/>
+  <arg name="iteration" default="5" doc="Number of times to display each command"/>
 
   <arg name="JOY" default="false" doc="Set to true if using 3-axis joystick to control arm."/>
   <arg name="HA" default="false" doc="Set to true if using sip/puff to control arm."/>
-	<arg name="SNP" default="false" doc="Set to true if using sip/puff to control arm."/>
-	<arg name="MS" default="false" doc="Set to true if using mouse to control arm."/>
+  <arg name="SNP" default="false" doc="Set to true if using sip/puff to control arm."/>
+  <arg name="MS" default="false" doc="Set to true if using mouse to control arm."/>
   <arg name="JOINT" default="false" doc="Set to true if joint velocity control"/>
-	<arg name="blending" default="false" doc="Set to true if there is not control blending."/>
+  <arg name="blending" default="false" doc="Set to true if there is not control blending."/>
   <arg name="PS3" default="false" doc="Set to false if don't want to use ps3 controller."/>
+
+  <!-- record bags -->
+  <!-- bag file name parameters -->  
+  <group if="$(arg save)">
+    <include file="$(find simulators)/launch/record.launch">
+      <arg name="bag_prefix" value="$(arg subject_id)_p_um_given_ui"/>
+    </include>    
+  </group>
 
   <node pkg="simulators" output="screen" type="command_following_simulation.py" name="command_following_simulation" args="$(arg duration) $(arg iteration)"/>
 
@@ -29,15 +38,5 @@
     <arg name="PS3" value="$(arg PS3)"/>
     <arg name="JOINT" value="$(arg JOINT)"/>
   </include>
-
-  <!-- record bags -->
-  <!-- bag file name parameters -->
-  <arg name="id" default="test" doc="trial identifier string"/>
-  <group if="$(arg save)">
-    <include file="$(find simulators)/launch/record.launch">
-      <arg name="bag_prefix" value="$(arg id)_p_um_given_ui"/>
-    </include>    
-  </group>
-
 
 </launch>

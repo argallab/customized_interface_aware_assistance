@@ -17,21 +17,11 @@ import itertools
 import collections
 
 
-def build_parser():
-	# Builds the parser for reading the command line arguments
-	parser = argparse.ArgumentParser(description='Script to process command issuing experiment data')
-	parser.add_argument('-path', help = 'Path to csv files to read', type=str)
-	parser.add_argument('-command_prompt', help='name of /command_prompt file', nargs='*')
-	parser.add_argument('-input', help='name of /joy_sip_puff file', nargs='*')
-	parser.add_argument('-o', '--output', help='name of the output file', nargs='*')
-	parser.add_argument('-id', help='subject id', type=str)
+def read_csv_files(subject_id):
 
-	return parser
-
-def read_csv_files(path, command_prompt, user_input, output):
-	path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'raw_data', path)
-	user_input_file = path + '/' + user_input
-	command_prompt_file = path + '/' + command_prompt
+	path = os.path.join(os.path.abspath(os.path.join(os.getcwd(), os.pardir)), 'raw_data', subject_id+'_p_um_given_ui')
+	user_input_file = path + '/_joy_sip_puff.csv'
+	command_prompt_file = path + '/_command_prompt.csv'
 	command_prompt_df = pd.read_csv(command_prompt_file, header = 0)
 	user_input_df = pd.read_csv(user_input_file, header = 0)
 	return command_prompt_df, user_input_df
@@ -221,19 +211,10 @@ def plot_response_curves(user_input, title):
 
 if __name__ == '__main__':
 
-	parser = build_parser()
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-id', help='subject id', type=str)
 	args = parser.parse_args()
-	path = args.path
-	output = args.output
-	command_prompt = args.command_prompt[0]
-	user_input = args.input[0]
 	subject_id = args.id
 
-	topics = read_csv_files(path, command_prompt, user_input, output)
-	# topics_scaled = scale_times(topics[0], topics[1], topics[2])
-	# ensure_ascending_time(topics)
+	topics = read_csv_files(subject_id)
 	build_probabilities(topics[0], topics[1], subject_id)
-
-
-	# How to run:
-	# python command_issuing_distribution_preprocessing.py -path deepak -command_prompt _slash_command_prompt.csv -input _slash_joy_sip_puff.csv -id deepak
