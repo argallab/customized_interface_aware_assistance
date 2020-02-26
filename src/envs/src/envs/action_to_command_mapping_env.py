@@ -3,8 +3,8 @@
 import os
 from backends.rendering import Viewer
 from utils import SCALE, VIEWPORT_W, VIEWPORT_H
-from utils import COMMAND_TEXT_COLOR, COMMAND_DISPLAY_POSITION, COMMAND_DISPLAY_FONTSIZE
-from utils import TIMER_DISPLAY_POSITION, TIMER_DISPLAY_FONTSIZE, TIMER_COLOR_NEUTRAL, TIMER_DISPLAY_TEXT_Y_ANCHOR
+from utils import COMMAND_TEXT_COLOR, COMMAND_DISPLAY_POSITION, COMMAND_DISPLAY_FONTSIZE, OPTION_DISPLAY_FONTSIZE, OPTIONS_TEXT_COLOR, OPTION_DISPLAY_OFFSET, OPTION_TEXT_DISPLAY_OFFSET
+from utils import TIMER_DISPLAY_POSITION, TIMER_DISPLAY_FONTSIZE, TIMER_COLOR_NEUTRAL, TIMER_DISPLAY_TEXT_Y_ANCHOR, OPTION_DISPLAY_POSITION, OPTION_TEXT_DISPLAY_POSITION, OPTION_TEXT_DISPLAY_FONTSIZE
 from utils import EXPERIMENT_START_COUNTDOWN
 from simulators.msg import Command
 from std_msgs.msg import String
@@ -42,7 +42,7 @@ class ActionEnv(object):
         self.start_prompt = False
         self.clear_for_next_prompt = False
         self.bold = True
-        self.action_timing_bound = 4 #seconds
+        self.action_timing_bound = 5 #seconds
         self.text_timing_bound = 2
 
         self.period = rospy.Duration(1.0)
@@ -61,8 +61,8 @@ class ActionEnv(object):
 
     def initialize_viewer(self):
         if self.viewer is None:
-            self.viewer = Viewer(VIEWPORT_W*2, VIEWPORT_H*2)
-            self.viewer.set_bounds(0, (VIEWPORT_W*2)/SCALE, 0, (VIEWPORT_H*2)/SCALE)
+            self.viewer = Viewer(VIEWPORT_W, VIEWPORT_H)
+            self.viewer.set_bounds(0, (VIEWPORT_W)/SCALE, 0, (VIEWPORT_H)/SCALE)
             self.viewer.window.set_location(1650, 300)
             self.timer_thread.start()
 
@@ -86,14 +86,26 @@ class ActionEnv(object):
     def _set_image_path(self):
         self.file_path = os.path.abspath(os.path.join(self.file_dir, self.img_prompt+'.png'))
 
-    def _render_sprite(self):
-        self.viewer.draw_sprite(self.file_path, x=VIEWPORT_W/2, y=VIEWPORT_H/2, scale=.5)
+    def _render_sprite(self, x, y, scale):
+        self.viewer.draw_sprite(self.file_path, x=x, y=y, scale=scale)
 
     def _render_text(self):
         self.viewer.draw_text(self.msg_prompt, x=COMMAND_DISPLAY_POSITION[0], y=COMMAND_DISPLAY_POSITION[1], font_size=COMMAND_DISPLAY_FONTSIZE, color=COMMAND_TEXT_COLOR, bold=self.bold)
 
+    def _render_options(self):
+        self.viewer.draw_text("1", x=OPTION_DISPLAY_POSITION[0], y=OPTION_DISPLAY_POSITION[1], font_size=OPTION_DISPLAY_FONTSIZE, color=OPTIONS_TEXT_COLOR, bold=self.bold)
+        self.viewer.draw_text("2", x=OPTION_DISPLAY_POSITION[0]+OPTION_DISPLAY_OFFSET,   y=OPTION_DISPLAY_POSITION[1], font_size=OPTION_DISPLAY_FONTSIZE, color=OPTIONS_TEXT_COLOR, bold=self.bold)
+        self.viewer.draw_text("3", x=OPTION_DISPLAY_POSITION[0]+2*OPTION_DISPLAY_OFFSET, y=OPTION_DISPLAY_POSITION[1], font_size=OPTION_DISPLAY_FONTSIZE, color=OPTIONS_TEXT_COLOR, bold=self.bold)
+        self.viewer.draw_text("4", x=OPTION_DISPLAY_POSITION[0]+3*OPTION_DISPLAY_OFFSET, y=OPTION_DISPLAY_POSITION[1], font_size=OPTION_DISPLAY_FONTSIZE, color=OPTIONS_TEXT_COLOR, bold=self.bold)
+
+        self.viewer.draw_text("Hard Puff", x=OPTION_TEXT_DISPLAY_POSITION[0],                              y=OPTION_TEXT_DISPLAY_POSITION[1], font_size=OPTION_TEXT_DISPLAY_FONTSIZE, color=OPTIONS_TEXT_COLOR, bold=self.bold)
+        self.viewer.draw_text("Hard Sip",  x=OPTION_TEXT_DISPLAY_POSITION[0]+  OPTION_TEXT_DISPLAY_OFFSET, y=OPTION_TEXT_DISPLAY_POSITION[1], font_size=OPTION_TEXT_DISPLAY_FONTSIZE, color=OPTIONS_TEXT_COLOR, bold=self.bold)
+        self.viewer.draw_text("Soft Puff", x=OPTION_TEXT_DISPLAY_POSITION[0]+2*OPTION_TEXT_DISPLAY_OFFSET, y=OPTION_TEXT_DISPLAY_POSITION[1], font_size=OPTION_TEXT_DISPLAY_FONTSIZE, color=OPTIONS_TEXT_COLOR, bold=self.bold)
+        self.viewer.draw_text("Soft Sip",  x=OPTION_TEXT_DISPLAY_POSITION[0]+3*OPTION_TEXT_DISPLAY_OFFSET, y=OPTION_TEXT_DISPLAY_POSITION[1], font_size=OPTION_TEXT_DISPLAY_FONTSIZE, color=OPTIONS_TEXT_COLOR, bold=self.bold)
+
+
     def _render_timer_text(self):
-        self.viewer.draw_text(str(self.current_time), x=COMMAND_DISPLAY_POSITION[0], y=COMMAND_DISPLAY_POSITION[1], font_size=TIMER_DISPLAY_FONTSIZE, color=TIMER_COLOR_NEUTRAL, anchor_y=TIMER_DISPLAY_TEXT_Y_ANCHOR, bold=True)
+        self.viewer.draw_text(str(self.current_time), x=TIMER_DISPLAY_POSITION[0], y=TIMER_DISPLAY_POSITION[1], font_size=TIMER_DISPLAY_FONTSIZE, color=TIMER_COLOR_NEUTRAL, anchor_y=TIMER_DISPLAY_TEXT_Y_ANCHOR, bold=True)
 
     def _render_timer(self, period):
         while not rospy.is_shutdown():
@@ -114,12 +126,19 @@ class ActionEnv(object):
     def render(self):
         self.viewer.window.clear()
 
+        # print self.img_prompt
         if self.img_prompt != '':
-            self._render_sprite()
+            self._render_options()
+            if self.img_prompt in self.motion_actions:
+                self._render_sprite(x=VIEWPORT_W/4, y=VIEWPORT_H/4, scale=0.2)
+            if self.img_prompt in self.mode_actions:
+                self._render_sprite(x=VIEWPORT_W/4, y=VIEWPORT_H/4, scale=0.05)
+
         if self.display_timer:
             self._render_timer_text()
 
         self._render_text()
+
 
         return self.viewer.render(False)
 
@@ -203,6 +222,13 @@ class ActionEnv(object):
     def reset(self):
         if 'action_prompts' in self.env_params.keys():
             self.action_prompts = self.env_params['action_prompts']
+
+        if 'actions' in self.env_params.keys():
+            if 'motion_actions' in self.env_params['actions']:
+                self.motion_actions = self.env_params['actions']['motion_actions']
+            if 'mode_actions' in self.env_params['actions']:
+                self.mode_actions = self.env_params['actions']['mode_actions']
+            # self.actions = self.env_params['actions']
 
         if 'start_prompt' in self.env_params.keys():
             if self.start_prompt == False:
