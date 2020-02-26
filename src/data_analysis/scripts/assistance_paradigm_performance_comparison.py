@@ -77,7 +77,6 @@ class CompareAssistanceParadigms(object):
 			value = len(corrections)
 
 		# TO DO: Other things to add, entropy for corrections how many um!=ui
-
 		return value
 
 
@@ -117,7 +116,7 @@ class CompareAssistanceParadigms(object):
 		fig = plt.gcf()
 		plot_folder = os.path.join(os.path.abspath(os.path.join(os.getcwd(), os.pardir)), 'plots')
 		fig_name = os.path.join(plot_folder, title+'.png')
-		plt.savefig(fig_name)
+		# plt.savefig(fig_name)
 
 		# TO DO: add argumen to save plot
 

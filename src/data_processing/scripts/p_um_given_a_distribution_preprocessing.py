@@ -40,8 +40,9 @@ class DataParser(object):
 class MeasuredCommandGivenActionAnalysis(object):
 	def __init__(self, args):
 
-		self.file_dir = args.path
 		self.id = args.id
+		self.file_dir = os.path.join(os.path.abspath(os.path.join(os.getcwd(), os.pardir)), 'raw_data', self.id+'_p_um_given_a')
+		
 		self.data = DataParser(self.file_dir)
 
 	def get_nearest_time_stamp(self, tq, time_stamp_array):
@@ -248,7 +249,6 @@ class MeasuredCommandGivenActionAnalysis(object):
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
-	parser.add_argument('-path', help = 'Path to csv files to read', type=str)
 	parser.add_argument('-id', help='subject id', type=str)
 	args = parser.parse_args()
 	# embed(banner1="before initialization")
