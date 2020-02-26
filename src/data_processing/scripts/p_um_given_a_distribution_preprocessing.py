@@ -152,6 +152,7 @@ class MeasuredCommandGivenActionAnalysis(object):
 		else:
 			ind = 0
 
+
 		for i in range(0, len(self.data.action_prompt_df)):
 
 			key = self.data.action_prompt_df.at[i, 'command'].replace('"', '')
@@ -159,7 +160,7 @@ class MeasuredCommandGivenActionAnalysis(object):
 			prompt_t_s = self.data.trial_marker_df.at[ind, 'rosbagTimestamp']
 			prompt_t_e = self.data.trial_marker_df.at[ind+1, 'rosbagTimestamp']
 
-			ind += 1
+			ind += 2
 
 			user_response_block_indices = self.get_user_response_block_indices(prompt_t_s, prompt_t_e, self.data.user_response_df)
 
