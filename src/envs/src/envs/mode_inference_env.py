@@ -6,7 +6,7 @@ from utils import PI, ROBOT_RADIUS, GOAL_RADIUS, MODE_DISPLAY_RADIUS
 from utils import ROBOT_COLOR_WHEN_MOVING, ROBOT_COLOR_WHEN_COMMAND_REQUIRED, ACTIVE_MODE_COLOR, NONACTIVE_MODE_COLOR, TURN_LOCATION_COLOR, MODE_DISPLAY_TEXT_COLOR, MODE_DISPLAY_TEXT_FONTSIZE
 from utils import MODE_DISPLAY_CIRCLE_START_POSITION_S, MODE_DISPLAY_CIRCLE_X_OFFSET_S, MODE_DISPLAY_TEXT_START_POSITION, MODE_DISPLAY_TEXT_X_OFFSET, MODE_DISPLAY_TEXT_Y_ANCHOR
 from utils import TIMER_DISPLAY_POSITION, TIMER_DISPLAY_FONTSIZE, TIMER_COLOR_NEUTRAL, TIMER_COLOR_WARNING, TIMER_COLOR_DANGER, TIMER_DISPLAY_TEXT_Y_ANCHOR, TIMER_DANGER_THRESHOLD, TIMER_WARNING_THRESHOLD
-from utils import TRIAL_OVER_TEXT_DISPLAY_POSITION, TRIAL_OVER_TEXT_FONTSIZE, TRIAL_OVER_TEXT_COLOR, TRIAL_OVER_TEXT_Y_ANCHOR, START_GOAL_TEXT_DISPLACEMENT
+from utils import TRIAL_OVER_TEXT_DISPLAY_POSITION, TRIAL_OVER_TEXT_FONTSIZE, TRIAL_OVER_TEXT_COLOR, TRIAL_OVER_TEXT_Y_ANCHOR, START_GOAL_TEXT_DISPLACEMENT, MODE_DISPLAY_CIRCLE_Y_OFFSET_S
 from utils import WP_RADIUS, INFLATION_FACTOR, PATH_HALF_WIDTH, MODE_INDEX_TO_DIM, DIM_TO_MODE_INDEX
 from utils import RGOrient, StartDirection, PositionOnLine
 from utils import get_sign_of_number
@@ -381,7 +381,11 @@ class ModeInferenceEnv(object):
 
     def _render_mode_display(self):
         for i, d in enumerate(self.DIMENSIONS):
-            t = Transform(translation=(MODE_DISPLAY_CIRCLE_START_POSITION_S[0] + i*MODE_DISPLAY_CIRCLE_X_OFFSET_S, MODE_DISPLAY_CIRCLE_START_POSITION_S[1]))
+            if d == 'y':
+                t = Transform(translation=(MODE_DISPLAY_CIRCLE_START_POSITION_S[0] + i*MODE_DISPLAY_CIRCLE_X_OFFSET_S, MODE_DISPLAY_CIRCLE_START_POSITION_S[1]))
+            else:
+                t = Transform(translation=(MODE_DISPLAY_CIRCLE_START_POSITION_S[0] + i*MODE_DISPLAY_CIRCLE_X_OFFSET_S, MODE_DISPLAY_CIRCLE_START_POSITION_S[1] - MODE_DISPLAY_CIRCLE_Y_OFFSET_S))
+
             if d == self.current_mode:
                 self.viewer.draw_circle(MODE_DISPLAY_RADIUS/SCALE, 30, True, color=ACTIVE_MODE_COLOR).add_attr(t)
             else:
@@ -391,9 +395,9 @@ class ModeInferenceEnv(object):
         '''
         Note that the coordinates of the text should in real pixels. Which is why here there is a multiplicative factor of SCALE.
         '''
-        self.viewer.draw_text("Horizontal", x=MODE_DISPLAY_TEXT_START_POSITION[0], y=MODE_DISPLAY_TEXT_START_POSITION[1], font_size=MODE_DISPLAY_TEXT_FONTSIZE, color=MODE_DISPLAY_TEXT_COLOR, anchor_y=MODE_DISPLAY_TEXT_Y_ANCHOR)
+        self.viewer.draw_text("Horizontal", x=MODE_DISPLAY_TEXT_START_POSITION[0], y=MODE_DISPLAY_TEXT_START_POSITION[1] - MODE_DISPLAY_CIRCLE_Y_OFFSET_S*SCALE , font_size=MODE_DISPLAY_TEXT_FONTSIZE, color=MODE_DISPLAY_TEXT_COLOR, anchor_y=MODE_DISPLAY_TEXT_Y_ANCHOR)
         self.viewer.draw_text("Vertical", x=MODE_DISPLAY_TEXT_START_POSITION[0] + MODE_DISPLAY_TEXT_X_OFFSET, y=MODE_DISPLAY_TEXT_START_POSITION[1], font_size=MODE_DISPLAY_TEXT_FONTSIZE, color=MODE_DISPLAY_TEXT_COLOR, anchor_y=MODE_DISPLAY_TEXT_Y_ANCHOR)
-        self.viewer.draw_text("Rotation", x=MODE_DISPLAY_TEXT_START_POSITION[0] + 2*MODE_DISPLAY_TEXT_X_OFFSET, y=MODE_DISPLAY_TEXT_START_POSITION[1], font_size=MODE_DISPLAY_TEXT_FONTSIZE, color=MODE_DISPLAY_TEXT_COLOR, anchor_y=MODE_DISPLAY_TEXT_Y_ANCHOR)
+        self.viewer.draw_text("Rotation", x=MODE_DISPLAY_TEXT_START_POSITION[0] + 2*MODE_DISPLAY_TEXT_X_OFFSET, y=MODE_DISPLAY_TEXT_START_POSITION[1] - MODE_DISPLAY_CIRCLE_Y_OFFSET_S*SCALE, font_size=MODE_DISPLAY_TEXT_FONTSIZE, color=MODE_DISPLAY_TEXT_COLOR, anchor_y=MODE_DISPLAY_TEXT_Y_ANCHOR)
 
     def _render_timer_text(self):
         if self.current_time < TIMER_WARNING_THRESHOLD:
@@ -681,7 +685,7 @@ class ModeInferenceEnv(object):
         self.timer_thread = threading.Thread(target=self._render_timer, args=(self.period,))
         self.lock = threading.Lock()
         self.current_time = 0
-        self.max_time = 50
+        self.max_time = 5
         print 'START'
 
 

@@ -206,7 +206,9 @@ class PUmGivenAEnv(object):
     def _render_mode_display(self):
         #TODO change location of the circles. Change how target is indicated.
         for i, d in enumerate(self.DIMENSIONS):
+            # if d == 'y':
             t = Transform(translation=(P_UM_GIVEN_A_MODE_DISPLAY_CIRCLE_START_POSITION_S[0] + i*MODE_DISPLAY_CIRCLE_X_OFFSET_S, P_UM_GIVEN_A_MODE_DISPLAY_CIRCLE_START_POSITION_S[1]))
+
             if d == self.current_mode:
                 self.viewer.draw_circle(MODE_DISPLAY_RADIUS/SCALE, 30, True, color=ACTIVE_MODE_COLOR).add_attr(t) # just so coloring is consistent with motions (red is current, green is goal)
             # elif d == self.target_mode:
