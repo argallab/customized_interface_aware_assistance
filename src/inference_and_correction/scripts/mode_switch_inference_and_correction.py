@@ -29,7 +29,7 @@ class ModeSwitchInferenceAndCorrection(object):
         self.P_UI_GIVEN_A = None
         self.P_UM_GIVEN_UI = None
         self.DEFAULT_UI_GIVEN_A_NOISE = 0.01
-        self.DEFAULT_UM_GIVEN_UI_NOISE = 0.35
+        self.DEFAULT_UM_GIVEN_UI_NOISE = 0.3
         self.P_UI_GIVEN_UM = collections.OrderedDict()
         self.ASSISTANCE_TYPE = rospy.get_param('assistance_type', 2)
         if self.ASSISTANCE_TYPE == 0:
@@ -39,12 +39,12 @@ class ModeSwitchInferenceAndCorrection(object):
         elif self.ASSISTANCE_TYPE == 2:
             self.ASSISTANCE_TYPE = AssistanceType.No_Assistance
 
-        self.ENTROPY_THRESHOLD = rospy.get_param('entropy_threshold', 0.4)
+        self.ENTROPY_THRESHOLD = rospy.get_param('entropy_threshold', 0.7)
 
         for u in LOW_LEVEL_COMMANDS:
             self.P_UI_GIVEN_UM[u] = 1.0/len(LOW_LEVEL_COMMANDS)
 
-        if os.path.exists(os.path.join(self.distribution_directory_path, str(self.subject_id)+'_p_ui_given_a.pkl')):
+        if os.path.exists(os.path.join(self.distribution_directory_path, str(self.subject_id)+'_p_ui_given_a.pkl')) and False:
             print('LOADING PERSONALIZED P_UI_GIVEN_A')
             with open(os.path.join(self.distribution_directory_path, str(self.subject_id)+'_p_ui_given_a.pkl'), 'rb') as fp:
                 self.P_UI_GIVEN_A = pickle.load(fp)#assumes that the conditional probability distribution is stored as a collections.OrderedDict conditioned on the mode
@@ -61,6 +61,7 @@ class ModeSwitchInferenceAndCorrection(object):
             self.P_UM_GIVEN_UI = collections.OrderedDict()
             self._init_p_um_given_ui()
 
+        print "P_UI_GIVEN_A", self.P_UI_GIVEN_A
         print "P_UM_GIVEN_UI", self.P_UM_GIVEN_UI
 
 
@@ -79,15 +80,17 @@ class ModeSwitchInferenceAndCorrection(object):
         if optimal_action_response.status: #not at the last position
             optimal_a = optimal_action_response.optimal_high_level_action #mode_r, model, move_p, move_n
             current_mode = optimal_action_response.current_mode
-            # print("OPTIMAL A", optimal_a)
-            # print("CURRENT_MODE", current_mode)
+            print("OPTIMAL A", optimal_a)
+            print("CURRENT_MODE", current_mode)
             self.compute_p_ui_given_um(optimal_a, current_mode, um)
             u_intended = self.compute_u_intended() #argmax computation for u_intended
-            # print ("U_INTENDED", u_intended)
+            print("UM ", um)
+            print ("U_INTENDED", u_intended)
             normalized_h_of_p_ui_given_um = self.compute_entropy_of_p_ui_given_um()
-            # print("ENTROPY", normalized_h_of_p_ui_given_um)
+            print("ENTROPY", normalized_h_of_p_ui_given_um)
             u_corrected, is_corrected_or_filtered, is_u_intended_equals_um = self.correct_or_pass_um(um, u_intended, normalized_h_of_p_ui_given_um)
-            # print ("U_CORRECTED", u_corrected, is_corrected_or_filtered)
+            print ("U_CORRECTED", u_corrected, is_corrected_or_filtered)
+            print("      ")
             response.u_corrected = u_corrected
             response.is_corrected_or_filtered = is_corrected_or_filtered
             response.status = True
