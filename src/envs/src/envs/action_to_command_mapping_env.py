@@ -105,7 +105,7 @@ class ActionEnv(object):
 
 
     def _render_timer_text(self):
-        self.viewer.draw_text(str(self.current_time), x=TIMER_DISPLAY_POSITION[0], y=TIMER_DISPLAY_POSITION[1], font_size=TIMER_DISPLAY_FONTSIZE, color=TIMER_COLOR_NEUTRAL, anchor_y=TIMER_DISPLAY_TEXT_Y_ANCHOR, bold=True)
+        self.viewer.draw_text(str(self.current_time), x=TIMER_DISPLAY_POSITION[0] + VIEWPORT_W/2 - 40 , y=TIMER_DISPLAY_POSITION[1], font_size=TIMER_DISPLAY_FONTSIZE, color=TIMER_COLOR_NEUTRAL, anchor_y=TIMER_DISPLAY_TEXT_Y_ANCHOR, bold=True)
 
     def _render_timer(self, period):
         while not rospy.is_shutdown():
@@ -128,12 +128,14 @@ class ActionEnv(object):
 
         # print self.img_prompt
         if self.img_prompt != '':
-            self._render_options()
+            if not self.start_training:
+                self._render_options()
             if self.img_prompt in self.motion_actions:
                 self._render_sprite(x=VIEWPORT_W/4, y=VIEWPORT_H/4, scale=0.2)
             if self.img_prompt in self.mode_actions:
                 self._render_sprite(x=VIEWPORT_W/4, y=VIEWPORT_H/4, scale=0.05)
-
+            if self.img_prompt in self.training_prompts:
+                self._render_sprite(x=VIEWPORT_W/8, y=VIEWPORT_H/8, scale=0.7)
         if self.display_timer:
             self._render_timer_text()
 
