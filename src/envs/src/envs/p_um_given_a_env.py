@@ -174,10 +174,10 @@ class PUmGivenAEnv(object):
                 if type(f.shape) is b2CircleShape:
                     t = Transform(translation = trans.position)
                     if isinstance(r, RobotSE2):
-                        if abs(np.linalg.norm(robot.linearVelocity)) > 0:
-                            self.viewer.draw_circle(f.shape.radius, 30, color=r.robot_color, filled=True).add_attr(t)
-                        else:
+                        if abs(np.linalg.norm(robot.linearVelocity)) > 0 or abs(np.linalg.norm(robot.angularVelocity)) > 0.0:
                             self.viewer.draw_circle(f.shape.radius, 30, color=ROBOT_COLOR_WHEN_MOVING, filled=True).add_attr(t)
+                        else:
+                            self.viewer.draw_circle(f.shape.radius, 30, color=r.robot_color, filled=True).add_attr(t)
                     else:
                         self.viewer.draw_circle(f.shape.radius, 30, color=(1.0, 1.0, 1.0), filled=True).add_attr(t)
                 elif type(f.shape) is b2EdgeShape:

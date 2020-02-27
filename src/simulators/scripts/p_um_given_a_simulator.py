@@ -32,7 +32,7 @@ class Simulator(object):
         rospy.init_node("Simulator")
         rospy.on_shutdown(self.shutdown_hook)
         self.called_shutdown = False
-        
+
         self.dim = 3
         user_vel = CartVelCmd()
         _dim = [MultiArrayDimension()]
@@ -64,7 +64,7 @@ class Simulator(object):
                                                          StartDirection.Y: {'positive':[0, VIEWPORT_HS/4], 'negative':[0, -VIEWPORT_HS/4]}}
 
         self.initialize_publishers()
-        self.initialize_subscribers()        
+        self.initialize_subscribers()
 
         if self.trial_info_dir_path is not None and os.path.exists(self.trial_info_dir_path):
             self.trial_list = os.listdir(self.trial_info_dir_path)
@@ -85,7 +85,7 @@ class Simulator(object):
             self.env_params = dict()
             self.env_params['robot_position'] = (VIEWPORT_WS/2, VIEWPORT_HS/2) #robot position will be in the center
             self.env_params['robot_orientation'] = 0.0 #robot orientation will always be 0.0
-            self.env_params['start_direction'] = StartDirection.X #which direction is the path pointing. 
+            self.env_params['start_direction'] = StartDirection.X #which direction is the path pointing.
             self.env_params['is_rotation'] = False #whether this trial has rotation as opposed to linear motion
             self.env_params['is_mode_switch'] = False #whether this trial is testing hard puffs or sips.
             start_direction = self.env_params['start_direction']
@@ -104,13 +104,13 @@ class Simulator(object):
                 self.mode_config['target_mode'] = 't' #specify the target mode
                 self.env_params['mode_config'] = self.mode_config
             else:
-                self.env_params['mode_config'] = None 
+                self.env_params['mode_config'] = None
 
-        #Set the proper starting mode in the teleop node using the set mode service. 
+        #Set the proper starting mode in the teleop node using the set mode service.
         rospy.loginfo("Waiting for teleop_node ")
         rospy.wait_for_service("/teleop_node/set_mode")
         rospy.loginfo("teleop_node node service found! ")
-        
+
         self.set_mode_srv = rospy.ServiceProxy('/teleop_node/set_mode', SetMode)
         self.set_mode_request = SetModeRequest()
         self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params['allowed_mode_index']]
@@ -132,23 +132,27 @@ class Simulator(object):
         # self.env.viewer.window.on_key_press = self.key_press
 
         self.start = False
-        first_trial = True 
+        first_trial = True
         is_done = False
 
-        r = rospy.Rate(100)       
+        r = rospy.Rate(100)
+        if self.training:
+            self.max_time = 1000
+        else:
+            self.max_time = 5       
 
         self.max_time = 5 # TODO change this for controlling max time for showing each prompt
-        if self.training: 
+        if self.training:
             time_check = self.max_time - 1
 
         while not rospy.is_shutdown():
 
-            if not self.start: 
-                self.start = self.env.start_countdown()        
-            
-            else: 
+            if not self.start:
+                self.start = self.env.start_countdown()
 
-                if first_trial: 
+            else:
+
+                if first_trial:
 
                     time.sleep(2)
 
@@ -157,22 +161,22 @@ class Simulator(object):
                     self.trial_filename_pub.publish(trial_info_filename)
 
                     self.env.reset()
-                    self.env.render()                          
-                    
+                    self.env.render()
+
                     self.trial_start_time = time.time()
-                    first_trial = False 
-                
+                    first_trial = False
 
-                else:  
 
-                    if not self.training: 
-                        time_check = (time.time() - self.trial_start_time) 
+                else:
+
+                    if not self.training:
+                        time_check = (time.time() - self.trial_start_time)
 
                     if time_check > self.max_time or is_done:
                         print("Move to NEXT TRIAL")
                         self.trial_marker_pub.publish('end')
                         #clear screen
-                        if self.env_params['is_mode_switch']: 
+                        if self.env_params['is_mode_switch']:
                             time.sleep(0.5)
                         self.env.render_clear('Loading next trial ...')
                         time.sleep(1.0)
@@ -188,7 +192,7 @@ class Simulator(object):
                         assert 'env_params' in trial_info_dict
                         self.env_params = trial_info_dict['env_params']
                         self.set_mode_request = SetModeRequest()
-                        
+
                         self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params['allowed_mode_index']]
                         status = self.set_mode_srv(self.set_mode_request)
 
@@ -199,7 +203,7 @@ class Simulator(object):
                         self.env.update_params(self.env_params)
                         self.env.reset()
                         self.env.render()
-                        
+
                         self.trial_start_time = time.time()
                         self.restart = False
 
@@ -232,10 +236,10 @@ class Simulator(object):
                     self.env.update_params(self.env_params)
                     self.env.reset()
                     self.env.render()
-                    
+
                     self.trial_start_time = time.time()
                     self.restart = False
-                
+
 
                 if self.terminate:
                     self.shutdown_hook('Session terminated')
@@ -246,12 +250,12 @@ class Simulator(object):
 
             r.sleep()
 
-    def joy_callback(self, msg):        
+    def joy_callback(self, msg):
         self.input_action['human'] = msg
 
-    def mode_switch_callback(self, msg): 
-        if not self.env_params['is_mode_switch']:  
-            if msg.mode != DIM_TO_MODE_INDEX[self.env_params['allowed_mode_index']]: 
+    def mode_switch_callback(self, msg):
+        if not self.env_params['is_mode_switch']:
+            if msg.mode != DIM_TO_MODE_INDEX[self.env_params['allowed_mode_index']]:
                 status = self.set_mode_srv(self.set_mode_request)
 
     def shutdown_hook(self, msg_string='DONE'):
@@ -259,7 +263,7 @@ class Simulator(object):
             self.called_shutdown = True
             self.shutdown_pub.publish("shutdown")
             #clear screen
-            self.env.render_clear('End of trial...')    
+            self.env.render_clear('End of trial...')
             self.env.close_window()
             print('Shutting down')
 
@@ -269,13 +273,13 @@ class Simulator(object):
         if k == key.R:
             self.restart = True
 
-    def initialize_publishers(self): 
+    def initialize_publishers(self):
         self.shutdown_pub = rospy.Publisher('/shutdown', String, queue_size=1)
         self.trial_marker_pub = rospy.Publisher('/trial_marker', String, queue_size=1)
         self.trial_filename_pub = rospy.Publisher('/trial_index', String, queue_size=1)
         self.action_pub = rospy.Publisher('/action_prompt', Command, queue_size=1)
 
-    def initialize_subscribers(self): 
+    def initialize_subscribers(self):
         rospy.Subscriber('/user_vel', CartVelCmd, self.joy_callback)
         rospy.Subscriber('/mode_switches', ModeSwitch, self.mode_switch_callback)
 
