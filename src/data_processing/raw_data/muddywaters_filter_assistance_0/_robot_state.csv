@@ -1,0 +1,5 @@
+rosbagTimestamp,header,seq,stamp,secs,nsecs,frame_id,robot_continuous_position,robot_continuous_orientation,robot_linear_velocity,robot_angular_velocity,robot_discrete_state,discrete_location,discrete_orientation,mode
+1582762468772469654,,1,,1582762468,771953105,'',"[22.5, 5.0]",0.0,"[0.0, 0.0]",-0.0,,"""p0""",0.0,"""t"""
+1582762468796427427,,2,,1582762468,795967102,'',"[22.5, 5.0]",0.0,"[0.0, 0.0]",-0.0,,"""p0""",0.0,"""x"""
+1582762468820527893,,3,,1582762468,820053100,'',"[22.5, 5.0]",0.0,"[0.0, 0.0]",-0.0,,"""p0""",0.0,"""x"""
+1582762468847220389,,4,,1582762468,846786022,'',"[22.5, 5.0]",0.0,"[0.0, 0.0]",-0.0,,"""p0""",0.0,"""x"""

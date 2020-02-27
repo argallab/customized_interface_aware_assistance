@@ -1,0 +1,2 @@
+rosbagTimestamp,header,seq,stamp,secs,nsecs,frame_id,mode,num_switches
+1582762468787762413,,1,,1582762468,787622928,"""user""",0,2
