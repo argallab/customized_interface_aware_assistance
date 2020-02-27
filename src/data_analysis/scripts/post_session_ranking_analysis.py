@@ -45,9 +45,9 @@ class PostSessionRankingSurvey(object):
     def get_response_per_category(self): 
         # array: [0, 1, 2] TO DO: Change to [1, 2, 3]
 
-        first_rank = 2  # First
-        second_rank = 1 # Second
-        third_rank = 0  # Third
+        first_rank = 1  # First
+        second_rank = 2 # Second
+        third_rank = 3  # Third
         # get number of respondants who ranked noas difficulty as 0, 1, and 2 each... repeat for all
 
         self.preference_noas = [len(self.df[self.df.Preference_1 == first_rank].index.tolist()),    # First
