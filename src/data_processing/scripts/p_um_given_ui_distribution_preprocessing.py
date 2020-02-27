@@ -76,6 +76,8 @@ def populate_probabilities_from_count(user_input):
 		if label in LABEL_TO_ARRAY_DICT:
 			counts_array[LABEL_TO_ARRAY_DICT[label]] += 1
 			length += 1
+
+
 	# for label in user_input:
 	# 	if label == '"input stopped"':
 	# 		pass
@@ -83,7 +85,12 @@ def populate_probabilities_from_count(user_input):
 	# 		counts_array[LABEL_TO_ARRAY_DICT[label]] += 1
 	# 		length += 1
 
-	norm_counts_array = counts_array/length
+	# embed(banner1='check counts')
+	if length != 0:
+		norm_counts_array = counts_array/length
+	else:
+		norm_counts_array = counts_array = np.zeros(len(LABEL_TO_ARRAY_DICT))
+	# norm_counts_array = counts_array/length
 
 	return norm_counts_array
 
@@ -148,15 +155,18 @@ def build_probabilities(command_prompt, user_input, subject_id):
 
 		user_response_header = user_input['frame_id'][user_response_block_indices]
 		# embed(banner1='check indices')
+		prob_count = populate_probabilities_from_count(user_response_header)
 
-		COMMAND_TO_ARRAY_DICT[key] += populate_probabilities_from_count(user_response_header)
-		NUM_TIMES_COMMAND_PROMPT_SHOWN[key] = NUM_TIMES_COMMAND_PROMPT_SHOWN[key] + 1
+		if np.sum(prob_count == np.zeros((6,))) != 6:
+			COMMAND_TO_ARRAY_DICT[key] += prob_count
+			NUM_TIMES_COMMAND_PROMPT_SHOWN[key] = NUM_TIMES_COMMAND_PROMPT_SHOWN[key] + 1
 
 		# a = user_input['axes'][user_response_block_indices].str.replace(r"\[", "")
 		# a = a.str.replace(r"\]", "")
 		# a = [float(i) for i in a]
 		# COMMAND_TO_PROFILE_ARRAY_DICT[key].append(a)
 
+	# embed(banner1='check after loop')
 
 	for k, v in COMMAND_TO_ARRAY_DICT.items():
 		v = v/NUM_TIMES_COMMAND_PROMPT_SHOWN[k]
