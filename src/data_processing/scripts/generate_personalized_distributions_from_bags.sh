@@ -45,10 +45,10 @@ echo "Subejct id: $subject_id"
 # python p_um_given_a_distribution_preprocessing.py -id ${subject_id}
 
 # P(Ui|a)
-python command_issuing_distribution_preprocessing.py -path deepak -command_prompt _slash_command_prompt.csv -input _slash_joy_sip_puff.csv -id deepak
+# python p_ui_given_a_distribution_preprocessing.py -id ${subject_id}
 
 # P(Um|a) optimization
-# python p_ui_given_a_distribution_preprocessing.py -id subject-id
+# python p_ui_given_a_distribution_preprocessing_implicit.py -id subject-id
 
 
 
