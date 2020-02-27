@@ -345,10 +345,10 @@ class ModeInferenceEnv(object):
                 if type(f.shape) is b2CircleShape:
                     t = Transform(translation = trans.position)
                     if isinstance(r, RobotSE2):
-                        if abs(np.linalg.norm(robot.linearVelocity)) > 0:
-                            self.viewer.draw_circle(f.shape.radius, 30, color=r.robot_color, filled=True).add_attr(t)
-                        else:
+                        if abs(np.linalg.norm(robot.linearVelocity)) > 0 or abs(np.linalg.norm(robot.angularVelocity)) > 0.0:
                             self.viewer.draw_circle(f.shape.radius, 30, color=ROBOT_COLOR_WHEN_MOVING, filled=True).add_attr(t)
+                        else:
+                            self.viewer.draw_circle(f.shape.radius, 30, color=r.robot_color, filled=True).add_attr(t)
                     else:
                         self.viewer.draw_circle(f.shape.radius, 30, color=(1.0, 1.0, 1.0), filled=True).add_attr(t)
                 elif type(f.shape) is b2EdgeShape:
@@ -367,7 +367,11 @@ class ModeInferenceEnv(object):
         #render the waypoints
         for i in range(len(self.waypoints)):
             t =  Transform(translation=(self.waypoints[i][0], self.waypoints[i][1]))
-            self.viewer.draw_circle(WP_RADIUS/SCALE, 30, True, color=(0,0,0)).add_attr(t)
+            robot_position = self.robot.get_position()
+            if robot_position[0] == self.waypoints[i][0] and robot_position[1] == self.waypoints[i][1]:
+                self.viewer.draw_circle(WP_RADIUS/SCALE, 30, True, color=(0,1,0)).add_attr(t)
+            else:
+                self.viewer.draw_circle(WP_RADIUS/SCALE, 30, True, color=(0,0,0)).add_attr(t)
 
     def _render_path(self):
         for i in range(1, len(self.path_points)):
@@ -518,7 +522,7 @@ class ModeInferenceEnv(object):
         #render assistance block label
         self._render_text('Assistance Type: '+self.assistance_type, LABEL_DISPLAY_POSITION, MODE_DISPLAY_TEXT_FONTSIZE+5)
 
-        if self.current_time >= self.max_time: #TODO change this time limit to a param
+        if self.current_time >= self.max_time and not self.training: #TODO change this time limit to a param
             self._render_trial_over_text()
 
         return self.viewer.render(False)
@@ -611,6 +615,7 @@ class ModeInferenceEnv(object):
         self.r_to_g_relative_orientation = self.env_params['r_to_g_relative_orientation'] #top right, top left, bottom, right, bottom left. relative position of the goal with respect to starting position of robot
         self.start_direction = self.env_params['start_direction']
         self.start_mode = self.env_params['start_mode']
+        self.training = self.env_params['training']
         self.assistance_type = ASSISTANCE_CODE_NAME[self.env_params['assistance_type']] # label assistance type
         self.location_of_turn = self.env_params['location_of_turn'] #corresponds to the index in self.waypoints list
         self.num_locations = self.num_turns + 2 #num turns + start + end point
@@ -726,7 +731,7 @@ class ModeInferenceEnv(object):
         rospy.set_param('current_discrete_state', self.current_discrete_state)
         self.robot.robot.linearVelocity = b2Vec2(user_vel[0], user_vel[1]) #update robot velocity
         self.robot.robot.angularVelocity = -user_vel[2]
-        if self.current_time >= self.max_time:
+        if self.current_time >= self.max_time and not self.training:
             self.robot.robot.linearVelocity = b2Vec2(0.0, 0.0)
             self.robot.robot.angularVelocity = 0.0
 

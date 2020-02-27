@@ -2,7 +2,7 @@
 
 from backends.rendering import Viewer
 from utils import SCALE, VIEWPORT_W, VIEWPORT_H
-from utils import COMMAND_TEXT_COLOR, COMMAND_DISPLAY_POSITION, COMMAND_DISPLAY_FONTSIZE 
+from utils import COMMAND_TEXT_COLOR, COMMAND_DISPLAY_POSITION, COMMAND_DISPLAY_FONTSIZE
 
 import pyglet
 
@@ -16,8 +16,8 @@ class PUmGivenUIEnv(object):
         assert self.env_params is not None
 
         assert 'text' in self.env_params
- 
-        self.text = '' 
+
+        self.text = ''
         self.bold = True
 
     def _render_text(self):
@@ -27,29 +27,28 @@ class PUmGivenUIEnv(object):
         if self.viewer is None:
             self.viewer = Viewer(VIEWPORT_W, VIEWPORT_H)
             self.viewer.set_bounds(0, VIEWPORT_W/SCALE, 0, VIEWPORT_H/SCALE)
-            self.viewer.window.set_location(650, 300)
+            self.viewer.window.set_location(1650, 300)
 
         self._render_text()
         return self.viewer.render(False)
 
-    def reset(self): 
+    def reset(self):
         # (mahdieh to do) Definitely better ways of doing this...
-        if 'x' in self.env_params.keys(): 
+        if 'x' in self.env_params.keys():
             self.x = self.env_params['x']
-        if 'y' in self.env_params.keys(): 
+        if 'y' in self.env_params.keys():
             self.y = self.env_params['y']
-        if 'text' in self.env_params.keys(): 
-            self.text = self.env_params['text'] 
-        if 'font_name' in self.env_params.keys(): 
+        if 'text' in self.env_params.keys():
+            self.text = self.env_params['text']
+        if 'font_name' in self.env_params.keys():
             self.font_name = self.env_params['font_name']
-        if 'font_size' in self.env_params.keys(): 
+        if 'font_size' in self.env_params.keys():
             self.font_size = self.env_params['font_size']
-        if 'anchor_x' in self.env_params.keys(): 
+        if 'anchor_x' in self.env_params.keys():
             self.anchor_x = self.env_params['anchor_x']
-        if 'anchor_y' in self.env_params.keys(): 
+        if 'anchor_y' in self.env_params.keys():
             self.anchor_y = self.env_params['anchor_y']
-        if 'color' in self.env_params.keys(): 
+        if 'color' in self.env_params.keys():
             self.color = self.env_params['color']
-        if 'bold' in self.env_params.keys(): 
+        if 'bold' in self.env_params.keys():
             self.bold = self.env_params['bold']
-

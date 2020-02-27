@@ -84,6 +84,7 @@ class Simulator(object):
 				trial_info_dict = pickle.load(fp) #this dict could have other info related to autonomy params. We are only interested in the environment params for the time being
 
 			assert 'env_params' in trial_info_dict
+			trial_info_dict['env_params']['training'] = self.training
 			self.env_params = trial_info_dict['env_params']
 			print 'ASSISTANCE_TYPE', self.env_params['assistance_type']
 		else:
@@ -109,6 +110,7 @@ class Simulator(object):
 					trial_info_dict = pickle.load(fp) #this dict could have other info related to autonomy params. We are only interested in the environment params for the time being
 
 				assert 'env_params' in trial_info_dict
+				trial_info_dict['env_params']['training'] = self.training
 				self.env_params = trial_info_dict['env_params']
 				print  'ASSISTANCE_TYPE', self.env_params['assistance_type']
 
@@ -189,6 +191,7 @@ class Simulator(object):
 								trial_info_dict = pickle.load(fp)
 
 							assert 'env_params' in trial_info_dict
+							trial_info_dict['env_params']['training'] = self.training
 							self.env_params = trial_info_dict['env_params']
 							print 'ASSISTANCE_TYPE', self.env_params['assistance_type']
 
@@ -225,6 +228,7 @@ class Simulator(object):
 						with open(trial_info_filepath, 'rb') as fp:
 							trial_info_dict = pickle.load(fp)
 						assert 'env_params' in trial_info_dict
+						trial_info_dict['env_params']['training'] = self.training
 						self.env_params = trial_info_dict['env_params']
 						print 'ASSISTANCE_TYPE', self.env_params['assistance_type']
 
