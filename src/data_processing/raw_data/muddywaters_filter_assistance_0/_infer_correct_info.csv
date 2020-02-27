@@ -1,0 +1,8 @@
+rosbagTimestamp,optimal_a,u_intended,normalized_h,u_corrected,is_corrected_or_filtered,is_u_intended_equals_um
+1582762468787378152,"""mode_r""","""Hard Puff""",0.0198740289513,"""Hard Puff""",False,True
+1582762468804500532,"""move_n""","""Soft Sip""",0.721598678903,"""Zero Band""",True,False
+1582762468815988966,"""move_n""","""Soft Sip""",0.721598678903,"""Zero Band""",True,False
+1582762468828123691,"""move_n""","""Soft Sip""",0.721598678903,"""Zero Band""",True,False
+1582762468835593008,"""move_n""","""Soft Sip""",0.721598678903,"""Zero Band""",True,False
+1582762468843728982,"""move_n""","""Soft Sip""",0.721598678903,"""Zero Band""",True,False
+1582762468852401606,"""move_n""","""Soft Sip""",0.721598678903,"""Zero Band""",True,False
