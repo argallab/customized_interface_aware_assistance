@@ -6,7 +6,7 @@ from utils import COMMAND_TEXT_COLOR, COMMAND_DISPLAY_POSITION, COMMAND_DISPLAY_
 
 import pyglet
 
-class TextWindowEnv(object):
+class PUmGivenUIEnv(object):
 
     def __init__(self, env_params):
 
