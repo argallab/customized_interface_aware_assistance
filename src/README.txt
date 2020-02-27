@@ -14,13 +14,6 @@ For hard puff, give hard puff, don't slow it down
 roslaunch simulators p_um_given_ui_sim.launch SNP:=true duration:=4 iteration:=3 id:=NAME-OF-SUBJECT save:=true
 press 's' to start
 
-c) create personalized distribution:
-c-1: Extract topics from bag file:
-cd /home/corrective_mode_switch_assistance/src/data_processing/scripts
-python extract_topics_from_bag.py ~/.ros/bag_name NAME-Of-SUBJECT_p_um_given_ui
-
-c-2: Build distributions from extracted csv file
-python p_um_given_ui_distribution_preprocessing.py -path ../raw_data/dan_p_um_given_ui/ -command_prompt _command_prompt.csv -input _joy_sip_puff.csv -id dan
 
 
 Phase 2:
@@ -39,26 +32,16 @@ b1) p_um_given_a sim training:
 Get familiar with the test environment:
 roslaunch simulators p_um_given_a_sim.launch subject_id:=NAME-OF-SUBJECT SNP:=true save:=false
 
-b2) p_um_given_a test:
-roslaunch simulators p_um_given_a_sim.: subject_id:=NAME-OF-SUBJECT SNP:=true save:=true
 
-d) create personalized distribution:
-d-1: Extract topics from bag file:
-cd /home/corrective_mode_switch_assistance/src/data_processing/scripts
-python extract_topics_from_bag.py ~/.ros/bag_name NAME-Of-SUBJECT_p_um_given_a
-python extract_topics_from_bag.py ~/.ros/bag_name NAME-Of-SUBJECT_p_ui_given_a
-
-d-1: Build distribution from csv files:
-python p_um_given_a_distribution_preprocessing.py -path ../raw_data/subject-id_p_um_given_a -id subject-id
-
-
-e) create p_ui_given_a distribution:
-python p_ui_given_a_distribution_preprocessing.py -id subject-id (directly from p_ui_given_a_sim test)
-python p_ui_given_a_distribution_preprocessing_implicit.py -id subject-id (optimization based from p_um_given_a test)
+Phase 3: 
+###########################################################
+Generate distributions from data collected during Phase 1 and Phase 2
+cd src/data_processing/scripts
+./generate_personalized_distributions_from_bags.sh NAME-OF-SUBJECT
 
 
 
-Phase 3:
+Phase 4:
 ###########################################################
 a) create experiment blocks for subject:
 python create_experiment_blocks --subject_id name_of_subject
@@ -79,7 +62,7 @@ b-2) After each block Post Task Survey:
 https://northwesterneng.az1.qualtrics.com/jfe/form/SV_51NCtXBYaxKFZVH
 
 
-Phase 4:
+Phase 5:
 ##################################################################
 End of All Blocks:
 Post Session Ranking Survey:
