@@ -102,8 +102,8 @@ class Simulator(object):
 				assert self.env_params['location_of_turn'] > 0 and self.env_params['location_of_turn'] <= self.env_params['num_turns'] #can't be the first or last location
 			else:
 				print ('LOADING TRAINING TRIAL')
-				trial_info_filename_index = 'training_trial'
-				trial_info_filepath = os.path.join(self.trial_info_dir_path, str(trial_info_filename_index) + '.pkl')
+				trial_info_filename_index = 100
+				trial_info_filepath = os.path.join(self.trial_info_dir_path, 'training_trial.pkl')
 				assert os.path.exists(trial_info_filepath) is not None
 				with open(trial_info_filepath, 'rb') as fp:
 					trial_info_dict = pickle.load(fp) #this dict could have other info related to autonomy params. We are only interested in the environment params for the time being
