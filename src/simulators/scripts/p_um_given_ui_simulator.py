@@ -9,7 +9,7 @@ import time
 from sensor_msgs.msg import Joy
 from std_msgs.msg import String
 from simulators.msg import Command
-from envs.text_window_env import TextWindowEnv
+from envs.p_um_given_ui_env import PUmGivenUIEnv
 from utils import LOW_LEVEL_COMMANDS, EXPERIMENT_START_COUNTDOWN
 import pyglet
 import sys
@@ -17,11 +17,11 @@ from random import randrange
 import threading
 
 
-class CommandFollowing(object):
+class PUmGivenUISim(object):
     def __init__(self, duration=1.0, iterations=1):
 
         # initialization
-        rospy.init_node("command_following")
+        rospy.init_node("p_um_given_ui_simulator")
         self.initialize_subscribers()
         self.initialize_publishers()
 
@@ -36,7 +36,7 @@ class CommandFollowing(object):
         env_params = dict()
         env_params['text'] = ''
 
-        self.env = TextWindowEnv(env_params)
+        self.env = PUmGivenUIEnv(env_params)
         self.env.reset()
 
         self.generate_command_list() # generate random order of commands 
@@ -108,5 +108,5 @@ class CommandFollowing(object):
 
 
 if __name__ == '__main__':
-    CommandFollowing(sys.argv[1], sys.argv[2])
+    PUmGivenUISim(sys.argv[1], sys.argv[2])
     rospy.spin()

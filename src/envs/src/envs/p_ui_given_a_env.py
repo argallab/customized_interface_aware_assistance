@@ -19,7 +19,7 @@ from IPython import embed
 
 # TO DO: (mahdeih) Too many if statments and booleans, can do a better job of the state machine, clean in up!!
 
-class ActionEnv(object):
+class PUiGivenAEnv(object):
 
     def __init__(self, env_params):
 
@@ -298,4 +298,4 @@ class ActionEnv(object):
 
 
 if __name__ == '__main__':
-    ActionEnv()
+    PUiGivenAEnv()

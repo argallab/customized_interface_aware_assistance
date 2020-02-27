@@ -8,17 +8,17 @@ import rospy
 import rospkg
 import os
 from simulators.msg import Command
-from envs.action_to_command_mapping_env import ActionEnv
+from envs.p_ui_given_a_env import PUiGivenAEnv
 import sys
 from random import randrange
 from pyglet.window import key
 from IPython import embed
 
-class ActionCommandModelling(object):
+class PUiGivenASim(object):
     def __init__(self, iterations=1, blocks=1):
 
         # initialization
-        rospy.init_node("action_to_command_modelling")
+        rospy.init_node("p_ui_given_a_simulator")
         rospy.on_shutdown(self.shutdown_hook)
 
         # self.initialize_subscribers()
@@ -46,7 +46,7 @@ class ActionCommandModelling(object):
         env_params['actions']['mode_actions'] = self.actions[6:]
         env_params['blocks'] = blocks
 
-        self.env = ActionEnv(env_params)
+        self.env = PUiGivenAEnv(env_params)
 
         # TO DO: cleanup publishers
         self.env.initialize_publishers('action_prompt')
@@ -152,5 +152,5 @@ class ActionCommandModelling(object):
 
 
 if __name__ == '__main__':
-    ActionCommandModelling(sys.argv[1], sys.argv[2])
+    PUiGivenASim(sys.argv[1], sys.argv[2])
     rospy.spin()
