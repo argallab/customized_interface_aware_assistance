@@ -15,6 +15,7 @@ a) Sip and Puff training:
 
 roslaunch simulators sip_puff_training_simulator.launch iteration:=3
 
+Have them explore what it is to issue different levels of commands.
 Upon launch, in rqt_reconfigure select prompted
 press 's' to start prompted training
 
@@ -35,10 +36,10 @@ b) P_UM_GIVEN_A mapping training:
 b1) p_um_given_a sim training:
 
 Get familiar with the test environment:
-roslaunch simulators p_um_given_a_sim.launch subject_id:=NAME-OF-SUBJECT SNP:=true save:=false
+roslaunch simulators p_um_given_a_sim.launch subject_id:=NAME-OF-SUBJECT SNP:=true save:=false training:=0
 
 Do tthe pumgivena experiment
-roslaunch simulators p_um_given_a_sim.launch subject_id:=NAME-OF-SUBJECT SNP:=true save:=true
+roslaunch simulators p_um_given_a_sim.launch subject_id:=NAME-OF-SUBJECT SNP:=true save:=true training:=1
 
 
 Phase 4:
