@@ -3,9 +3,11 @@ Phase 1:
 Open qualtrics:
 https://northwesterneng.az1.qualtrics.com/jfe/form/SV_5biu1XSbex3VKVn
 
+Explain what the subject will be doing as a part of the task
+
 a) P_UI_GIVEN_A keyboard test
 
-roslaunch simulators p_ui_given_a_sim.launch subject_id:=NAME-OF-SUBJECT save:=true iteration:=2 block:=3
+roslaunch simulators p_ui_given_a_sim.launch subject_id:=NAME-OF-SUBJECT save:=true iteration:=1 block:=6
 
 Phase 2:
 ###########################################################
@@ -20,7 +22,7 @@ b) P_UM_GIVEN_UI Test
 
 Tell them to give command as soon as they see it, have 4 seconds to respond
 For hard puff, give hard puff, don't slow it down
-roslaunch simulators p_um_given_ui_sim.launch SNP:=true duration:=4 iteration:=3 id:=NAME-OF-SUBJECT save:=true
+roslaunch simulators p_um_given_ui_sim.launch SNP:=true duration:=4 iteration:=12 subject_id:=NAME-OF-SUBJECT save:=true
 press 's' to start
 
 

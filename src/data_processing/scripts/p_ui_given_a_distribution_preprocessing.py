@@ -38,7 +38,7 @@ class IntendedCommandGivenActionAnalysis(object):
 
 		self.id = args.id
 		self.file_dir = os.path.join(os.path.abspath(os.path.join(os.getcwd(), os.pardir)), 'raw_data', self.id+'_p_ui_given_a')
-		
+
 		self.data = DataParser(self.file_dir)
 
 	def get_nearest_time_stamp(self, tq, time_stamp_array):
@@ -130,7 +130,6 @@ class IntendedCommandGivenActionAnalysis(object):
 			if user_response_block_indices != []: # if they gave a response
 				user_response = int(self.data.user_response_df['command'][user_response_block_indices].replace('"', ''))
 				ACTION_TO_ARRAY_DICT[key][user_response-1] += 1
-
 			else:
 				ACTION_TO_ARRAY_NORMALIZER_DICT[key] -= 1
 
