@@ -35,6 +35,9 @@ do
 	fi
 done
 
+max_y=0
+max_d=0
+max_month=0
 max_h=0
 max_m=0
 max_x=0
@@ -42,25 +45,48 @@ i=0
 for file in "${p_ui_given_a_bags_array[@]}";
 do
 	file_name=${file##*/}
-	hour="$(cut -d'_' -f9 <<<$file_name)" # assuming all the days are the same
+	year="$(cut -d'_' -f6 <<<$file_name)"
+	month="$(cut -d'_' -f7 <<<$file_name)"
+	day="$(cut -d'_' -f8 <<<$file_name)"
+	hour="$(cut -d'_' -f9 <<<$file_name)"
 	mins="$(cut -d'_' -f10 <<<$file_name)"
 	secs="$(cut -d'_' -f11 <<<$file_name)" 	
-	if (( $hour == $max_h )); then
-		if (( $mins == $max_m)); then
-			if (( $secs > $max_s )); then
-				max_s=$secs
+
+	if (( $year == $max_y )); then
+		if (( $month == $max_month )); then
+			if (( $day == $max_d )); then
+				if (( $hour == $max_h )); then
+					if (( $mins == $max_m)); then
+						if (( $secs > $max_s )); then
+							max_s=$secs
+							i=$i
+						fi
+					fi
+					if (( $mins > $max_m )); then
+						max_m=$mins
+						i=$i
+					fi
+				fi
+				if (( $hour > $max_h )); then
+					max_h=$hour
+					i=$i
+				fi
+			fi
+			if (( $day > $max_d )); then
+				max_d=$day
 				i=$i
 			fi
 		fi
-		if (( $mins > $max_m )); then
-			max_m=$mins
+		if (( $month > $max_month )); then
+			max_month=$month
 			i=$i
 		fi
-	fi
-	if (( $hour > $max_h )); then
-		max_h=$hour
+	fi 
+	if (( $year > $max_y )); then
+		max_y=$year
 		i=$i
-	fi
+	fi 
+
 	i=i+1
 done
 			
