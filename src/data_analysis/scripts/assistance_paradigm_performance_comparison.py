@@ -76,6 +76,19 @@ class CompareAssistanceParadigms(object):
 				corrections = [] # no assistance has no corrections
 			value = len(corrections)
 
+		if metric == 'success': 
+			pass
+			# start_ind = df[df['trial_marker'] == 'start'].index.tolist()
+			# end_ind = df[df['trial_marker'] == 'end'].index.tolist()
+			# total_time = df.loc[end_ind, 'time'].item() - df.loc[start_ind, 'time'].item()
+			# if total_time >= 50: 
+				
+			# either get time and if time is >= 50 then didn't complete, or if gola postiont or orientation doesn't match
+
+
+		if metric == 'distance': 
+			pass
+
 		# TO DO: Other things to add, entropy for corrections how many um!=ui
 		return value
 
@@ -124,7 +137,7 @@ class CompareAssistanceParadigms(object):
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-id', '--subject_id', help='experiment block: subject_id_type_assistance_block', type=str)
-	parser.add_argument('-m', '--metrics', help='metrics to analyze', nargs='+', default=['time', 'mode_switches', 'corrections'])
+	parser.add_argument('-m', '--metrics', help='metrics to analyze', nargs='+', default=['time', 'mode_switches', 'corrections', 'success', 'distance'])
 	args = parser.parse_args()
 	if args.subject_id: 
 		comp_assistance = CompareAssistanceParadigms(args.metrics, args.subject_id)
