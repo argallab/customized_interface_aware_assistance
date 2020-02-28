@@ -1,3 +1,0 @@
-time,robot_continuous_position,robot_continuous_orientation,robot_linear_velocity,robot_angular_velocity,robot_discrete_state,discrete_location,discrete_orientation,robot_state_mode,sip_puff_frame_id,sip_puff_axes,sip_puff_buttons,mode_frame_id,mode,trial_marker,sip_puff_before_frame_id,user_vel
-0.0,,,,,,,,,,,,,,start,,
-27.31179165799999,,,,,,,,,,,,,,end,,
