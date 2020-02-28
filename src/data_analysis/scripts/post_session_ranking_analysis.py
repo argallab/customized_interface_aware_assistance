@@ -46,7 +46,7 @@ class PostSessionRankingSurvey(object):
         # array: [0, 1, 2] TO DO: Change to [1, 2, 3]
 
         first_rank = 1  # First
-        second_rank = 2 # Second
+        second_rank = 2# Second
         third_rank = 3  # Third
         # get number of respondants who ranked noas difficulty as 0, 1, and 2 each... repeat for all
 
