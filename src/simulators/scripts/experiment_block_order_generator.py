@@ -1,5 +1,25 @@
 import random
 
-a = ['no_0', 'no_1', 'f_0', 'f_1', 'c_0', 'c_1']
-random.shuffle(a)
-print(a)
+a = ['n', 'f', 'c']
+inds = [0,1]
+
+final_list = []
+
+index_first = [random.randint(0,1) for i in range(3)]
+index_second = [int(not bool(i) )for i in index_first]
+index = []
+index.extend(index_first)
+index.extend(index_second)
+# print(index)
+final_list.extend(a)
+final_list.extend(a)
+# print(final_list)
+order = [ s + '_' + str(ind) for ind, s in zip(index, final_list)]
+first_part = order[:3]
+second_part = order[3:]
+random.shuffle(first_part)
+random.shuffle(second_part)
+final_order = []
+final_order.extend(first_part)
+final_order.extend(second_part)
+print(final_order)
