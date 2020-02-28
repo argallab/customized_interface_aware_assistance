@@ -79,7 +79,7 @@ class ConcatenateMainStudyTopicsPerTrial(object):
 	def ensure_ascending(self, data): 
 
 		flag = 0
-		if (all(data[i] < data[i+1] for i in range(len(data)-1))): 
+		if (all(data[i] <= data[i+1] for i in range(len(data)-1))): 
 			flag = 1
 		return flag
 
@@ -172,6 +172,11 @@ class ConcatenateMainStudyTopicsPerTrial(object):
 		# save
 		for i in range(self.num_trials): 
 			trial = frankenstein_df.loc[(frankenstein_df['time'] >= self.start_ind[i]) & (frankenstein_df['time'] <= self.end_ind[i])]
+			# reset index for the datafram so starts from 0
+			trial.reset_index(drop=True, inplace=True)
+			ts = trial.loc[0, 'time']
+			for j in range(len(trial)): 
+				trial.at[j, 'time'] = trial.loc[j, 'time'] - ts
 			trial_filename = os.path.join(trial_dir, self.block+'_'+str(self.df_dict['trial_index'].loc[i, 'trial_index'])+'.csv')
 			trial.to_csv(trial_filename, index=False)
 
