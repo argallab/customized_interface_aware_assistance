@@ -10,6 +10,7 @@ from IPython import embed
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import matplotlib.colors as mcolors
+import plotly.express as px
 
 # read in qualtrics ranking csv with filename
 # remove unused columns from topic csv
@@ -43,8 +44,8 @@ class TLXCompareAssistanceParadigms(object):
         if subject_id: # if looking at one subject
             self.subject_id = subject_id[0]
             self.df = self.df.loc[self.df['ID'] == self.subject_id]
-        # else: 
-        #     self.skip_ids() # skip test subjects
+        else: 
+            self.skip_ids() # skip test subjects
                
 
 
@@ -54,7 +55,7 @@ class TLXCompareAssistanceParadigms(object):
         ids = ['dan', 'deepak', 'andrew']
         for i in range(len(ids)): 
             self.df = self.df[self.df.ID != ids[i]]
-        embed()
+        self.df.reset_index(drop=True, inplace=True)
 
     def compute_tlx(self, trial_data): 
         
@@ -109,6 +110,8 @@ class TLXCompareAssistanceParadigms(object):
 
             self.plot_box_plot([no_assistance, filtered, corrected], ['No Assistance', 'Filtered', 'Corrective'], metric)
 
+            # df = pd.DataFrame(dict(linear=no_assistance, linear=filtered, corrected=corrected)).melt(var_name="quartilemethod")
+            # self.plotly_box_plot(df)
 
     def plot_box_plot(self, data, ticks, title):
         plt.boxplot(data)
@@ -122,6 +125,16 @@ class TLXCompareAssistanceParadigms(object):
 
         # TO DO: add argumen to save plot
 
+    # def plotly_box_plot(self, data):
+
+    #     fig = px.box(data, y="value", facet_col="quartilemethod", color="quartilemethod",
+    #          boxmode="overlay", points='all')
+
+    #     fig.update_traces(quartilemethod="no_assistance", jitter=0, col=1)
+    #     fig.update_traces(quartilemethod="filtered", jitter=0, col=2)
+    #     fig.update_traces(quartilemethod="corrected", jitter=0, col=3)
+
+    #     fig.show()
 
 
 if __name__ == '__main__':
