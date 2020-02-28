@@ -99,7 +99,7 @@ Phase 4:
 Generate distributions from data collected during Phase 1 and Phase 2
 cd src/data_processing/scripts ./generate_personalized_distributions_from_bags.sh NAME-OF-SUBJECT
 
-Do sanity check of the distributions by opening them and inspecting them.
+DO SANITY CHECK OF THE DISTRIBUTIONS BY OPENING THEM AND INSPECTING THEM.
 
 
 Phase 5:
