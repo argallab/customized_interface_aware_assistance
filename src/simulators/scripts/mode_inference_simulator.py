@@ -179,7 +179,7 @@ class Simulator(object):
 							print("Move to NEXT TRIAL")
 							self.trial_marker_pub.publish('end')
 							self.env.render_clear('Loading next trial ...')
-							time.sleep(3.0) #sleep before the next trial happens
+							time.sleep(5.0) #sleep before the next trial happens
 							self.trial_index += 1
 							if self.trial_index == len(self.metadata_index):
 								self.shutdown_hook('Reached end of trial list. End of session')
@@ -217,7 +217,7 @@ class Simulator(object):
 						print("RESTART INITIATED")
 						self.trial_marker_pub.publish('restart')
 						self.restart = False
-						time.sleep(3.0)
+						time.sleep(5.0)
 						#TODO should I be incrementing trial index here or should I just restart the same trial?
 						if self.trial_index == len(self.metadata_index):
 							self.shutdown_hook('Reached end of trial list. End of session')
