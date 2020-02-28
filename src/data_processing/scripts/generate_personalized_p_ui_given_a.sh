@@ -16,6 +16,8 @@ echo "Subejct id: $subject_id"
 
 search_dir="/root/.ros/"
 
+declare -A p_ui_given_a_bags_array
+i=0
 for full_file in ${search_dir}*.bag;
 do
 	file_name=${full_file##*/}
@@ -26,17 +28,81 @@ do
 	# echo "$name"
 	if [[ "$name" == "$subject_id" ]]; then
 		if [[ "$p_of" == 'ui' ]] && [[ "$given" == 'a' ]]; then # p(Ui|a)
-			p_ui_given_a_bag=$full_file
+			p_ui_given_a_bags_array[$i]=$full_file
+			i=i+1
 		fi
 		# echo $full_file
 	fi
 done
 
-# P(Ui|a) (internal_model)
-echo "Extracting: $p_ui_given_a_bag"
-python extract_topics_from_bag.py $p_ui_given_a_bag "${subject_id}_p_ui_given_a"
+max_y=0
+max_d=0
+max_month=0
+max_h=0
+max_m=0
+max_x=0
+i=0
+for file in "${p_ui_given_a_bags_array[@]}";
+do
+	file_name=${file##*/}
+	year="$(cut -d'_' -f6 <<<$file_name)"
+	month="$(cut -d'_' -f7 <<<$file_name)"
+	day="$(cut -d'_' -f8 <<<$file_name)"
+	hour="$(cut -d'_' -f9 <<<$file_name)"
+	mins="$(cut -d'_' -f10 <<<$file_name)"
+	secs="$(cut -d'_' -f11 <<<$file_name)" 	
 
-# Build distributions:
-# P(Ui|a)
-echo "Generating p(ui|a)"
-python p_ui_given_a_distribution_preprocessing.py -id ${subject_id}
+	if (( $year == $max_y )); then
+		if (( $month == $max_month )); then
+			if (( $day == $max_d )); then
+				if (( $hour == $max_h )); then
+					if (( $mins == $max_m)); then
+						if (( $secs > $max_s )); then
+							max_s=$secs
+							i=$i
+						fi
+					fi
+					if (( $mins > $max_m )); then
+						max_m=$mins
+						i=$i
+					fi
+				fi
+				if (( $hour > $max_h )); then
+					max_h=$hour
+					i=$i
+				fi
+			fi
+			if (( $day > $max_d )); then
+				max_d=$day
+				i=$i
+			fi
+		fi
+		if (( $month > $max_month )); then
+			max_month=$month
+			i=$i
+		fi
+	fi 
+	if (( $year > $max_y )); then
+		max_y=$year
+		i=$i
+	fi 
+
+	i=i+1
+done
+	
+p_ui_given_a_bag=${p_ui_given_a_bags_array[$i]}
+if [[ "${#p_ui_given_a_bags_array[@]}" == 1 ]]; then # if lenght of array is one, return just that one file (otherwise gives empty)
+	p_ui_given_a_bag=$p_ui_given_a_bags_array
+fi
+
+echo "$p_ui_given_a_bag"
+
+
+# # P(Ui|a) (internal_model)
+# echo "Extracting: $p_ui_given_a_bag"
+# python extract_topics_from_bag.py $p_ui_given_a_bag "${subject_id}_p_ui_given_a"
+
+# # Build distributions:
+# # P(Ui|a)
+# echo "Generating p(ui|a)"
+# python p_ui_given_a_distribution_preprocessing.py -id ${subject_id}
