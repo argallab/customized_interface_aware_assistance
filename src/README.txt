@@ -3,6 +3,10 @@ Phase 1:
 Open qualtrics:
 https://northwesterneng.az1.qualtrics.com/jfe/form/SV_5biu1XSbex3VKVn
 
+Open incognito tabs for all qualtrics study.
+
+show picture of ph1
+
 Explain what the subject will be doing as a part of the task
 
 a) P_UI_GIVEN_A keyboard test
@@ -12,6 +16,8 @@ roslaunch simulators p_ui_given_a_sim.launch subject_id:=NAME-OF-SUBJECT save:=t
 Phase 2:
 ###########################################################
 a) Sip and Puff training:
+
+show picture of ph2
 
 roslaunch simulators sip_puff_training_simulator.launch iteration:=3
 
@@ -23,7 +29,7 @@ b) P_UM_GIVEN_UI Test
 
 Tell them to give command as soon as they see it, have 4 seconds to respond
 For hard puff, give hard puff, don't slow it down
-roslaunch simulators p_um_given_ui_sim.launch SNP:=true duration:=4 iteration:=12 subject_id:=NAME-OF-SUBJECT save:=true
+roslaunch simulators p_um_given_ui_sim.launch SNP:=true duration:=4 iteration:=15 subject_id:=NAME-OF-SUBJECT save:=true
 press 's' to start
 
 
@@ -36,7 +42,7 @@ b) P_UM_GIVEN_A mapping training:
 b1) p_um_given_a sim training:
 
 Get familiar with the test environment:
-roslaunch simulators p_um_given_a_sim.launch subject_id:=NAME-OF-SUBJECT SNP:=true save:=false training:=0
+roslaunch simulators p_um_given_a_sim.launch subject_id:=NAME-OF-SUBJECT SNP:=true save:=true training:=0
 
 Do tthe pumgivena experiment
 roslaunch simulators p_um_given_a_sim.launch subject_id:=NAME-OF-SUBJECT SNP:=true save:=true training:=1
