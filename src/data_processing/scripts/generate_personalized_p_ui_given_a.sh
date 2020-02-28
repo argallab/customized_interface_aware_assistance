@@ -89,14 +89,20 @@ do
 
 	i=i+1
 done
-			
+	
 p_ui_given_a_bag=${p_ui_given_a_bags_array[$i]}
+if [[ "${#p_ui_given_a_bags_array[@]}" == 1 ]]; then # if lenght of array is one, return just that one file (otherwise gives empty)
+	p_ui_given_a_bag=$p_ui_given_a_bags_array
+fi
 
-# P(Ui|a) (internal_model)
-echo "Extracting: $p_ui_given_a_bag"
-python extract_topics_from_bag.py $p_ui_given_a_bag "${subject_id}_p_ui_given_a"
+echo "$p_ui_given_a_bag"
 
-# Build distributions:
-# P(Ui|a)
-echo "Generating p(ui|a)"
-python p_ui_given_a_distribution_preprocessing.py -id ${subject_id}
+
+# # P(Ui|a) (internal_model)
+# echo "Extracting: $p_ui_given_a_bag"
+# python extract_topics_from_bag.py $p_ui_given_a_bag "${subject_id}_p_ui_given_a"
+
+# # Build distributions:
+# # P(Ui|a)
+# echo "Generating p(ui|a)"
+# python p_ui_given_a_distribution_preprocessing.py -id ${subject_id}
