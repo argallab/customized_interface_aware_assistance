@@ -1,0 +1,654 @@
+StartDate,EndDate,Status,IPAddress,Progress,Duration (in seconds),Finished,RecordedDate,ResponseId,RecipientLastName,RecipientFirstName,RecipientEmail,ExternalReference,LocationLatitude,LocationLongitude,DistributionChannel,UserLanguage,Q35,Q33,Q49,Q11,Q15,Q12,Q13,Q14,Q10,Q16,Q17,Q18,Q19,Q20,Q21,Q22,Q23,Q24,Q2_1,Q9_1,Q4_1,Q8_1,Q5_1,Q6_1,Q25,Q48,Q26,Q28,Q30,Q36,Q50,Q54,Q32,Q55,Q47,Q37,Q39,Q41
+Start Date,End Date,Response Type,IP Address,Progress,Duration (in seconds),Finished,Recorded Date,Response ID,Recipient Last Name,Recipient First Name,Recipient Email,External Data Reference,Location Latitude,Location Longitude,Distribution Channel,User Language,Subject ID,Assistance Level,Block Number,Click the factor that represents the more important contributor to workload for the task,Click the factor that represents the more important contributor to workload for the task,Click the factor that represents the more important contributor to workload for the task,Click the factor that represents the more important contributor to workload for the task,Click the factor that represents the more important contributor to workload for the task,Click the factor that represents the more important contributor to workload for the task,Click the factor that represents the more important contributor to workload for the task,Click the factor that represents the more important contributor to workload for the task,Click the factor that represents the more important contributor to workload for the task,Click the factor that represents the more important contributor to workload for the task,Click the factor that represents the more important contributor to workload for the task,Click the factor that represents the more important contributor to workload for the task,Click the factor that represents the more important contributor to workload for the task,Click the factor that represents the more important contributor to workload for the task,Click the factor that represents the more important contributor to workload for the task,MENTAL DEMAND:How mentally demanding was the task?,"FRUSTRATION:How insecure, discouraged, irritated, stressed, and annoyed were you?",PHYSICAL DEMAND:How physically demanding was the task?,EFFORT:How hard did you have to work to accomplish your level of performance?,TEMPORAL DEMAND:How hurried or rushed was the pace of the task?,PERFORMANCE:How successful were you in accomplishing what you were asked to do?,It was easy for me to complete this task.,I am not fatigued from completing this task.,The robot (red circle) was easy for me to operate.,It was easy for me to issue my intended commands.,I had to think about how to accomplish the task using the robot (red circle).,An autonomous assistance system was assisting me to perform the task,The autonomous assistance helped me to reduce the number of mode switches. Note: Answer neutral if you think there was no assistance system assisting you.,The autonomous assistance helped me to complete the task faster. Note: Answer neutral if you think there was no assistance system assisting you.,The autonomous assistance helped me complete the task more efficiently. Note: Answer neutral if you think there was no assistance system assisting you.,The autonomous assistance helped me to reduce unwanted mode switches. Note: Answer neutral if you think there was no assistance system assisting you,I preferred doing the task with assistance.  Note: Answer neutral if you think there was no assistance system assisting you.,"(OPTIONAL) If you would have liked assistance at any time during task execution, please describe when and what type of assistance you would have preferred:",I feel proficient in controlling the robot using this interface.,I feel proficient in controlling the robot with this assistance mode.
+"{""ImportId"":""startDate"",""timeZone"":""America/Denver""}","{""ImportId"":""endDate"",""timeZone"":""America/Denver""}","{""ImportId"":""status""}","{""ImportId"":""ipAddress""}","{""ImportId"":""progress""}","{""ImportId"":""duration""}","{""ImportId"":""finished""}","{""ImportId"":""recordedDate"",""timeZone"":""America/Denver""}","{""ImportId"":""_recordId""}","{""ImportId"":""recipientLastName""}","{""ImportId"":""recipientFirstName""}","{""ImportId"":""recipientEmail""}","{""ImportId"":""externalDataReference""}","{""ImportId"":""locationLatitude""}","{""ImportId"":""locationLongitude""}","{""ImportId"":""distributionChannel""}","{""ImportId"":""userLanguage""}","{""ImportId"":""QID44_TEXT""}","{""ImportId"":""QID42""}","{""ImportId"":""QID58""}","{""ImportId"":""QID11""}","{""ImportId"":""QID15""}","{""ImportId"":""QID12""}","{""ImportId"":""QID13""}","{""ImportId"":""QID14""}","{""ImportId"":""QID10""}","{""ImportId"":""QID16""}","{""ImportId"":""QID17""}","{""ImportId"":""QID18""}","{""ImportId"":""QID19""}","{""ImportId"":""QID20""}","{""ImportId"":""QID21""}","{""ImportId"":""QID22""}","{""ImportId"":""QID23""}","{""ImportId"":""QID24""}","{""ImportId"":""QID2_1""}","{""ImportId"":""QID9_1""}","{""ImportId"":""QID4_1""}","{""ImportId"":""QID8_1""}","{""ImportId"":""QID5_1""}","{""ImportId"":""QID6_1""}","{""ImportId"":""QID25""}","{""ImportId"":""QID57""}","{""ImportId"":""QID26""}","{""ImportId"":""QID28""}","{""ImportId"":""QID30""}","{""ImportId"":""QID36""}","{""ImportId"":""QID59""}","{""ImportId"":""QID63""}","{""ImportId"":""QID32""}","{""ImportId"":""QID64""}","{""ImportId"":""QID56""}","{""ImportId"":""QID37_TEXT""}","{""ImportId"":""QID39""}","{""ImportId"":""QID41""}"
+2020-02-21 16:51:06,2020-02-21 16:59:07,IP Address,131.193.171.254,100,480,True,2020-02-21 16:59:07,R_3elaQtVfHX96I7t,,,,,41.8782958984375,-87.69069671630859375,anonymous,EN,dan,Noas,0,"Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Frustration
+
+How insecure, discouraged, irritated, stressed, and annoyed versus secure, gratified, content, relaxed, and complacent did you feel during the task?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?",8,2,41,27,60,62,Somewhat Agree,Somewhat Agree,Agree,Neutral,Agree,True,,,Neutral,,Agree,,Somewhat Agree,Agree
+2020-02-21 17:08:21,2020-02-21 17:11:50,IP Address,131.193.149.251,100,209,True,2020-02-21 17:11:51,R_2a8HXzDEAPYTRq0,,,,,41.8782958984375,-87.69069671630859375,anonymous,EN,dan,Coras,0,"Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Frustration
+
+How insecure, discouraged, irritated, stressed, and annoyed versus secure, gratified, content, relaxed, and complacent did you feel during the task?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?",5,9,38,22,32,82,Somewhat Agree,Somewhat Agree,Somewhat Agree,Neutral,Agree,True,,,Agree,,Somewhat Agree,,Agree,Agree
+2020-02-21 17:22:31,2020-02-21 17:25:14,IP Address,131.193.149.251,100,163,True,2020-02-21 17:25:15,R_3j0zkw2LKugrugg,,,,,41.8782958984375,-87.69069671630859375,anonymous,EN,dan,Filtas,0,"Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Frustration
+
+How insecure, discouraged, irritated, stressed, and annoyed versus secure, gratified, content, relaxed, and complacent did you feel during the task?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Frustration
+
+How insecure, discouraged, irritated, stressed, and annoyed versus secure, gratified, content, relaxed, and complacent did you feel during the task?","Frustration
+
+How insecure, discouraged, irritated, stressed, and annoyed versus secure, gratified, content, relaxed, and complacent did you feel during the task?","Frustration
+
+How insecure, discouraged, irritated, stressed, and annoyed versus secure, gratified, content, relaxed, and complacent did you feel during the task?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?",22,40,68,60,48,27,Somewhat Disagree,Disagree,Somewhat Agree,Disagree,Disagree,True,,,Disagree,,Neutral,,Somewhat Disagree,Strongly Disagree
+2020-02-26 20:11:24,2020-02-26 20:15:37,IP Address,165.124.171.129,100,252,True,2020-02-26 20:15:37,R_WwjKEc1D6FLSCjv,,,,,42.0597991943359375,-87.68419647216796875,anonymous,EN,deepak,Filtas,1,"Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?",69,17,80,69,74,31,Somewhat Disagree,Neutral,Neutral,Somewhat Disagree,Somewhat Agree,False,,,Neutral,,Neutral,,Somewhat Disagree,Neutral
+2020-02-26 20:15:48,2020-02-26 20:18:40,IP Address,165.124.171.129,100,172,True,2020-02-26 20:18:41,R_2OPWU9wtMFqViyA,,,,,42.0597991943359375,-87.68419647216796875,anonymous,EN,deepak,Coras,0,"Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?",25,14,37,39,45,0,Somewhat Agree,Somewhat Agree,Somewhat Agree,Neutral,Somewhat Disagree,True,,,Somewhat Agree,,Somewhat Agree,,Neutral,Neutral
+2020-02-26 20:22:16,2020-02-26 20:24:42,IP Address,165.124.171.129,100,145,True,2020-02-26 20:24:42,R_0PABzBXc1B9xws1,,,,,42.0597991943359375,-87.68419647216796875,anonymous,EN,deepak,Coras,1,"Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?",16,5,36,23,34,,Neutral,Somewhat Agree,Neutral,Somewhat Agree,Neutral,True,,,Somewhat Agree,,Neutral,,Somewhat Agree,Somewhat Agree
+2020-02-26 20:30:19,2020-02-26 20:32:33,IP Address,165.124.171.129,100,133,True,2020-02-26 20:32:33,R_yUeL6pmqoVRoOlz,,,,,42.0597991943359375,-87.68419647216796875,anonymous,EN,deepak,Filtas,0,"Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?",21,15,48,58,58,,Somewhat Disagree,Somewhat Disagree,Neutral,Somewhat Disagree,Neutral,True,,,Neutral,,Neutral,,Neutral,Somewhat Disagree
+2020-02-26 20:39:42,2020-02-26 20:41:49,IP Address,165.124.171.129,100,127,True,2020-02-26 20:41:50,R_3EtD4eHUvEjQPzF,,,,,42.0597991943359375,-87.68419647216796875,anonymous,EN,deepak,Noas,1,"Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Frustration
+
+How insecure, discouraged, irritated, stressed, and annoyed versus secure, gratified, content, relaxed, and complacent did you feel during the task?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?",40,32,68,74,51,31,Disagree,Somewhat Disagree,Somewhat Disagree,Somewhat Disagree,Agree,False,,,Neutral,,Neutral,,Neutral,Neutral
+2020-02-26 20:47:09,2020-02-26 20:50:10,IP Address,165.124.171.129,100,181,True,2020-02-26 20:50:11,R_2rHkFhzjgCWc05C,,,,,42.0597991943359375,-87.68419647216796875,anonymous,EN,deepak,Noas,0,"Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Frustration
+
+How insecure, discouraged, irritated, stressed, and annoyed versus secure, gratified, content, relaxed, and complacent did you feel during the task?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?",63,45,83,76,67,19,Disagree,Somewhat Disagree,Somewhat Disagree,Disagree,Agree,False,,,Neutral,,Neutral,,Neutral,Somewhat Disagree
+2020-02-27 08:42:27,2020-02-27 10:23:26,IP Address,165.124.171.129,100,6059,True,2020-02-27 10:23:27,R_qI67MwCj3c9loTn,,,,,42.0597991943359375,-87.68419647216796875,anonymous,EN,andrew,Noas,0,"Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?",20,10,40,60,60,65,Somewhat Disagree,Somewhat Agree,Somewhat Disagree,Disagree,Somewhat Agree,False,,,Neutral,,Neutral,,Disagree,Neutral
+2020-02-27 10:23:32,2020-02-27 13:18:52,IP Address,50.234.12.38,100,10520,True,2020-02-27 13:18:53,R_1dgywoAlAwUx0NH,,,,,41.8972015380859375,-87.619598388671875,anonymous,EN,andrew,Filtas,0,"Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Frustration
+
+How insecure, discouraged, irritated, stressed, and annoyed versus secure, gratified, content, relaxed, and complacent did you feel during the task?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Frustration
+
+How insecure, discouraged, irritated, stressed, and annoyed versus secure, gratified, content, relaxed, and complacent did you feel during the task?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Frustration
+
+How insecure, discouraged, irritated, stressed, and annoyed versus secure, gratified, content, relaxed, and complacent did you feel during the task?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?",15,10,20,35,50,20,Somewhat Disagree,Somewhat Disagree,Somewhat Agree,Somewhat Disagree,Disagree,True,,,Somewhat Agree,,Agree,,Somewhat Agree,Somewhat Agree
+2020-02-27 13:18:59,2020-02-27 13:27:52,IP Address,50.234.12.38,100,533,True,2020-02-27 13:27:53,R_2TH1ZLaOU04Cxiy,,,,,41.8972015380859375,-87.619598388671875,anonymous,EN,andrew,Filtas,1,"Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Frustration
+
+How insecure, discouraged, irritated, stressed, and annoyed versus secure, gratified, content, relaxed, and complacent did you feel during the task?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Frustration
+
+How insecure, discouraged, irritated, stressed, and annoyed versus secure, gratified, content, relaxed, and complacent did you feel during the task?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?",15,20,20,45,60,30,Neutral,Somewhat Disagree,Neutral,Somewhat Agree,Somewhat Disagree,True,,,Agree,,Agree,,Neutral,Somewhat Agree
+2020-02-27 13:33:26,2020-02-27 13:36:18,IP Address,50.234.12.38,100,171,True,2020-02-27 13:36:18,R_Zt03kUgWR7JSZVL,,,,,41.8972015380859375,-87.619598388671875,anonymous,EN,andrew,Coras,0,"Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?",10,10,10,15,40,45,Agree,Neutral,Somewhat Agree,Somewhat Agree,Neutral,True,,,Agree,,Strongly Agree,,Somewhat Agree,Agree
+2020-02-27 13:40:15,2020-02-27 13:43:05,IP Address,50.234.12.38,100,169,True,2020-02-27 13:43:05,R_D31VtCuTQneL9hD,,,,,41.8972015380859375,-87.619598388671875,anonymous,EN,andrew,Coras,1,"Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Frustration
+
+How insecure, discouraged, irritated, stressed, and annoyed versus secure, gratified, content, relaxed, and complacent did you feel during the task?","Frustration
+
+How insecure, discouraged, irritated, stressed, and annoyed versus secure, gratified, content, relaxed, and complacent did you feel during the task?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?",10,15,15,15,60,60,Somewhat Agree,Neutral,Somewhat Agree,Somewhat Agree,Somewhat Agree,True,,,Strongly Agree,,Strongly Agree,,Somewhat Agree,Agree
+2020-02-27 13:48:41,2020-02-27 13:51:05,IP Address,50.234.12.38,100,143,True,2020-02-27 13:51:05,R_2QyApNmSlOUiTE9,,,,,41.8972015380859375,-87.619598388671875,anonymous,EN,andrew,Noas,1,"Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Frustration
+
+How insecure, discouraged, irritated, stressed, and annoyed versus secure, gratified, content, relaxed, and complacent did you feel during the task?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Frustration
+
+How insecure, discouraged, irritated, stressed, and annoyed versus secure, gratified, content, relaxed, and complacent did you feel during the task?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?",25,35,35,60,65,50,Disagree,Somewhat Disagree,Somewhat Disagree,Somewhat Disagree,Neutral,False,,,Neutral,,Neutral,,Somewhat Agree,Neutral
+2020-02-27 18:07:50,2020-02-27 18:17:14,IP Address,165.124.171.129,100,564,True,2020-02-27 18:17:15,R_0iYT3rUn4uc4Ry1,,,,,42.0597991943359375,-87.68419647216796875,anonymous,EN,001,Noas,1,"Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Frustration
+
+How insecure, discouraged, irritated, stressed, and annoyed versus secure, gratified, content, relaxed, and complacent did you feel during the task?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Frustration
+
+How insecure, discouraged, irritated, stressed, and annoyed versus secure, gratified, content, relaxed, and complacent did you feel during the task?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Frustration
+
+How insecure, discouraged, irritated, stressed, and annoyed versus secure, gratified, content, relaxed, and complacent did you feel during the task?","Frustration
+
+How insecure, discouraged, irritated, stressed, and annoyed versus secure, gratified, content, relaxed, and complacent did you feel during the task?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?",20,80,70,70,,80,Disagree,Disagree,Somewhat Disagree,Disagree,Agree,False,Neutral,Neutral,Neutral,Neutral,Neutral,,Somewhat Agree,Neutral
+2020-02-27 18:22:31,2020-02-27 18:29:35,IP Address,165.124.171.129,100,424,True,2020-02-27 18:29:36,R_33jALM5YKXDRTKp,,,,,42.0597991943359375,-87.68419647216796875,anonymous,EN,001,Filtas,1,"Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?",20,10,40,70,80,,Agree,Agree,Agree,Agree,Agree,True,Agree,Agree,Agree,Strongly Agree,Strongly Agree,adjusting sensitivity of soft sip -- it was low compared to soft puff,Strongly Agree,Strongly Agree
+2020-02-27 18:33:56,2020-02-27 18:37:47,IP Address,165.124.171.129,100,230,True,2020-02-27 18:37:47,R_1FtTy5WgPpOssFm,,,,,42.0597991943359375,-87.68419647216796875,anonymous,EN,001,Coras,0,"Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?",,,10,20,90,,Strongly Agree,Strongly Agree,Strongly Agree,Strongly Agree,Strongly Agree,True,Strongly Agree,Strongly Agree,Strongly Agree,Strongly Agree,Agree,,Strongly Agree,Strongly Agree
+2020-02-27 18:43:07,2020-02-27 18:48:17,IP Address,165.124.171.129,100,309,True,2020-02-27 18:48:17,R_3OrfQDWdkhmTq4t,,,,,42.0597991943359375,-87.68419647216796875,anonymous,EN,001,Coras,1,"Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?",10,,20,20,60,,Strongly Agree,Strongly Agree,Strongly Agree,Strongly Agree,Agree,True,Strongly Agree,Strongly Agree,Strongly Agree,Strongly Agree,Agree,,Strongly Agree,Strongly Agree
+2020-02-27 18:53:09,2020-02-27 18:58:44,IP Address,165.124.171.129,100,334,True,2020-02-27 18:58:44,R_ABBoE4AgX2g9GeJ,,,,,42.0597991943359375,-87.68419647216796875,anonymous,EN,001,Noas,0,"Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?",60,,40,60,40,,Agree,Somewhat Agree,Agree,Agree,Strongly Agree,False,Neutral,Neutral,Neutral,Neutral,Neutral,,Strongly Agree,Neutral
+2020-02-27 19:03:56,2020-02-27 19:12:11,IP Address,165.124.171.129,100,494,True,2020-02-27 19:12:11,R_11i5PzvI7RHhYVJ,,,,,42.0597991943359375,-87.68419647216796875,anonymous,EN,001,Filtas,0,"Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Mental Demand
+
+How much mental and perceptual activity was required (e.g. thinking, deciding, calculating, remembering, looking, searching, etc)? Was the task easy or demanding, simple or complex, exacting or forgiving?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?","Performance
+
+How successful do you think you were in accomplishing the goals of the task set by the experimenter (or yourself)? How satisfied were you with your performance in accomplishing these goals?","Effort
+
+How hard did you have to work (mentally and physically) to accomplish your level of performance?","Physical Demand
+
+How much physical activity was required (e.g. pushing, pulling, turning, controlling, activating, etc)? Was the task easy or demanding, slow or brisk, slack or strenuous, restful or laborious?","Temporal Demand
+
+How much time pressure did you feel due to the rate of pace at which the tasks or task elements occurred? Was the pace slow and leisurely or rapid and frantic?",35,,20,20,40,,Agree,Agree,Agree,Agree,Agree,True,Strongly Agree,Agree,Agree,Strongly Agree,Agree,,Strongly Agree,Strongly Agree
