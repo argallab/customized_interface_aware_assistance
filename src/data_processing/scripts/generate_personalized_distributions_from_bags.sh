@@ -8,7 +8,7 @@
 # plot distributions
 
 
-# input: bagfile name, subject name 
+# input: bagfile name, subject name
 # bagfile=$1
 # echo "Bagfile: $bagfile"
 subject_id=$1
@@ -19,8 +19,8 @@ search_dir="/root/.ros/"
 declare -A p_ui_given_a_bags_array
 i=0
 for full_file in ${search_dir}*.bag;
-do 
-	file_name=${full_file##*/} 
+do
+	file_name=${full_file##*/}
 	name="$(cut -d'_' -f1 <<<$file_name)"
 	p_of="$(cut -d'_' -f3 <<<$file_name)"
 	given="$(cut -d'_' -f5 <<<$file_name)"
@@ -54,12 +54,15 @@ i=0
 for file in "${p_ui_given_a_bags_array[@]}";
 do
 	file_name=${file##*/}
-	year="$(cut -d'_' -f6 <<<$file_name)"
-	month="$(cut -d'_' -f7 <<<$file_name)"
-	day="$(cut -d'_' -f8 <<<$file_name)"
-	hour="$(cut -d'_' -f9 <<<$file_name)"
-	mins="$(cut -d'_' -f10 <<<$file_name)"
-	secs="$(cut -d'_' -f11 <<<$file_name)" 	
+	datetime="$(cut -d'_' -f6 <<<$file_name)"
+
+	year="$(cut -d'-' -f1 <<<$datetime)"
+	month="$(cut -d'-' -f2 <<<$datetime)"
+	day="$(cut -d'-' -f3 <<<$datetime)"
+	hour="$(cut -d'-' -f4 <<<$datetime)"
+	mins="$(cut -d'-' -f5 <<<$datetime)"
+	secs="$(cut -d'-' -f6 <<<$datetime)"
+	secs="$(cut -d'.' -f1 <<<$secs)" 	
 
 	if (( $year == $max_y )); then
 		if (( $month == $max_month )); then
@@ -90,15 +93,15 @@ do
 			max_month=$month
 			i=$i
 		fi
-	fi 
+	fi
 	if (( $year > $max_y )); then
 		max_y=$year
 		i=$i
-	fi 
+	fi
 
 	i=i+1
 done
-	
+
 p_ui_given_a_bag=${p_ui_given_a_bags_array[$i]}
 if [[ "${#p_ui_given_a_bags_array[@]}" == 1 ]]; then # if lenght of array is one, return just that one file (otherwise gives empty)
 	p_ui_given_a_bag=$p_ui_given_a_bags_array
@@ -117,7 +120,7 @@ echo "Extracting: $p_ui_given_a_bag"
 python extract_topics_from_bag.py $p_ui_given_a_bag "${subject_id}_p_ui_given_a"
 
 
-# Build distributions: 
+# Build distributions:
 
 # P(Um|Ui)
 echo "Generating p(um|ui)"
@@ -134,7 +137,3 @@ python p_ui_given_a_distribution_preprocessing.py -id ${subject_id}
 # P(Um|a) optimization
 echo "Generating p(ui|a) implicity using optimization"
 python p_ui_given_a_distribution_preprocessing_implicit.py -id ${subject_id}
-
-
-
-

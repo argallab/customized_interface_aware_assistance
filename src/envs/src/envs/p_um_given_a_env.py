@@ -243,7 +243,7 @@ class PUmGivenAEnv(object):
         if self.viewer is None:
             self.viewer = Viewer(VIEWPORT_W, VIEWPORT_H)
             self.viewer.set_bounds(0, VIEWPORT_W/SCALE, 0, VIEWPORT_H/SCALE)
-            self.viewer.window.set_location(1650, 300)
+            self.viewer.window.set_location(650, 300)
             self.timer_thread.start()
 
     def start_countdown(self):
