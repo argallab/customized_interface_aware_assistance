@@ -108,7 +108,7 @@ Phase 5:
 (Repeat b-1 and b-2 until all blocks are completed)
 
 a-3) Quick training to explain the path and what information is shown on screen.
-roslaunch simulators modeinference_sim.launch SNP:=true JOINT:=true subject_id:=NAME-Of-SUBJECT assistance_block:="no" block_id:=0 training:=1 save:=true optim:=0
+roslaunch simulators modeinference_sim.launch SNP:=true JOINT:=true subject_id:=NAME-Of-SUBJECT assistance_block:="no" block_id:=0 training:=1 save:=false optim:=0
 
 b-1) run experiment:
 roslaunch simulators modeinference_sim.launch SNP:=true JOINT:=true subject_id:=NAME-Of-SUBJECT assistance_block:="no" block_id:=0 training:=0 save:=true optim:=0
