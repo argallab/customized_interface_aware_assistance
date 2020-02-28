@@ -520,7 +520,7 @@ class ModeInferenceEnv(object):
         #render timer
         self._render_timer_text()
         #render assistance block label
-        self._render_text('Assistance Type: '+self.assistance_type, LABEL_DISPLAY_POSITION, MODE_DISPLAY_TEXT_FONTSIZE+5)
+        self._render_text('Condition: '+self.assistance_type, LABEL_DISPLAY_POSITION, MODE_DISPLAY_TEXT_FONTSIZE+5)
 
         if self.current_time >= self.max_time and not self.training: #TODO change this time limit to a param
             self._render_trial_over_text()
