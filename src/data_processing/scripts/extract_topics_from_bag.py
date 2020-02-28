@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
 import rosbag, sys, csv
+import rospy
 import time
 import string
 import os #for file management make directory
 import shutil #for file management, copy file
 import ntpath
+from IPython import embed
 
 #verify correct input arguments: 1 or 2
 if (len(sys.argv) > 3):
@@ -52,10 +54,16 @@ for bagFile in listOfBagFiles:
 
 	#get list of topics from the bag
 	listOfTopics = []
+	listOfTimes = []
 	for topic, msg, t in bagContents:
 		if topic not in listOfTopics:
 			listOfTopics.append(topic)
+		t = t.secs+(t.nsecs*10**(-9))
+		t = float(t)
+		listOfTimes.append(t)
 
+	# get first time of bag file
+	ts = min(listOfTimes)
 
 	for topicName in listOfTopics:
 		#Create a new CSV file for each topic
@@ -66,6 +74,8 @@ for bagFile in listOfBagFiles:
 			for subtopic, msg, t in bag.read_messages(topicName):	# for each instant in time that has data for topicName
 				#parse data from this instant, which is of the form of multiple lines of "Name: value\n"
 				#	- put it in the form of a list of 2-element lists
+				t = t.secs+(t.nsecs*10**(-9))
+				t = float(t)
 				msgString = str(msg)
 				msgList = string.split(msgString, '\n')
 				instantaneousListOfData = []
@@ -82,6 +92,7 @@ for bagFile in listOfBagFiles:
 					filewriter.writerow(headers)
 					firstIteration = False
 				# write the value from each pair to the file
+				t -= ts
 				values = [str(t)]	#first column will have rosbag timestamp
 				for pair in instantaneousListOfData:
 					if len(pair) > 1:
