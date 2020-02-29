@@ -45,8 +45,7 @@ class TLXCompareAssistanceParadigms(object):
             self.subject_id = subject_id[0]
             self.df = self.df.loc[self.df['ID'] == self.subject_id]
         else: 
-            self.skip_ids() # skip test subjects
-               
+            self.skip_ids() # skip test subjects               
 
 
     def skip_ids(self):
@@ -56,6 +55,7 @@ class TLXCompareAssistanceParadigms(object):
         for i in range(len(ids)): 
             self.df = self.df[self.df.ID != ids[i]]
         self.df.reset_index(drop=True, inplace=True)
+        
 
     def compute_tlx(self, trial_data): 
         
@@ -115,12 +115,15 @@ class TLXCompareAssistanceParadigms(object):
 
     def plot_box_plot(self, data, ticks, title):
         plt.boxplot(data)
-        plt.xticks(range(1,len(ticks)+1), ticks, rotation=25)
+        plt.xticks(range(1,len(ticks)+1), ticks, rotation=0)
         plt.title(title)
+        plt.ylim(0,100)
         plt.show() 
+
         fig = plt.gcf()
         plot_folder = os.path.join(os.path.abspath(os.path.join(os.getcwd(), os.pardir)), 'plots')
         fig_name = os.path.join(plot_folder, title+'.png')
+
         # plt.savefig(fig_name)
 
         # TO DO: add argumen to save plot
@@ -139,7 +142,7 @@ class TLXCompareAssistanceParadigms(object):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-f', '--filename', help='qaultrics post-session ranking survey', default='post_task_survey.csv', type=str) # has defualt,
+    parser.add_argument('-f', '--filename', help='qaultrics post-task survey', default='post_task_survey.csv', type=str) # has defualt,
     parser.add_argument('-id', '--subject_id', help='experiment block: subject_id_type_assistance_block', type=str) # no default but optional
     parser.add_argument('-m', '--metrics', help='metrics to analyze', nargs='+', default=['tlx', 'raw_tlx']) # has default
     args = parser.parse_args()
