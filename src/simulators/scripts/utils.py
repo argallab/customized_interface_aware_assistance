@@ -124,74 +124,74 @@ MODE_SWITCH_TRANSITION = {'x': {'Hard Puff': 'y', 'Hard Sip': 't', 'Soft Puff': 
 #next location or the previous location
 #Enum defintions
 class AssistanceType(Enum):
-    Filter = 0
-    Corrective = 1
-    No_Assistance = 2
+	Filter = 0
+	Corrective = 1
+	No_Assistance = 2
 
 class PositionOnLine(Enum):
-    START = 0
-    BETWEEN = 1
-    END = 2
-    NOT_ON_LINE = 3
+	START = 0
+	BETWEEN = 1
+	END = 2
+	NOT_ON_LINE = 3
 
 class StartDirection(Enum):
-    X = 0
-    Y = 1
+	X = 0
+	Y = 1
 
 class RGOrient(Enum):
-    '''
-    Relative position of the goal with respect to the robot. This information is used for constructing properly shared paths in ModeInferenceEnv
-    '''
-    TOP_RIGHT = 0
-    TOP_LEFT = 1
-    BOTTOM_LEFT = 2
-    BOTTOM_RIGHT = 3
+	'''
+	Relative position of the goal with respect to the robot. This information is used for constructing properly shared paths in ModeInferenceEnv
+	'''
+	TOP_RIGHT = 0
+	TOP_LEFT = 1
+	BOTTOM_LEFT = 2
+	BOTTOM_RIGHT = 3
 
 
 TRANSITION_FOR_ACTION =   { RGOrient.TOP_RIGHT:   {'Soft Puff': {'x': 'next', 'y': 'next', 't': 'prev'}, 'Soft Sip': {'x': 'prev', 'y': 'prev', 't': 'next'}},
-    					   RGOrient.TOP_LEFT:     {'Soft Puff': {'x': 'prev', 'y': 'next', 't': 'prev'}, 'Soft Sip': {'x': 'next', 'y': 'prev', 't': 'next'}},
-    					   RGOrient.BOTTOM_RIGHT: {'Soft Puff': {'x': 'next', 'y': 'prev', 't': 'prev'}, 'Soft Sip': {'x': 'prev', 'y': 'next', 't': 'next'}},
-    					   RGOrient.BOTTOM_LEFT:  {'Soft Puff': {'x': 'prev', 'y': 'prev', 't': 'prev'}, 'Soft Sip': {'x': 'next', 'y': 'next', 't': 'next'}}
-    						}
+						   RGOrient.TOP_LEFT:     {'Soft Puff': {'x': 'prev', 'y': 'next', 't': 'prev'}, 'Soft Sip': {'x': 'next', 'y': 'prev', 't': 'next'}},
+						   RGOrient.BOTTOM_RIGHT: {'Soft Puff': {'x': 'next', 'y': 'prev', 't': 'prev'}, 'Soft Sip': {'x': 'prev', 'y': 'next', 't': 'next'}},
+						   RGOrient.BOTTOM_LEFT:  {'Soft Puff': {'x': 'prev', 'y': 'prev', 't': 'prev'}, 'Soft Sip': {'x': 'next', 'y': 'next', 't': 'next'}}
+							}
 
 
 #utility functions
 
 def get_sign_of_number(x):
-    '''
-    Utility function for getting the sign of a scalar. +1 for positive, -1 for negative
-    '''
-    if int(x>=0):
-        return 1.0
-    else:
-        return -1.0
+	'''
+	Utility function for getting the sign of a scalar. +1 for positive, -1 for negative
+	'''
+	if int(x>=0):
+		return 1.0
+	else:
+		return -1.0
 
 
 #class definitions
 class Robot2D(object):
-    def __init__(self, world, position, robot_color=(1.0, 0.0, 0.0), radius=3, type='kinematic'):
-        self.robot = world.CreateKinematicBody(position=position,shapes=[b2CircleShape(pos=position, radius=radius)])
-        self.robot_color = robot_color
+	def __init__(self, world, position, robot_color=(1.0, 0.0, 0.0), radius=3, type='kinematic'):
+		self.robot = world.CreateKinematicBody(position=position,shapes=[b2CircleShape(pos=position, radius=radius)])
+		self.robot_color = robot_color
 
 class RobotSE2(object):
-    def __init__(self, world, position, orientation, robot_color=(1.0, 0.0, 0.0), radius=3, type='kinematic'):
-        # self.direction_vec = world.CreateKinematicBody(position=position, shape=[b2EdgeShape(vertices=[position, (radius*math.cos(orientation), radius*math.sin(orientation))])])
-        self.robot = world.CreateKinematicBody(position=position, angle=orientation, shapes=[b2CircleShape(pos=position, radius=radius)])
-        self.robot_color = robot_color
-        self.radius = radius
+	def __init__(self, world, position, orientation, robot_color=(1.0, 0.0, 0.0), radius=3, type='kinematic'):
+		# self.direction_vec = world.CreateKinematicBody(position=position, shape=[b2EdgeShape(vertices=[position, (radius*math.cos(orientation), radius*math.sin(orientation))])])
+		self.robot = world.CreateKinematicBody(position=position, angle=orientation, shapes=[b2CircleShape(pos=position, radius=radius)])
+		self.robot_color = robot_color
+		self.radius = radius
 
-    def set_robot_color(self, robot_color):
-        self.robot_color = robot_color
+	def set_robot_color(self, robot_color):
+		self.robot_color = robot_color
 
-    #GETTERS
-    def get_direction_marker_end_points(self):
-        return (self.robot.position[0], self.robot.position[1]), (self.robot.position[0] + 2*self.radius*math.cos(self.robot.angle), self.robot.position[1] + 2*self.radius*math.sin(self.robot.angle))
+	#GETTERS
+	def get_direction_marker_end_points(self):
+		return (self.robot.position[0], self.robot.position[1]), (self.robot.position[0] + 2*self.radius*math.cos(self.robot.angle), self.robot.position[1] + 2*self.radius*math.sin(self.robot.angle))
 
-    def get_position(self):
-        return [self.robot.position[0], self.robot.position[1]]
+	def get_position(self):
+		return [self.robot.position[0], self.robot.position[1]]
 
-    def get_angle(self):
-        return self.robot.angle
+	def get_angle(self):
+		return self.robot.angle
 
 	def get_linear_velocity(self):
 		return [self.robot.linearVelocity[0], self.robot.linearVelocity[1]]
@@ -200,13 +200,13 @@ class RobotSE2(object):
 		return self.robot.angularVelocity
 
 	#Setters
-    def set_position(self, position):
-        self.robot.position = position
+	def set_position(self, position):
+		self.robot.position = position
 
-    def set_orientation(self, orientation):
-        self.robot.angle = orientation
+	def set_orientation(self, orientation):
+		self.robot.angle = orientation
 
 class Goal(object):
-    """docstring forGoal."""
-    def __init__(self, arg):
-        pass
+	"""docstring forGoal."""
+	def __init__(self, arg):
+		pass
