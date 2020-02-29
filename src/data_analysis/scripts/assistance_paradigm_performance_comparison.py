@@ -7,6 +7,10 @@ import numpy as numpy
 import matplotlib
 import matplotlib.pyplot as plt 
 from IPython import embed
+import sys
+import rospkg
+sys.path.append(os.path.join(rospkg.RosPack().get_path('simulators'), 'scripts'))
+import utils 
 
 # per individual and over all subjects
 # load dataframes in folder 
@@ -54,16 +58,40 @@ class CompareAssistanceParadigms(object):
 			[self.files_name_list.append(f) for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f))]
 			[self.files_path_list.append(os.path.join(folder, f)) for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f))]
 
+	def load_trial_metadata(self, trial_index): 
+		self.metadata_dir = os.path.join(os.path.abspath(os.path.join(os.getcwd(), os.pardir, os.pardir)), 'simulators/scripts/trial_dir', trial_index+'.pkl')
+		trial_metadata = pd.read_pickle(self.metadata_dir)
+		return trial_metadata
+
+	def get_trial_index_from_file(self, file): 
+		trial_index= file.split('/')[-1].split('_')[-1].split('.')[0]
+		return trial_index
+
 		
+	def _task_completion_time(self, df): 
+		start_ind = df[df['trial_marker'] == 'start'].index.tolist()
+		end_ind = df[df['trial_marker'] == 'end'].index.tolist()
+		time = df.loc[end_ind, 'time'].item() - df.loc[start_ind, 'time'].item()
+		return time
+
+	def _distance_to_end(self, df, file): 
+		trial_index = self.get_trial_index_from_file(file)
+		metadata = self.load_trial_metadata(trial_index) 
+		goal_position = metadata['env_params']['goal_position'] # get goal position
+		# TO DO: fix main_study_concat so these aren't strings
+		final_position_str = df.loc[df['robot_continuous_position'].last_valid_index(),'robot_continuous_position'].split('[')[-1].split(']')[0].split(',') # get last robot position
+		final_position = [float(final_position_str[0]), float(final_position_str[1])]
+		manhattan_dist = numpy.linalg.norm(goal_position[0]-final_position[0]) + numpy.linalg.norm(goal_position[1]-final_position[1]) # manhattan distance
+		return manhattan_dist
+
+
 	def compute_metric(self, metric, file): 
 		# compute the measure of interest
 
 		df = pd.read_csv(file, header = 0)
 
 		if metric == 'time': 
-			start_ind = df[df['trial_marker'] == 'start'].index.tolist()
-			end_ind = df[df['trial_marker'] == 'end'].index.tolist()
-			value = df.loc[end_ind, 'time'].item() - df.loc[start_ind, 'time'].item()
+			value = self._task_completion_time(df)
 
 		if metric == 'mode_switches': 
 			mode_switches = df[(df['mode'].notnull()) & (df['mode_frame_id']=='user')].index.tolist() # mode swithces from user or autonomy and not service calls
@@ -77,45 +105,61 @@ class CompareAssistanceParadigms(object):
 			value = len(corrections)
 
 		if metric == 'success': 
-			pass
-			# start_ind = df[df['trial_marker'] == 'start'].index.tolist()
-			# end_ind = df[df['trial_marker'] == 'end'].index.tolist()
-			# total_time = df.loc[end_ind, 'time'].item() - df.loc[start_ind, 'time'].item()
-			# if total_time >= 50: 
-				
 			# either get time and if time is >= 50 then didn't complete, or if gola postiont or orientation doesn't match
+			# more accurate to do the position since can technically be successful with 50
+			# no need for orientation becuaase orientation is already before goal, so if not at goal, that's all we need to know
+			time = self._task_completion_time(df)
+			manhattan_dist = self._distance_to_end(df, file)			
+			if manhattan_dist <= 0.5 and time <= 50: 
+				value = 1
+			else: 
+				value = 0 
 
-
-		if metric == 'distance': 
-			pass
+		if metric == 'distance':
+			value = self._distance_to_end(df, file) 
+			
 
 		# TO DO: Other things to add, entropy for corrections how many um!=ui
 		return value
 
 
-	def group_per_metric(self): 
-	# for each file, get the metric of interest and store in corresponding array
+	def group_per_metric(self, metric): 
+	
+		# To Do: maybe save these as globals for each metric? 
+		no_assistance = list()
+		filtered = list()
+		corrected = list()
+
+		for i, file in enumerate(self.files_name_list): 
+			self.trial_name_info = file.split('_')
+			assistance_type_ind = self.trial_name_info.index('assistance')-1
+
+			value = self.compute_metric(metric, self.files_path_list[i])
+
+			if self.trial_name_info[assistance_type_ind] == 'no': 
+				no_assistance.append(value)
+			elif self.trial_name_info[assistance_type_ind] == 'filter': 
+				filtered.append(value)
+			elif self.trial_name_info[assistance_type_ind] == 'corrective': 
+				corrected.append(value)
+			else:
+				print '[warning:] unexpected assistance type' 
+
+		return no_assistance, filtered, corrected
+
+
+	def data_analysis(self): 
+
+		# for each file, get the metric of interest and store in corresponding array
 		for metric in self.metrics: 
 
-			# To Do: maybe save these as globals for each metric? 
-			no_assistance = list()
-			filtered = list()
-			corrected = list()
+			no_assistance, filtered, corrected = self.group_per_metric(metric)
 
-			for i, file in enumerate(self.files_name_list): 
-				self.trial_name_info = file.split('_')
-				assistance_type_ind = self.trial_name_info.index('assistance')-1
+		if metric == 'success': 
+			# plot percent sucess as bar plot (percent is the sum dvivide by length of array)
+			self.bar_plot([100*sum(no_assistance)/float(len(no_assistance)), 100*sum(filtered)/float(len(filtered)), 100*sum(corrected)/float(len(corrected))], ['No Assistance', 'Filtered', 'Corrective'], 'percent'+' '+metric)
 
-				value = self.compute_metric(metric, self.files_path_list[i])
-
-				if self.trial_name_info[assistance_type_ind] == 'no': 
-					no_assistance.append(value)
-				elif self.trial_name_info[assistance_type_ind] == 'filter': 
-					filtered.append(value)
-				elif self.trial_name_info[assistance_type_ind] == 'corrective': 
-					corrected.append(value)
-				else:
-					print '[warning:] unexpected assistance type' 
+		else: 
 
 			self.plot_box_plot([no_assistance, filtered, corrected], ['No Assistance', 'Filtered', 'Corrective'], metric)
 
@@ -133,6 +177,15 @@ class CompareAssistanceParadigms(object):
 
 		# TO DO: add argumen to save plot
 
+	def bar_plot(self, data, ticks, title): 
+		fig , ax = plt.subplots()
+		ax.bar(ticks, data)
+		ax.set_ylim(0, 100)
+		plt.title(title)
+		plt.show()
+
+
+
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
@@ -145,4 +198,4 @@ if __name__ == '__main__':
 	else: 
 		comp_assistance = CompareAssistanceParadigms(args.metrics)
 	comp_assistance.load_trial_data()
-	comp_assistance.group_per_metric()
+	comp_assistance.data_analysis()
