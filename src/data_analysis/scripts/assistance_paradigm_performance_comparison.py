@@ -123,7 +123,7 @@ class CompareAssistanceParadigms(object):
 	def plot_box_plot(self, data, ticks, title):
 
 		plt.boxplot(data)
-		plt.xticks(range(1,len(ticks)+1), ticks, rotation=25)
+		plt.xticks(range(1,len(ticks)+1), ticks, rotation=0)
 		plt.title(title)
 		plt.show() 
 		fig = plt.gcf()
