@@ -12,6 +12,10 @@ import rospkg
 sys.path.append(os.path.join(rospkg.RosPack().get_path('simulators'), 'scripts'))
 import utils 
 
+import scipy.stats as ss
+# import statsmodels.formual.api as sfa 
+# import sckikit_posthocs as sp
+
 # per individual and over all subjects
 # load dataframes in folder 
 # for each dataframe, calculate metric of interest (e.g. completion time or number of mode switches)
@@ -110,7 +114,7 @@ class CompareAssistanceParadigms(object):
 			# no need for orientation becuaase orientation is already before goal, so if not at goal, that's all we need to know
 			time = self._task_completion_time(df)
 			manhattan_dist = self._distance_to_end(df, file)			
-			if manhattan_dist <= 0.5 and time <= 50: 
+			if manhattan_dist <= 0.1 and time <= 50: 
 				value = 1
 			else: 
 				value = 0 
@@ -162,6 +166,7 @@ class CompareAssistanceParadigms(object):
 		else: 
 
 			self.plot_box_plot([no_assistance, filtered, corrected], ['No Assistance', 'Filtered', 'Corrective'], metric)
+			embed()
 
 
 	def plot_box_plot(self, data, ticks, title):
@@ -183,6 +188,10 @@ class CompareAssistanceParadigms(object):
 		ax.set_ylim(0, 100)
 		plt.title(title)
 		plt.show()
+
+
+	def parametric_anova_with_post_hoc(self, data):
+		pass
 
 
 
