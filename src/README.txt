@@ -67,7 +67,7 @@ a) Sip and Puff training:
 
 show picture of ph2
 
-roslaunch simulators sip_puff_training_simulator.launch iteration:=3
+roslaunch simulators sip_puff_training_simulator.launch iteration:=5
 
 Have them explore what it is to issue different levels of commands.
 Upon launch, in rqt_reconfigure select prompted
@@ -124,3 +124,17 @@ End of All Blocks:
 Post Session Ranking Survey:
 
 https://northwesterneng.az1.qualtrics.com/jfe/form/SV_bvKTMj4kxDaXdv7
+
+
+
+001 - n_1, f_1, c_0, c_1, n_0, f_0
+002 - n_1, f_1, c_0, f_0, n_0, c_1
+003 - f_1, c_0, n_1, n_0, c_1, f_0
+004 - n_1, f_1, c_0, f_0, c_1, n_0
+
+
+005 - n_0, c_0, f_0, f_1, c_1, n_1
+006 - f_1, c_0, n_1, f_0, n_0, c_1
+007 - n_0, c_0, f_1, n_1, f_0, c_1
+008 - n_0, c_1, f_1, c_0, n_1, f_0
+009 - f_1, c_0, n_0, c_1, n_1, f_0
