@@ -126,6 +126,7 @@ def _init_p_um_given_ui(commands, keys, subject_id):
 			p_um[i][name] = commands[i][index]
 	# embed(banner1="u_m")
 	personalized_distributions_dir = os.path.join(rospkg.RosPack().get_path('inference_and_correction'), 'personalized_distributions')
+	print(p_um)
 	pickle.dump(p_um, open(os.path.join(personalized_distributions_dir, subject_id +'_p_um_given_ui.pkl'), "wb"))
 
 
