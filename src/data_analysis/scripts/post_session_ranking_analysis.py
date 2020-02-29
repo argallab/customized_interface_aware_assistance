@@ -36,11 +36,15 @@ class PostSessionRankingSurvey(object):
         # read csv file ask dataframe
         # skip rows 1 and 2 so the default qualtrics stuff doesn't mix up the data type from int to object
         self.df = pd.read_csv(self.block_dir , header = 0, usecols=columns, skiprows=[1,2])
-        
+        self.skip_ids() # skip test subjects
 
     def skip_ids(self):
-        pass
         # Id's to skip (test id's, manual cleaning) 
+        # To do: instead of hardcode add input argument
+        ids = ['dan', 'deepak', 'andrew']
+        for i in range(len(ids)): 
+            self.df = self.df[self.df.ID != ids[i]]
+        self.df.reset_index(drop=True, inplace=True)
 
     def get_response_per_category(self): 
         # array: [0, 1, 2] TO DO: Change to [1, 2, 3]
@@ -144,7 +148,7 @@ class PostSessionRankingSurvey(object):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-f', '--filename', help='qaultrics post-session ranking survey', type=str)
+    parser.add_argument('-f', '--filename', help='qaultrics post-session ranking survey', default='post_session_survey.csv', type=str) # has defualt,
     args = parser.parse_args()
     ranks = PostSessionRankingSurvey(args)
     ranks.get_response_per_category()
