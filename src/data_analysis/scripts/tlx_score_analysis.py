@@ -10,6 +10,7 @@ from IPython import embed
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import matplotlib.colors as mcolors
+import plotly.express as px
 
 # read in qualtrics ranking csv with filename
 # remove unused columns from topic csv
@@ -43,9 +44,8 @@ class TLXCompareAssistanceParadigms(object):
         if subject_id: # if looking at one subject
             self.subject_id = subject_id[0]
             self.df = self.df.loc[self.df['ID'] == self.subject_id]
-        # else: 
-        #     self.skip_ids() # skip test subjects
-               
+        else: 
+            self.skip_ids() # skip test subjects               
 
 
     def skip_ids(self):
@@ -54,7 +54,8 @@ class TLXCompareAssistanceParadigms(object):
         ids = ['dan', 'deepak', 'andrew']
         for i in range(len(ids)): 
             self.df = self.df[self.df.ID != ids[i]]
-        embed()
+        self.df.reset_index(drop=True, inplace=True)
+        
 
     def compute_tlx(self, trial_data): 
         
@@ -109,24 +110,39 @@ class TLXCompareAssistanceParadigms(object):
 
             self.plot_box_plot([no_assistance, filtered, corrected], ['No Assistance', 'Filtered', 'Corrective'], metric)
 
+            # df = pd.DataFrame(dict(linear=no_assistance, linear=filtered, corrected=corrected)).melt(var_name="quartilemethod")
+            # self.plotly_box_plot(df)
 
     def plot_box_plot(self, data, ticks, title):
         plt.boxplot(data)
-        plt.xticks(range(1,len(ticks)+1), ticks, rotation=25)
+        plt.xticks(range(1,len(ticks)+1), ticks, rotation=0)
         plt.title(title)
+        plt.ylim(0,100)
         plt.show() 
+
         fig = plt.gcf()
         plot_folder = os.path.join(os.path.abspath(os.path.join(os.getcwd(), os.pardir)), 'plots')
         fig_name = os.path.join(plot_folder, title+'.png')
+
         # plt.savefig(fig_name)
 
         # TO DO: add argumen to save plot
 
+    # def plotly_box_plot(self, data):
+
+    #     fig = px.box(data, y="value", facet_col="quartilemethod", color="quartilemethod",
+    #          boxmode="overlay", points='all')
+
+    #     fig.update_traces(quartilemethod="no_assistance", jitter=0, col=1)
+    #     fig.update_traces(quartilemethod="filtered", jitter=0, col=2)
+    #     fig.update_traces(quartilemethod="corrected", jitter=0, col=3)
+
+    #     fig.show()
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-f', '--filename', help='qaultrics post-session ranking survey', default='post_task_survey.csv', type=str) # has defualt,
+    parser.add_argument('-f', '--filename', help='qaultrics post-task survey', default='post_task_survey.csv', type=str) # has defualt,
     parser.add_argument('-id', '--subject_id', help='experiment block: subject_id_type_assistance_block', type=str) # no default but optional
     parser.add_argument('-m', '--metrics', help='metrics to analyze', nargs='+', default=['tlx', 'raw_tlx']) # has default
     args = parser.parse_args()
