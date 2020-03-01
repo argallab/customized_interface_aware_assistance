@@ -159,14 +159,13 @@ class CompareAssistanceParadigms(object):
 
 			no_assistance, filtered, corrected = self.group_per_metric(metric)
 
-		if metric == 'success': 
-			# plot percent sucess as bar plot (percent is the sum dvivide by length of array)
-			self.bar_plot([100*sum(no_assistance)/float(len(no_assistance)), 100*sum(filtered)/float(len(filtered)), 100*sum(corrected)/float(len(corrected))], ['No Assistance', 'Filtered', 'Corrective'], 'percent'+' '+metric)
+			if metric == 'success': 
+				# plot percent sucess as bar plot (percent is the sum dvivide by length of array)
+				self.bar_plot([100*sum(no_assistance)/float(len(no_assistance)), 100*sum(filtered)/float(len(filtered)), 100*sum(corrected)/float(len(corrected))], ['No Assistance', 'Filtered', 'Corrective'], 'percent'+' '+metric)
 
-		else: 
+			else: 
 
-			self.plot_box_plot([no_assistance, filtered, corrected], ['No Assistance', 'Filtered', 'Corrective'], metric)
-			embed()
+				self.plot_box_plot([no_assistance, filtered, corrected], ['No Assistance', 'Filtered', 'Corrective'], metric)
 
 
 	def plot_box_plot(self, data, ticks, title):
