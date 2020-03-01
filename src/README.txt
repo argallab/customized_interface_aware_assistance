@@ -27,7 +27,7 @@ in which you will get to know what the study is about, what the tasks are and ho
 Following the familiarization phase, we will proceed to a training phase, during which you will have be trained on more detailed aspects
 the various essential skills that are required to perform the tasks. You will be tested on how well you have acquired these skills. The training will be repeated
 until you reach a minimum level of proficiency.
-Following that we will proceed to the main study
+Following that we will proceed to the main study4
 
 Let us get started with the familiarization phase.
 
@@ -136,5 +136,5 @@ https://northwesterneng.az1.qualtrics.com/jfe/form/SV_bvKTMj4kxDaXdv7
 005 - n_0, c_0, f_0, f_1, c_1, n_1
 006 - f_1, c_0, n_1, f_0, n_0, c_1
 007 - n_0, c_0, f_1, n_1, f_0, c_1
-008 - n_0, c_1, f_1, c_0, n_1, f_0
-009 - f_1, c_0, n_0, c_1, n_1, f_0
+008 - c_1, n_0, f_1, c_0, n_1, f_0
+009 - c_0, f_1, n_0, c_1, n_1, f_0
