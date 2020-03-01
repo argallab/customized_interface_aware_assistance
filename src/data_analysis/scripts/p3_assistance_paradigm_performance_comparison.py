@@ -100,6 +100,18 @@ class CompareAssistanceParadigms(object):
 		return manhattan_dist
 
 
+	def is_successful_trial(self, df, file): 
+		# either get time and if time is >= 50 then didn't complete, or if gola postiont or orientation doesn't match
+		# more accurate to do the position since can technically be successful with 50
+		# no need for orientation becuaase orientation is already before goal, so if not at goal, that's all we need to know
+		time = self._task_completion_time(df)
+		manhattan_dist = self._distance_to_end(df, file)
+		if manhattan_dist <= 0.1 and time <= 50: # successful trial if less than max time and at goal
+			return 1
+		else: 
+			return 0 	
+
+
 	def compute_metric(self, metric, file): 
 		# compute the measure of interest
 
@@ -109,8 +121,11 @@ class CompareAssistanceParadigms(object):
 			value = self._task_completion_time(df)
 
 		if metric == 'mode_switches': 
-			mode_switches = df[(df['mode'].notnull()) & (df['mode_frame_id']=='user')].index.tolist() # mode swithces from user or autonomy and not service calls
-			value = len(mode_switches)
+			if self.is_successful_trial(df, file): 
+				mode_switches = df[(df['mode'].notnull()) & (df['mode_frame_id']=='user')].index.tolist() # mode swithces from user or autonomy and not service calls
+				value = len(mode_switches)
+			else: 
+				value = 'nan'
 
 		if metric == 'corrections': 
 			if 'is_corrected_or_filtered' in df.columns: 
@@ -119,16 +134,8 @@ class CompareAssistanceParadigms(object):
 				corrections = [] # no assistance has no corrections
 			value = len(corrections)
 
-		if metric == 'success': 
-			# either get time and if time is >= 50 then didn't complete, or if gola postiont or orientation doesn't match
-			# more accurate to do the position since can technically be successful with 50
-			# no need for orientation becuaase orientation is already before goal, so if not at goal, that's all we need to know
-			time = self._task_completion_time(df)
-			manhattan_dist = self._distance_to_end(df, file)			
-			if manhattan_dist <= 0.1 and time <= 50: 
-				value = 1
-			else: 
-				value = 0 
+		if metric == 'success': 			
+			value = is_successful_trial(df, file)
 
 		if metric == 'distance':
 			value = self._distance_to_end(df, file) 
@@ -151,14 +158,17 @@ class CompareAssistanceParadigms(object):
 
 			value = self.compute_metric(metric, self.files_path_list[i])
 
-			if self.trial_name_info[assistance_type_ind] == 'no': 
-				no_assistance.append(value)
-			elif self.trial_name_info[assistance_type_ind] == 'filter': 
-				filtered.append(value)
-			elif self.trial_name_info[assistance_type_ind] == 'corrective': 
-				corrected.append(value)
-			else:
-				print('[warning:] unexpected assistance type')
+			if value != 'nan': 
+				if self.trial_name_info[assistance_type_ind] == 'no': 
+					no_assistance.append(value)
+				elif self.trial_name_info[assistance_type_ind] == 'filter': 
+					filtered.append(value)
+				elif self.trial_name_info[assistance_type_ind] == 'corrective': 
+					corrected.append(value)
+				else:
+					print('[warning:] unexpected assistance type')
+			else: 
+				print('[warning: ]'+metric+' value is nan. make sure this is what you expected.')
 
 		return no_assistance, filtered, corrected
 
@@ -168,9 +178,9 @@ class CompareAssistanceParadigms(object):
 		# assign the assistance condition label to each data in the arrays so we can add it as a column in the dataframe
 		condition = []
 		for i in range(len(self.labels)): 
-			for j in range(np.shape(data)[1]): 
+			for j in range(len(data[i])):  
 				condition.append(self.labels[i])
-		df = pd.DataFrame({metric: np.array(data).flatten(), 'condition': condition})
+		df = pd.DataFrame({metric: list(itertools.chain(*data)) , 'condition': condition}) # flatten the data and create dataframe so each value corresponds with assistance condition
 		return df 
 
 
@@ -202,7 +212,8 @@ class CompareAssistanceParadigms(object):
 		plt.style.use('ggplot')
 
 		sns.set(style="whitegrid")
-		ax = sns.boxplot(x=df["condition"], y=df[metric]) 		
+		ax = sns.boxplot(x=df["condition"], y=df[metric]) 	
+		ax = sns.swarmplot(x=df["condition"], y=df[metric], color=".4")	
 
 		# get y position for all the p-value pairs based on location and significacne
 		sig_df = pd.DataFrame({'pair':pairs, 'p_value': p_values, 'text': sig_text})
@@ -225,9 +236,11 @@ class CompareAssistanceParadigms(object):
 
 	def get_significant_pairs(self, df, metric): 
 
-		# pairwise_comparisons = sp.posthoc_conover(df, val_col=metric, group_col='condition', p_adjust='holm') 
-		pairwise_comparisons = sp.posthoc_wilcoxon(df, val_col=metric, group_col='condition', p_adjust='holm')
-		
+		pairwise_comparisons = sp.posthoc_conover(df, val_col=metric, group_col='condition', p_adjust='holm') 
+		# embed()
+		# TO DO: Wilcoxon won't work for mode switches because not truly paired test (conditions have different lengths)
+		# pairwise_comparisons = sp.posthoc_wilcoxon(df, val_col=metric, group_col='condition', p_adjust='holm')
+
 		groups = pairwise_comparisons.keys().to_list() 
 		combinations = list(itertools.combinations(groups, 2)) # possible combinations for pairwise comparison 
 		pairs = []
@@ -237,7 +250,7 @@ class CompareAssistanceParadigms(object):
 			if pairwise_comparisons.loc[combinations[i][0], combinations[i][1]] <= self.alpha:  # if signifcane between the two pairs is alot, add position
 				pairs.append([self.label_to_plot_pos[combinations[i][0]], self.label_to_plot_pos[combinations[i][1]]])
 				p_values.append(pairwise_comparisons.loc[combinations[i][0], combinations[i][1]])
-			
+
 		return pairs, p_values
 
 
