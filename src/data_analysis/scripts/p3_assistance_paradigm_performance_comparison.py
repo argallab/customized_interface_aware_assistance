@@ -279,13 +279,16 @@ class CompareAssistanceParadigms(object):
 				text_pos_y = y_min+(h*i)+0.25
 				plt.plot(sig_df.loc[i, 'pair'], y_pos, lw=1.5, c='k')		
 				plt.text(text_pos_x, text_pos_y, sig_df.loc[i, 'text'], ha='center', va='bottom', color='k')
+
+		# plt.ylabel('Distance to Goal')
+		# embed()
 		
 		plt.show()
 
 		# save to folder
-		plot_folder = os.path.join(os.path.abspath(os.path.join(os.getcwd(), os.pardir)), 'plots')
-		fig_name = os.path.join(plot_folder, metric+'.png')
-		plt.savefig(fig_name)
+		# plot_folder = os.path.join(os.path.abspath(os.path.join(os.getcwd(), os.pardir)), 'plots')
+		# fig_name = os.path.join(plot_folder, metric+'.png')
+		# plt.savefig(fig_name)
 
 
 	def get_significant_pairs(self, df, metric): 
