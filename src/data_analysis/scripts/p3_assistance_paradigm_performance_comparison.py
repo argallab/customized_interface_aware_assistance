@@ -48,7 +48,9 @@ class CompareAssistanceParadigms(object):
 			self.get_recursive_folders()
 			print(self.data_dir)
 
+		self.trial_fraction_metric = ['success'] # metrics that are calculated over all trials for a signle condition for each person 
 		self.labels= ['No Assistance', 'Filtered', 'Corrective']
+		self.assistance_cond = ['no', 'filter', 'corrective']
 		self.label_to_plot_pos = {'No Assistance': 0, 'Filtered': 1 , 'Corrective': 2}
 		self.v_strong_alpha = 0.001
 		self.strong_alpha = 0.01
@@ -135,7 +137,7 @@ class CompareAssistanceParadigms(object):
 			value = len(corrections)
 
 		if metric == 'success': 			
-			value = is_successful_trial(df, file)
+			value = self.is_successful_trial(df, file)
 
 		if metric == 'distance':
 			value = self._distance_to_end(df, file) 
@@ -145,20 +147,62 @@ class CompareAssistanceParadigms(object):
 		return value
 
 
+	def group_per_trial(self, metric): 
+
+		# TO DO: this needs to be looked at, not as generci as it seems, rewally only for percentages within a trial, so if you want mean over traia, need to fix this
+
+		no_assistance = list()
+		filtered = list()
+		corrected = list()
+
+		id_list = []
+		for i, file in enumerate(self.files_name_list): 
+			subject_id = file.split('_')[0]
+			if subject_id not in id_list: 
+				id_list.append(subject_id) # get the list of unique ids 
+
+
+		for unique_id in id_list: # for each user
+			indices = [] 	# get the index of all files that belong to that user
+			for ind, file in enumerate(self.files_name_list): 
+				if unique_id in file: 
+					indices.append(ind)					
+
+			for cond in self.assistance_cond: 
+				value_list = []
+				for i in indices: # for all tirals of that user, get the trials belogning to certian assistance condition
+					if self.files_name_list[i].split('_')[self.files_name_list[i].split('_').index('assistance')-1] == cond: 
+						value_list.append(self.compute_metric(metric, self.files_path_list[i])) # find value given path file corresponding to filename
+
+				# calculated percentage: 
+				value = 100*sum(value_list)/len(value_list)
+				if cond == 'no': 
+					no_assistance.append(value)
+				elif cond == 'filter': 
+					filtered.append(value)
+				elif cond == 'corrective': 
+					corrected.append(value)
+				else:
+					print('[warning:] unexpected assistance type') 
+
+		return no_assistance, filtered, corrected
+
+
+
 	def group_per_metric(self, metric): 
 	
-		# To Do: maybe save these as globals for each metric? 
 		no_assistance = list()
 		filtered = list()
 		corrected = list()
 
 		for i, file in enumerate(self.files_name_list): 
-			self.trial_name_info = file.split('_')
-			assistance_type_ind = self.trial_name_info.index('assistance')-1
+			self.trial_name_info = file.split('_') # split up info contained in files_name
+			assistance_type_ind = self.trial_name_info.index('assistance')-1 # get the index that contains the word assistance, minus one to get the assistance type
 
 			value = self.compute_metric(metric, self.files_path_list[i])
 
 			if value != 'nan': 
+				# TO DO: Use self.assistance_cond instead of if els
 				if self.trial_name_info[assistance_type_ind] == 'no': 
 					no_assistance.append(value)
 				elif self.trial_name_info[assistance_type_ind] == 'filter': 
@@ -168,7 +212,7 @@ class CompareAssistanceParadigms(object):
 				else:
 					print('[warning:] unexpected assistance type')
 			else: 
-				print('[warning: ]'+metric+' value is nan. make sure this is what you expected.')
+				print('[warning]: '+metric+' value is nan. make sure this is what you expected.')
 
 		return no_assistance, filtered, corrected
 
@@ -187,48 +231,58 @@ class CompareAssistanceParadigms(object):
 	def data_analysis(self): 
 		# for each file, get the metric of interest and store in corresponding array
 		for metric in self.metrics: 
-			no_assistance, filtered, corrected = self.group_per_metric(metric)
-			data = [no_assistance, filtered, corrected]
 
+			if metric in self.trial_fraction_metric: 
+				no_assistance, filtered, corrected = self.group_per_trial(metric)
+
+			else: 
+				no_assistance, filtered, corrected = self.group_per_metric(metric)
+
+			data = [no_assistance, filtered, corrected]
 			self.parametric_anova_with_post_hoc(data, metric)
 		# TO DO: maybe make a main dataframe that holds all the metrics we looked at and save to pkl or something
 
 
-	def plot_with_significance(self, df, metric, pairs, p_values): 
+	def plot_with_significance(self, df, metric, *args, **kwargs): 
 
-		y_min =  round(df[metric].max()) # get maximum data value (max y)
-		h = y_min*0.1
-		y_min = y_min + h
-
-		sig_text = []
-		for i in p_values: 
-			if i <= self.v_strong_alpha: 
-				sig_text.append('***')
-			elif i <= self.strong_alpha: 
-				sig_text.append('**')
-			elif i <= self.alpha: 
-				sig_text.append('*')
+		pairs = kwargs.get('pairs', None)
+		p_values = kwargs.get('p_values', None)
 
 		plt.style.use('ggplot')
-
 		sns.set(style="whitegrid")
 		ax = sns.boxplot(x=df["condition"], y=df[metric]) 	
 		ax = sns.swarmplot(x=df["condition"], y=df[metric], color=".4")	
 
-		# get y position for all the p-value pairs based on location and significacne
-		sig_df = pd.DataFrame({'pair':pairs, 'p_value': p_values, 'text': sig_text})
-		sig_df = sig_df.sort_values(by=['pair']) # sort so it looks neat when plotting. convert to data frame so can get sig_text with the pairs after sorting
-		sig_df.reset_index(drop=True, inplace=True) # reindex after sorting
+		# If significance exists, plot it
+		if not pairs == None: 
+			y_min =  round(df[metric].max()) # get maximum data value (max y)
+			h = y_min*0.1
+			y_min = y_min + h
 
-		for i in range(len(pairs)): 
-			y_pos = [y_min+(h*i)]*2 # start and end is same height so *2 
-			text_pos_x = sum(sig_df.loc[i, 'pair'])/2 # text position should be in the center of the line connecting the pairs 
-			text_pos_y = y_min+(h*i)+0.25
-			plt.plot(sig_df.loc[i, 'pair'], y_pos, lw=1.5, c='k')		
-			plt.text(text_pos_x, text_pos_y, sig_df.loc[i, 'text'], ha='center', va='bottom', color='k')
+			sig_text = []
+			for i in p_values: 
+				if i <= self.v_strong_alpha: 
+					sig_text.append('***')
+				elif i <= self.strong_alpha: 
+					sig_text.append('**')
+				elif i <= self.alpha: 
+					sig_text.append('*')		
+
+			# get y position for all the p-value pairs based on location and significacne
+			sig_df = pd.DataFrame({'pair':pairs, 'p_value': p_values, 'text': sig_text})
+			sig_df = sig_df.sort_values(by=['pair']) # sort so it looks neat when plotting. convert to data frame so can get sig_text with the pairs after sorting
+			sig_df.reset_index(drop=True, inplace=True) # reindex after sorting
+
+			for i in range(len(pairs)): 
+				y_pos = [y_min+(h*i)]*2 # start and end is same height so *2 
+				text_pos_x = sum(sig_df.loc[i, 'pair'])/2 # text position should be in the center of the line connecting the pairs 
+				text_pos_y = y_min+(h*i)+0.25
+				plt.plot(sig_df.loc[i, 'pair'], y_pos, lw=1.5, c='k')		
+				plt.text(text_pos_x, text_pos_y, sig_df.loc[i, 'text'], ha='center', va='bottom', color='k')
 		
 		plt.show()
 
+		# save to folder
 		plot_folder = os.path.join(os.path.abspath(os.path.join(os.getcwd(), os.pardir)), 'plots')
 		fig_name = os.path.join(plot_folder, metric+'.png')
 		plt.savefig(fig_name)
@@ -264,8 +318,13 @@ class CompareAssistanceParadigms(object):
 		if p<= self.alpha: 
 			# do posthoc test to learn which groups differ in their medians
 			pairs, p_values = self.get_significant_pairs(df, metric)
+			self.plot_with_significance(df, metric, pairs=pairs, p_values=p_values)	
+
+		else: 
+			print(metric + ' failed hypothesis test.')
+			self.plot_with_significance(df, metric)	
 		
-		self.plot_with_significance(df, metric, pairs, p_values)		
+			
 
 
 
