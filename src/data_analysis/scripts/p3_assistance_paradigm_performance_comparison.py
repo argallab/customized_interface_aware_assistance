@@ -135,7 +135,7 @@ class CompareAssistanceParadigms(object):
 			value = len(corrections)
 
 		if metric == 'success': 			
-			value = is_successful_trial(df, file)
+			value = self.is_successful_trial(df, file)
 
 		if metric == 'distance':
 			value = self._distance_to_end(df, file) 
@@ -194,41 +194,46 @@ class CompareAssistanceParadigms(object):
 		# TO DO: maybe make a main dataframe that holds all the metrics we looked at and save to pkl or something
 
 
-	def plot_with_significance(self, df, metric, pairs, p_values): 
+	def plot_with_significance(self, df, metric, *args, **kwargs): 
 
-		y_min =  round(df[metric].max()) # get maximum data value (max y)
-		h = y_min*0.1
-		y_min = y_min + h
-
-		sig_text = []
-		for i in p_values: 
-			if i <= self.v_strong_alpha: 
-				sig_text.append('***')
-			elif i <= self.strong_alpha: 
-				sig_text.append('**')
-			elif i <= self.alpha: 
-				sig_text.append('*')
+		pairs = kwargs.get('pairs', None)
+		p_values = kwargs.get('p_values', None)
 
 		plt.style.use('ggplot')
-
 		sns.set(style="whitegrid")
 		ax = sns.boxplot(x=df["condition"], y=df[metric]) 	
 		ax = sns.swarmplot(x=df["condition"], y=df[metric], color=".4")	
 
-		# get y position for all the p-value pairs based on location and significacne
-		sig_df = pd.DataFrame({'pair':pairs, 'p_value': p_values, 'text': sig_text})
-		sig_df = sig_df.sort_values(by=['pair']) # sort so it looks neat when plotting. convert to data frame so can get sig_text with the pairs after sorting
-		sig_df.reset_index(drop=True, inplace=True) # reindex after sorting
+		# If significance exists, plot it
+		if not pairs == None: 
+			y_min =  round(df[metric].max()) # get maximum data value (max y)
+			h = y_min*0.1
+			y_min = y_min + h
 
-		for i in range(len(pairs)): 
-			y_pos = [y_min+(h*i)]*2 # start and end is same height so *2 
-			text_pos_x = sum(sig_df.loc[i, 'pair'])/2 # text position should be in the center of the line connecting the pairs 
-			text_pos_y = y_min+(h*i)+0.25
-			plt.plot(sig_df.loc[i, 'pair'], y_pos, lw=1.5, c='k')		
-			plt.text(text_pos_x, text_pos_y, sig_df.loc[i, 'text'], ha='center', va='bottom', color='k')
+			sig_text = []
+			for i in p_values: 
+				if i <= self.v_strong_alpha: 
+					sig_text.append('***')
+				elif i <= self.strong_alpha: 
+					sig_text.append('**')
+				elif i <= self.alpha: 
+					sig_text.append('*')		
+
+			# get y position for all the p-value pairs based on location and significacne
+			sig_df = pd.DataFrame({'pair':pairs, 'p_value': p_values, 'text': sig_text})
+			sig_df = sig_df.sort_values(by=['pair']) # sort so it looks neat when plotting. convert to data frame so can get sig_text with the pairs after sorting
+			sig_df.reset_index(drop=True, inplace=True) # reindex after sorting
+
+			for i in range(len(pairs)): 
+				y_pos = [y_min+(h*i)]*2 # start and end is same height so *2 
+				text_pos_x = sum(sig_df.loc[i, 'pair'])/2 # text position should be in the center of the line connecting the pairs 
+				text_pos_y = y_min+(h*i)+0.25
+				plt.plot(sig_df.loc[i, 'pair'], y_pos, lw=1.5, c='k')		
+				plt.text(text_pos_x, text_pos_y, sig_df.loc[i, 'text'], ha='center', va='bottom', color='k')
 		
 		plt.show()
 
+		# save to folder
 		plot_folder = os.path.join(os.path.abspath(os.path.join(os.getcwd(), os.pardir)), 'plots')
 		fig_name = os.path.join(plot_folder, metric+'.png')
 		plt.savefig(fig_name)
@@ -260,12 +265,18 @@ class CompareAssistanceParadigms(object):
 
 		# non parametric kruskal wallis test
 		H, p = ss.kruskal(*data)
+		embed()
 		# if can reject null hypothesis that population medians of all groups are equel, 
 		if p<= self.alpha: 
 			# do posthoc test to learn which groups differ in their medians
 			pairs, p_values = self.get_significant_pairs(df, metric)
+			self.plot_with_significance(df, metric, pairs=pairs, p_values=p_values)	
+
+		else: 
+			print(metric + ' failed hypothesis test.')
+			self.plot_with_significance(df, metric)	
 		
-		self.plot_with_significance(df, metric, pairs, p_values)		
+			
 
 
 
