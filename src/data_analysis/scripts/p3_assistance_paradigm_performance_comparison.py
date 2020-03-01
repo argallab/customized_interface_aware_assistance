@@ -225,8 +225,9 @@ class CompareAssistanceParadigms(object):
 
 	def get_significant_pairs(self, df, metric): 
 
-		pairwise_comparisons = sp.posthoc_conover(df, val_col=metric, group_col='condition', p_adjust='holm') 
-
+		# pairwise_comparisons = sp.posthoc_conover(df, val_col=metric, group_col='condition', p_adjust='holm') 
+		pairwise_comparisons = sp.posthoc_wilcoxon(df, val_col=metric, group_col='condition', p_adjust='holm')
+		
 		groups = pairwise_comparisons.keys().to_list() 
 		combinations = list(itertools.combinations(groups, 2)) # possible combinations for pairwise comparison 
 		pairs = []

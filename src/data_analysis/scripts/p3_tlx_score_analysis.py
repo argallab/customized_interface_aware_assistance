@@ -61,7 +61,7 @@ class TLXCompareAssistanceParadigms(object):
     def skip_ids(self):
         # Id's to skip (test id's, manual cleaning) 
         # To do: instead of hardcode add input argument
-        ids = ['dan', 'deepak', 'andrew']
+        ids = ['dan', 'deepak', 'andrew', '0']
         for i in range(len(ids)): 
             self.df = self.df[self.df.ID != ids[i]]
         self.df.reset_index(drop=True, inplace=True)
@@ -180,7 +180,7 @@ class TLXCompareAssistanceParadigms(object):
 
     def get_significant_pairs(self, df, metric): 
 
-        pairwise_comparisons = sp.posthoc_conover(df, val_col=metric, group_col='condition', p_adjust='holm') 
+        pairwise_comparisons = sp.posthoc_wilcoxon(df, val_col=metric, group_col='condition', p_adjust='holm') 
 
         groups = pairwise_comparisons.keys().to_list() 
         combinations = list(itertools.combinations(groups, 2)) # possible combinations for pairwise comparison 
