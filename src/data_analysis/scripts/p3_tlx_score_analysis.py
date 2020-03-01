@@ -174,9 +174,9 @@ class TLXCompareAssistanceParadigms(object):
         
         plt.show()
 
-        plot_folder = os.path.join(os.path.abspath(os.path.join(os.getcwd(), os.pardir)), 'plots')
-        fig_name = os.path.join(plot_folder, metric+'.png')
-        plt.savefig(fig_name)
+        # plot_folder = os.path.join(os.path.abspath(os.path.join(os.getcwd(), os.pardir)), 'plots')
+        # fig_name = os.path.join(plot_folder, metric+'.png')
+        # plt.savefig(fig_name)
 
 
     def get_significant_pairs(self, df, metric): 
