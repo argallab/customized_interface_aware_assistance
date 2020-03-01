@@ -102,8 +102,8 @@ class PostTaskLikertAnalysis(object):
 
 		ax.barh(y_pos, x_data, xerr=error, align='center')
 		ax.set_yticks(y_pos)
-		# ax.set_yticklabels(self.question_text)
-		ax.set_yticklabels(self.question_num)
+		ax.set_yticklabels(self.question_text)
+		# ax.set_yticklabels(self.question_num)
 		ax.invert_yaxis()  # labels read top-to-bottom
 		ax.set_xticks(x_pos)
 		ax.set_xticklabels(self.label_to_score.keys())
@@ -123,104 +123,105 @@ class PostTaskLikertAnalysis(object):
 			self.plot_mean_rank_horizontal_bar_plot(responses, len(sub_df), i)
 
 
-	# def plot_percentage_bar_plot(self): 
+	def plot_percentage_bar_plot(self): 
+		embed(banner1='plotlty')
 		
-	# 	top_labels = ['Strongly<br>agree', 'Agree', 'Somewhat<br>agree', 'Neutral', 'Somewhat<br>disagree', 'Disagree',
-	# 		  'Strongly<br>disagree']
+		top_labels = ['Strongly<br>agree', 'Agree', 'Somewhat<br>agree', 'Neutral', 'Somewhat<br>disagree', 'Disagree',
+			  'Strongly<br>disagree']
 
-	# 	colors = ['rgba(45, 24, 74, 0.8)', 'rgba(54, 44, 44, 0.8)',
-	# 				'rgba(38, 24, 74, 0.8)', 'rgba(71, 58, 131, 0.8)',
-	# 				'rgba(122, 120, 168, 0.8)', 'rgba(164, 163, 204, 0.85)',
-	# 				'rgba(190, 192, 213, 1)']
+		colors = ['rgba(45, 24, 74, 0.8)', 'rgba(54, 44, 44, 0.8)',
+					'rgba(38, 24, 74, 0.8)', 'rgba(71, 58, 131, 0.8)',
+					'rgba(122, 120, 168, 0.8)', 'rgba(164, 163, 204, 0.85)',
+					'rgba(190, 192, 213, 1)']
 
-	# 	y_data = self.question_text.values.tolist()
+		y_data = self.question_text.values.tolist()
 
-	# 	x_data = self.get_percentages()
+		x_data = self.get_percentages()
 
-	# 	fig = go.Figure()
+		fig = go.Figure()
 
-	# 	for i in range(0, len(x_data[0])):
-	# 		for xd, yd in zip(x_data, y_data):
-	# 			fig.add_trace(go.Bar(
-	# 				x=[xd[i]], y=[yd],
-	# 				orientation='h',
-	# 				marker=dict(
-	# 					color=colors[i],
-	# 					line=dict(color='rgb(248, 248, 249)', width=1)
-	# 				)
-	# 			))
+		for i in range(0, len(x_data[0])):
+			for xd, yd in zip(x_data, y_data):
+				fig.add_trace(go.Bar(
+					x=[xd[i]], y=[yd],
+					orientation='h',
+					marker=dict(
+						color=colors[i],
+						line=dict(color='rgb(248, 248, 249)', width=1)
+					)
+				))
 
-	# 	fig.update_layout(
-	# 		xaxis=dict(
-	# 			showgrid=False,
-	# 			showline=False,
-	# 			showticklabels=False,
-	# 			zeroline=False,
-	# 			domain=[0.15, 1]
-	# 		),
-	# 		yaxis=dict(
-	# 			showgrid=False,
-	# 			showline=False,
-	# 			showticklabels=False,
-	# 			zeroline=False,
-	# 		),
-	# 		barmode='stack',
-	# 		paper_bgcolor='rgb(248, 248, 255)',
-	# 		plot_bgcolor='rgb(248, 248, 255)',
-	# 		margin=dict(l=120, r=10, t=140, b=80),
-	# 		showlegend=False,
-	# 	)
+		fig.update_layout(
+			xaxis=dict(
+				showgrid=False,
+				showline=False,
+				showticklabels=False,
+				zeroline=False,
+				domain=[0.15, 1]
+			),
+			yaxis=dict(
+				showgrid=False,
+				showline=False,
+				showticklabels=False,
+				zeroline=False,
+			),
+			barmode='stack',
+			paper_bgcolor='rgb(248, 248, 255)',
+			plot_bgcolor='rgb(248, 248, 255)',
+			margin=dict(l=120, r=10, t=140, b=80),
+			showlegend=False,
+		)
 
-	# 	annotations = []
+		annotations = []
 
-	# 	for yd, xd in zip(y_data, x_data):
-	# 		# labeling the y-axis
-	# 		annotations.append(dict(xref='paper', yref='y',
-	# 								x=0.14, y=yd,
-	# 								xanchor='right',
-	# 								text=str(yd),
-	# 								font=dict(family='Arial', size=14,
-	# 										  color='rgb(67, 67, 67)'),
-	# 								showarrow=False, align='right'))
-	# 		# labeling the first percentage of each bar (x_axis)
-	# 		annotations.append(dict(xref='x', yref='y',
-	# 								x=xd[0] / 2, y=yd,
-	# 								text=str(xd[0]) + '%',
-	# 								font=dict(family='Arial', size=14,
-	# 										  color='rgb(248, 248, 255)'),
-	# 								showarrow=False))
-	# 		# labeling the first Likert scale (on the top)
-	# 		if yd == y_data[-1]:
-	# 			annotations.append(dict(xref='x', yref='paper',
-	# 									x=xd[0] / 2, y=1.1,
-	# 									text=top_labels[0],
-	# 									font=dict(family='Arial', size=14,
-	# 											  color='rgb(67, 67, 67)'),
-	# 									showarrow=False))
-	# 		space = xd[0]
-	# 		for i in range(1, len(xd)):
-	# 				# labeling the rest of percentages for each bar (x_axis)
-	# 				annotations.append(dict(xref='x', yref='y',
-	# 										x=space + (xd[i]/2), y=yd,
-	# 										text=str(xd[i]) + '%',
-	# 										font=dict(family='Arial', size=14,
-	# 												  color='rgb(248, 248, 255)'),
-	# 										showarrow=False))
-	# 				# labeling the Likert scale
-	# 				if yd == y_data[-1]:
-	# 					annotations.append(dict(xref='x', yref='paper',
-	# 											x=space + (xd[i]/2), y=1.1,
-	# 											text=top_labels[i],
-	# 											font=dict(family='Arial', size=14,
-	# 													  color='rgb(67, 67, 67)'),
-	# 											showarrow=False))
-	# 				space += xd[i]
+		for yd, xd in zip(y_data, x_data):
+			# labeling the y-axis
+			annotations.append(dict(xref='paper', yref='y',
+									x=0.14, y=yd,
+									xanchor='right',
+									text=str(yd),
+									font=dict(family='Arial', size=14,
+											  color='rgb(67, 67, 67)'),
+									showarrow=False, align='right'))
+			# labeling the first percentage of each bar (x_axis)
+			annotations.append(dict(xref='x', yref='y',
+									x=xd[0] / 2, y=yd,
+									text=str(xd[0]) + '%',
+									font=dict(family='Arial', size=14,
+											  color='rgb(248, 248, 255)'),
+									showarrow=False))
+			# labeling the first Likert scale (on the top)
+			if yd == y_data[-1]:
+				annotations.append(dict(xref='x', yref='paper',
+										x=xd[0] / 2, y=1.1,
+										text=top_labels[0],
+										font=dict(family='Arial', size=14,
+												  color='rgb(67, 67, 67)'),
+										showarrow=False))
+			space = xd[0]
+			for i in range(1, len(xd)):
+					# labeling the rest of percentages for each bar (x_axis)
+					annotations.append(dict(xref='x', yref='y',
+											x=space + (xd[i]/2), y=yd,
+											text=str(xd[i]) + '%',
+											font=dict(family='Arial', size=14,
+													  color='rgb(248, 248, 255)'),
+											showarrow=False))
+					# labeling the Likert scale
+					if yd == y_data[-1]:
+						annotations.append(dict(xref='x', yref='paper',
+												x=space + (xd[i]/2), y=1.1,
+												text=top_labels[i],
+												font=dict(family='Arial', size=14,
+														  color='rgb(67, 67, 67)'),
+												showarrow=False))
+					space += xd[i]
 
-	# 	fig.update_layout(annotations=annotations)
+		fig.update_layout(annotations=annotations)
 
-	# 	fig.show()
+		fig.show()
 
-	# 	embed()
+		embed()
 
 
 
