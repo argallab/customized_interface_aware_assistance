@@ -48,7 +48,9 @@ class CompareAssistanceParadigms(object):
 			self.get_recursive_folders()
 			print(self.data_dir)
 
+		self.trial_fraction_metric = ['success'] # metrics that are calculated over all trials for a signle condition for each person 
 		self.labels= ['No Assistance', 'Filtered', 'Corrective']
+		self.assistance_cond = ['no', 'filter', 'corrective']
 		self.label_to_plot_pos = {'No Assistance': 0, 'Filtered': 1 , 'Corrective': 2}
 		self.v_strong_alpha = 0.001
 		self.strong_alpha = 0.01
@@ -145,20 +147,62 @@ class CompareAssistanceParadigms(object):
 		return value
 
 
+	def group_per_trial(self, metric): 
+
+		# TO DO: this needs to be looked at, not as generci as it seems, rewally only for percentages within a trial, so if you want mean over traia, need to fix this
+
+		no_assistance = list()
+		filtered = list()
+		corrected = list()
+
+		id_list = []
+		for i, file in enumerate(self.files_name_list): 
+			subject_id = file.split('_')[0]
+			if subject_id not in id_list: 
+				id_list.append(subject_id) # get the list of unique ids 
+
+
+		for unique_id in id_list: # for each user
+			indices = [] 	# get the index of all files that belong to that user
+			for ind, file in enumerate(self.files_name_list): 
+				if unique_id in file: 
+					indices.append(ind)					
+
+			for cond in self.assistance_cond: 
+				value_list = []
+				for i in indices: # for all tirals of that user, get the trials belogning to certian assistance condition
+					if self.files_name_list[i].split('_')[self.files_name_list[i].split('_').index('assistance')-1] == cond: 
+						value_list.append(self.compute_metric(metric, self.files_path_list[i])) # find value given path file corresponding to filename
+
+				# calculated percentage: 
+				value = 100*sum(value_list)/len(value_list)
+				if cond == 'no': 
+					no_assistance.append(value)
+				elif cond == 'filter': 
+					filtered.append(value)
+				elif cond == 'corrective': 
+					corrected.append(value)
+				else:
+					print('[warning:] unexpected assistance type') 
+
+		return no_assistance, filtered, corrected
+
+
+
 	def group_per_metric(self, metric): 
 	
-		# To Do: maybe save these as globals for each metric? 
 		no_assistance = list()
 		filtered = list()
 		corrected = list()
 
 		for i, file in enumerate(self.files_name_list): 
-			self.trial_name_info = file.split('_')
-			assistance_type_ind = self.trial_name_info.index('assistance')-1
+			self.trial_name_info = file.split('_') # split up info contained in files_name
+			assistance_type_ind = self.trial_name_info.index('assistance')-1 # get the index that contains the word assistance, minus one to get the assistance type
 
 			value = self.compute_metric(metric, self.files_path_list[i])
 
 			if value != 'nan': 
+				# TO DO: Use self.assistance_cond instead of if els
 				if self.trial_name_info[assistance_type_ind] == 'no': 
 					no_assistance.append(value)
 				elif self.trial_name_info[assistance_type_ind] == 'filter': 
@@ -168,7 +212,7 @@ class CompareAssistanceParadigms(object):
 				else:
 					print('[warning:] unexpected assistance type')
 			else: 
-				print('[warning: ]'+metric+' value is nan. make sure this is what you expected.')
+				print('[warning]: '+metric+' value is nan. make sure this is what you expected.')
 
 		return no_assistance, filtered, corrected
 
@@ -187,9 +231,14 @@ class CompareAssistanceParadigms(object):
 	def data_analysis(self): 
 		# for each file, get the metric of interest and store in corresponding array
 		for metric in self.metrics: 
-			no_assistance, filtered, corrected = self.group_per_metric(metric)
-			data = [no_assistance, filtered, corrected]
 
+			if metric in self.trial_fraction_metric: 
+				no_assistance, filtered, corrected = self.group_per_trial(metric)
+
+			else: 
+				no_assistance, filtered, corrected = self.group_per_metric(metric)
+
+			data = [no_assistance, filtered, corrected]
 			self.parametric_anova_with_post_hoc(data, metric)
 		# TO DO: maybe make a main dataframe that holds all the metrics we looked at and save to pkl or something
 
@@ -265,7 +314,6 @@ class CompareAssistanceParadigms(object):
 
 		# non parametric kruskal wallis test
 		H, p = ss.kruskal(*data)
-		embed()
 		# if can reject null hypothesis that population medians of all groups are equel, 
 		if p<= self.alpha: 
 			# do posthoc test to learn which groups differ in their medians
