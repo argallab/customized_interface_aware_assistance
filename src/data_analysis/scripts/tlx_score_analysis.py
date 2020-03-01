@@ -10,7 +10,7 @@ from IPython import embed
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import matplotlib.colors as mcolors
-import plotly.express as px
+
 
 # read in qualtrics ranking csv with filename
 # remove unused columns from topic csv
@@ -124,20 +124,6 @@ class TLXCompareAssistanceParadigms(object):
         plot_folder = os.path.join(os.path.abspath(os.path.join(os.getcwd(), os.pardir)), 'plots')
         fig_name = os.path.join(plot_folder, title+'.png')
 
-        # plt.savefig(fig_name)
-
-        # TO DO: add argumen to save plot
-
-    # def plotly_box_plot(self, data):
-
-    #     fig = px.box(data, y="value", facet_col="quartilemethod", color="quartilemethod",
-    #          boxmode="overlay", points='all')
-
-    #     fig.update_traces(quartilemethod="no_assistance", jitter=0, col=1)
-    #     fig.update_traces(quartilemethod="filtered", jitter=0, col=2)
-    #     fig.update_traces(quartilemethod="corrected", jitter=0, col=3)
-
-    #     fig.show()
 
 
 if __name__ == '__main__':
