@@ -124,9 +124,9 @@ class TLXCompareAssistanceParadigms(object):
         # assign the assistance condition label to each data in the arrays so we can add it as a column in the dataframe
         condition = []
         for i in range(len(self.labels)): 
-            for j in range(len(data[1])): 
+            for j in range(len(data[i])): 
                 condition.append(self.labels[i])
-        df = pd.DataFrame({metric: np.array(data).flatten(), 'condition': condition})
+        df = pd.DataFrame({metric: list(itertools.chain(*data)), 'condition': condition})
         return df 
 
 
@@ -157,7 +157,8 @@ class TLXCompareAssistanceParadigms(object):
         plt.style.use('ggplot')
 
         sns.set(style="whitegrid")
-        ax = sns.boxplot(x=df["condition"], y=df[metric])       
+        ax = sns.boxplot(x=df["condition"], y=df[metric])    
+        ax = sns.swarmplot(x=df["condition"], y=df[metric], color=".4")    
 
         # get y position for all the p-value pairs based on location and significacne
         sig_df = pd.DataFrame({'pair':pairs, 'p_value': p_values, 'text': sig_text})
@@ -180,7 +181,8 @@ class TLXCompareAssistanceParadigms(object):
 
     def get_significant_pairs(self, df, metric): 
 
-        pairwise_comparisons = sp.posthoc_wilcoxon(df, val_col=metric, group_col='condition', p_adjust='holm') 
+        pairwise_comparisons = sp.posthoc_conover(df, val_col=metric, group_col='condition', p_adjust='holm') 
+        # pairwise_comparisons = sp.posthoc_wilcoxon(df, val_col=metric, group_col='condition', p_adjust='holm')
 
         groups = pairwise_comparisons.keys().to_list() 
         combinations = list(itertools.combinations(groups, 2)) # possible combinations for pairwise comparison 
