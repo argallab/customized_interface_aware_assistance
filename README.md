@@ -16,3 +16,44 @@ The corner with a violet patch is where the human is required to the rotate the 
 Each trial has a maximum allowed time of 50 seconds.
 
 ### Description of packages
+
+backends - Graphics rendering related code. Adopted from OpenAI Gym's rendering framework. Built on top of pyglet
+data_analysis - Scripts for analyzing the experiment data. Code for gtenerating plots in the paper.
+data_processing - Scripts for data parsing and preprocessing.
+envs - Different simulation environments used in the different phases of our study.
+general_purpose - General purpose scripts for keybaord input etc
+inference_and_correction - Code for customized handling of unintended physical actions.
+simulators - Code for launching the simulation environment and loading appropriate trial information
+teleop_nodes - Code for interface with different types of control interface. Note that, in this study only sip and puff is used. The remaining are work in progress.
+
+To run this code on your own computer, clone this repository to a location of choice, then...
+1. Open terminal and build ROS workspace
+```Shell
+  cd corrective_mode_switch_assistance/
+  catkin_make
+  ```
+2. **Run internal model mapping data collection**:
+```Shell
+  roslaunch simulators p_ui_given_a_sim.launch subject_id:=NAME-OF-SUBJECT save:=true iteration:=1 block:=6
+  ```
+Please refer to Study_Protocol.txt for more details on the exact args etc.
+
+3. **Run interface operation data collection**
+  ```Shell
+  roslaunch simulators p_um_given_ui_sim.launch SNP:=true duration:=4 iteration:=1 subject_id:=NAME-OF-SUBJECT save:=true
+  ```
+
+4. **Run practice for final task**
+  ```Shell
+  roslaunch simulators p_um_given_a_sim.launch subject_id:=NAME-OF-SUBJECT SNP:=true save:=true training:=0
+  ```
+
+5. **Run script for extracting personalized distributions**
+```Shell
+roslaunch simulators p_um_given_a_sim.launch subject_id:=NAME-OF-SUBJECT SNP:=true save:=true training:=0
+```
+
+5. **Run main study environment**:
+ ```Shell
+ roslaunch simulators modeinference_sim.launch SNP:=true JOINT:=true subject_id:=NAME-OF-SUBJECT assistance_block:=ASSISTANCE_CONDITION block_id:=BLOCK_ID training:=0 save:=true
+  ```
