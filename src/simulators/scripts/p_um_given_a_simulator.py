@@ -23,11 +23,10 @@ import os
 from utils import Robot2D, FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS, SCALE, VIEWPORT_W, VIEWPORT_H, DIM_TO_MODE_INDEX, VIEWPORT_WS, VIEWPORT_HS
 from utils import ROBOT_RADIUS, GOAL_RADIUS, GOAL_SHAPES, GOAL_COLORS, PI, HUMAN_ROBOT_COLOR, AUTONOMY_ROBOT_COLOR, TRIANGLE_L
 from utils import RGOrient, StartDirection, AssistanceType
-from IPython import embed
+
 
 class Simulator(object):
     def __init__(self, subject_id, training):
-
         super(Simulator, self).__init__()
         rospy.init_node("Simulator")
         rospy.on_shutdown(self.shutdown_hook)
@@ -123,14 +122,6 @@ class Simulator(object):
         self.env.initialize_viewer()
         self.env.viewer.window.on_key_press = self.key_press
 
-        # self.env.reset()
-        # self.env.render()
-
-        # self.trial_marker_pub.publish('start')
-        # self.publish_action(self.env_params['action'])
-        # self.trial_filename_pub.publish(trial_info_filename)
-        # self.env.viewer.window.on_key_press = self.key_press
-
         self.start = False
         first_trial = True
         is_done = False
@@ -139,39 +130,28 @@ class Simulator(object):
         if self.training:
             self.max_time = 1000
         else:
-            self.max_time = 5       
+            self.max_time = 5
 
         self.max_time = 5 # TODO change this for controlling max time for showing each prompt
         if self.training:
             time_check = self.max_time - 1
 
         while not rospy.is_shutdown():
-
             if not self.start:
                 self.start = self.env.start_countdown()
-
             else:
-
                 if first_trial:
-
                     time.sleep(2)
-
                     self.trial_marker_pub.publish('start')
                     self.publish_action(self.env_params['action'])
                     self.trial_filename_pub.publish(trial_info_filename)
-
                     self.env.reset()
                     self.env.render()
-
                     self.trial_start_time = time.time()
                     first_trial = False
-
-
                 else:
-
                     if not self.training:
                         time_check = (time.time() - self.trial_start_time)
-
                     if time_check > self.max_time or is_done:
                         print("Move to NEXT TRIAL")
                         self.trial_marker_pub.publish('end')
@@ -192,7 +172,6 @@ class Simulator(object):
                         assert 'env_params' in trial_info_dict
                         self.env_params = trial_info_dict['env_params']
                         self.set_mode_request = SetModeRequest()
-
                         self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params['allowed_mode_index']]
                         status = self.set_mode_srv(self.set_mode_request)
 
@@ -210,8 +189,6 @@ class Simulator(object):
                 if self.restart:
                     self.trial_marker_pub.publish('restart')
                     self.restart = False
-                    #potentially render a black screen between trials?
-                    #self.env.render_black() #myabe pass an arg to self.env.render(show_blackout=True)
                     time.sleep(2.0)
                     self.trial_index += 1
                     if self.trial_index == len(self.trial_list):
@@ -239,7 +216,6 @@ class Simulator(object):
 
                     self.trial_start_time = time.time()
                     self.restart = False
-
 
                 if self.terminate:
                     self.shutdown_hook('Session terminated')
@@ -288,9 +264,7 @@ class Simulator(object):
         self.action_msg.command = msg
         self.action_pub.publish(self.action_msg)
 
-
 if __name__ == '__main__':
-    #TODO parse num turns from launch file
     subject_id = sys.argv[1]
     training = int(sys.argv[2])
     Simulator(subject_id, training)
