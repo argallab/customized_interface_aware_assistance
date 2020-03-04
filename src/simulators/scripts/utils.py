@@ -26,7 +26,6 @@ ACTIVE_MODE_COLOR_ERROR = (1.0, 0, 0)
 MODE_DISPLAY_TEXT_COLOR = (0,0,0,255)
 TRIAL_OVER_TEXT_COLOR = (0,0,0,255)
 
-
 ROBOT_COLOR_WHEN_COMMAND_REQUIRED = (1.0, 105.0/255, 80/255.0)
 ROBOT_COLOR_WHEN_MOVING = (1.0, 0.0, 0.0)
 COMMAND_TEXT_COLOR = (82, 179, 217, 255) # blue (shakespeare)
@@ -56,7 +55,6 @@ MODE_DISPLAY_CIRCLE_START_POSITION_S = [(3*VIEWPORT_WS)/4 +2*ROBOT_RADIUS_S, VIE
 MODE_DISPLAY_CIRCLE_X_OFFSET_S = 3*ROBOT_RADIUS_S
 MODE_DISPLAY_CIRCLE_Y_OFFSET_S = 60/SCALE
 P_UM_GIVEN_A_MODE_DISPLAY_CIRCLE_START_POSITION_S = [VIEWPORT_WS/2 - MODE_DISPLAY_CIRCLE_X_OFFSET_S, 2*VIEWPORT_HS/3 ]
-
 
 MODE_DISPLAY_TEXT_START_POSITION = [(3*VIEWPORT_W)/4+2*	ROBOT_RADIUS, VIEWPORT_H - 3.5*ROBOT_RADIUS]
 P_UM_GIVEN_A_MODE_DISPLAY_TEXT_START_POSITION = [VIEWPORT_W/2 - MODE_DISPLAY_CIRCLE_X_OFFSET_S*SCALE, 2*VIEWPORT_H/3 - 2*ROBOT_RADIUS]
@@ -96,22 +94,18 @@ MODE_INDEX_TO_DIM = {v:k for k,v in DIM_TO_MODE_INDEX.items()}
 
 ASSISTANCE_CODE_NAME = {0: 'Filtas', 1: 'Coras', 2: 'Noas'}
 
-
 # LISTS
+#low level commands issued by the snp interface. hp = hard puff, hs= hard sip, sp = soft puff, ss = soft sip. Also the domain for ui and um
 LOW_LEVEL_COMMANDS = ['Hard Puff', 'Hard Sip', 'Soft Puff', 'Soft Sip']
 EXPERIMENT_START_COUNTDOWN = ['Get Ready!','3', '2', '1']
-#low level commands issued by the snp interface. hp = hard puff, hs= hard sip, sp = soft puff, ss = soft sip. Also the domain for ui and um
-# LOW_LEVEL_COMMANDS = ['hp', 'hs', 'sp', 'ss']
+
 #high level actions, move_p = move in positive direction, move_n = move in negative direction, mode_r = switch mode to right, mode_l = switch mode to left. positive and negative is conditioned on mode
 HIGH_LEVEL_ACTIONS = ['move_p', 'move_n', 'mode_r', 'mode_l']
 #true mapping of a to u
-# TRUE_ACTION_TO_COMMAND = collections.OrderedDict({'move_p': 'Soft Puff', 'move_n':'Soft Sip', 'mode_r':'Hard Puff', 'mode_l': 'Hard Sip'})
 TRUE_ACTION_TO_COMMAND = collections.OrderedDict({'x': collections.OrderedDict({'move_p': 'Soft Puff', 'move_n':'Soft Sip', 'mode_r':'Hard Puff', 'mode_l': 'Hard Sip'}),
 												  'y': collections.OrderedDict({'move_p': 'Soft Puff', 'move_n':'Soft Sip', 'mode_r':'Hard Puff', 'mode_l': 'Hard Sip'}),
 												  't': collections.OrderedDict({'move_p': 'Soft Sip', 'move_n':'Soft Puff', 'mode_r':'Hard Puff', 'mode_l': 'Hard Sip'})})
-
 #true inverse mapping of u to a
-# TRUE_COMMAND_TO_ACTION = collections.OrderedDict({v:k for k, v in TRUE_ACTION_TO_COMMAND.items()})
 TRUE_COMMAND_TO_ACTION = collections.OrderedDict()
 for k in TRUE_ACTION_TO_COMMAND.keys():
 	TRUE_COMMAND_TO_ACTION[k] = collections.OrderedDict({v:k for k, v in TRUE_ACTION_TO_COMMAND[k].items()})
@@ -147,16 +141,12 @@ class RGOrient(Enum):
 	BOTTOM_LEFT = 2
 	BOTTOM_RIGHT = 3
 
-
 TRANSITION_FOR_ACTION =   { RGOrient.TOP_RIGHT:   {'Soft Puff': {'x': 'next', 'y': 'next', 't': 'prev'}, 'Soft Sip': {'x': 'prev', 'y': 'prev', 't': 'next'}},
 						   RGOrient.TOP_LEFT:     {'Soft Puff': {'x': 'prev', 'y': 'next', 't': 'prev'}, 'Soft Sip': {'x': 'next', 'y': 'prev', 't': 'next'}},
 						   RGOrient.BOTTOM_RIGHT: {'Soft Puff': {'x': 'next', 'y': 'prev', 't': 'prev'}, 'Soft Sip': {'x': 'prev', 'y': 'next', 't': 'next'}},
 						   RGOrient.BOTTOM_LEFT:  {'Soft Puff': {'x': 'prev', 'y': 'prev', 't': 'prev'}, 'Soft Sip': {'x': 'next', 'y': 'next', 't': 'next'}}
 							}
-
-
 #utility functions
-
 def get_sign_of_number(x):
 	'''
 	Utility function for getting the sign of a scalar. +1 for positive, -1 for negative
@@ -166,7 +156,6 @@ def get_sign_of_number(x):
 	else:
 		return -1.0
 
-
 #class definitions
 class Robot2D(object):
 	def __init__(self, world, position, robot_color=(1.0, 0.0, 0.0), radius=3, type='kinematic'):
@@ -175,7 +164,6 @@ class Robot2D(object):
 
 class RobotSE2(object):
 	def __init__(self, world, position, orientation, robot_color=(1.0, 0.0, 0.0), radius=3, type='kinematic'):
-		# self.direction_vec = world.CreateKinematicBody(position=position, shape=[b2EdgeShape(vertices=[position, (radius*math.cos(orientation), radius*math.sin(orientation))])])
 		self.robot = world.CreateKinematicBody(position=position, angle=orientation, shapes=[b2CircleShape(pos=position, radius=radius)])
 		self.robot_color = robot_color
 		self.radius = radius
