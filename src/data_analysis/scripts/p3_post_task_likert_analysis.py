@@ -7,12 +7,15 @@ import numpy as np
 import pickle  
 from ast import literal_eval 
 from IPython import embed
+import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import matplotlib.colors as mcolors
 import seaborn as sns
 import itertools
 
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
 
 class PostTaskLikertAnalysis(object):
 	def __init__(self, filename, *subject_id):
@@ -33,7 +36,12 @@ class PostTaskLikertAnalysis(object):
 		# skip rows 1 and 2 so the default qualtrics stuff doesn't mix up the data type from int to object
 		self.df = pd.read_csv(self.file_path , header = 0, usecols=columns, skiprows=[2])
 
-		self.question_num = ['Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Q7', 'Q8', 'Q9', 'Q10', 'Q11', 'Q13', 'Q14']
+		# self.question_num = ['Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Q7', 'Q8', 'Q9', 'Q10', 'Q11', 'Q13', 'Q14']
+		# self.question_num = ['Q1', 'Q2', 'Q3', 'Q4', 'Q9', 'Q10', 'Q11']
+		self.question_num = ['Q2', 'Q3', 'Q4', 'Q9', 'Q10']
+
+
+
 		self.question_text = self.df.loc[0, self.question_num] # first row is questions save as array
 		for i in range(len(self.question_text)): 
 			self.question_text[i] = self.question_text[i].split('Note')[0] 
@@ -113,16 +121,32 @@ class PostTaskLikertAnalysis(object):
 		ax.set_xticklabels(self.label_to_score.keys())
 		ax.set_title(title)
 
+
+
 		plt.show()
 
 
 	def plot_stacked_horizontal_bar_plot(self, df): 
 
+		
+		sns.set_style("dark")
+		sns.set_context("paper")
+		sns.set_palette("colorblind")
+
 		ax = sns.barplot(x='score', y='question', hue='condition', data=df)  
+
+
+		font_size = 20
+		ax.tick_params(labelsize='xx-large')
+
+
 		# TO DO: use gloabl var		
 		ax.set_xticklabels(['Strongly Disagree', 'Disagree', 'Neutral', 'Somewhat Agree', 'Agree', 'Strongly Agree'])
-		plt.subplots_adjust(left=.31)
-
+		plt.xlabel('')
+		plt.ylabel('')
+		plt.subplots_adjust(left=.49)
+		plt.subplots_adjust(right=.97)
+		plt.setp(ax.get_legend().get_texts(), fontsize=font_size) # for legend text
 		plt.show()  
 
 
