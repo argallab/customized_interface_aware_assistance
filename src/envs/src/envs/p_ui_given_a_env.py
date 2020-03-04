@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 import os
 from backends.rendering import Viewer
 from utils import SCALE, VIEWPORT_W, VIEWPORT_H
@@ -15,9 +14,8 @@ import time
 from pyglet.window import key
 import random
 import threading
-from IPython import embed
 
-# TO DO: (mahdeih) Too many if statments and booleans, can do a better job of the state machine, clean in up!!
+# TODO: (mahdeih) Too many if statments and booleans, can do a better job of the state machine, clean in up!!
 
 class PUiGivenAEnv(object):
 
@@ -57,8 +55,6 @@ class PUiGivenAEnv(object):
         self.display_timer = False
         self.ready_for_user = False
 
-
-
     def initialize_viewer(self):
         if self.viewer is None:
             self.viewer = Viewer(VIEWPORT_W, VIEWPORT_H)
@@ -66,11 +62,8 @@ class PUiGivenAEnv(object):
             self.viewer.window.set_location(650, 300)
             self.timer_thread.start()
 
-
     def initialize_publishers(self, rostopic):
-        # for ros bag purposes (not being used for any code logic)
-        # self.action_pub = rospy.Publisher(rostopic, Command, queue_size=1)
-        # To do: clean publishers:
+        # TODO: clean publishers:
         self.sim_state = rospy.Publisher('sim_state', String, queue_size=1)
 
 
@@ -80,7 +73,6 @@ class PUiGivenAEnv(object):
         self.action_pub.publish(self.action_msg)
 
     def publish_sim_state(self, msg):
-        # self.sim_state_msg = msg
         self.sim_state.publish(msg)
 
     def _set_image_path(self):
@@ -125,8 +117,6 @@ class PUiGivenAEnv(object):
 
     def render(self):
         self.viewer.window.clear()
-
-        # print self.img_prompt
         if self.img_prompt != '':
             if not self.start_training:
                 self._render_options()
@@ -140,19 +130,14 @@ class PUiGivenAEnv(object):
             self._render_timer_text()
 
         self._render_text()
-
-
         return self.viewer.render(False)
 
     def training_refresher(self):
         self.img_prompt = self.training_prompts[self.msg_ind]
-        # self.publish_action(self.img_prompt)
         self._set_image_path()
 
     def step(self):
-
         bool_publish = False
-
         if self.start_prompt:
             if self.display_start_countdown:
                 self.display_timer = False
@@ -169,14 +154,10 @@ class PUiGivenAEnv(object):
                     self.display_start_countdown = False
                     self.clear_for_next_prompt = False
                     self.ready_for_new_prompt = True
-
                     self.publish_sim_state('start_test')
-
             else:
-
                 if self.ready_for_new_prompt:
                     self.img_prompt = self.action_prompts[self.prompt_ind]
-                    # self.publish_action(self.img_prompt)
                     bool_publish = True
                     self._set_image_path()
                     self.ready_for_new_prompt = False
@@ -186,13 +167,12 @@ class PUiGivenAEnv(object):
                     self.current_time = self.action_timing_bound
 
                 if self.clear_for_next_prompt:
-                    # to do: make  not hardcoded
+                    # TODO: make  not hardcoded
                     if (time.time() - self.te>= 0.5): # delay for a little bit so user has some break in between trainsitions (not immediate)
                         self.prompt_ind += 1
                         self.ready_for_new_prompt = True
                         self.clear_for_next_prompt = False
                         self.img_prompt = ''
-                        # self.publish_action(self.img_prompt)
                         bool_publish = True
                         if self.prompt_ind >= len(self.action_prompts): # if reached end of prompt list, if more batches left, go to training, else show end message
                             self.img_prompt = ''
@@ -211,8 +191,6 @@ class PUiGivenAEnv(object):
                     self.img_prompt = ''
                     self.display_timer = False
 
-
-
         if self.start_training:
             self.msg_prompt = ''
             self.display_timer = False
@@ -230,7 +208,6 @@ class PUiGivenAEnv(object):
                 self.motion_actions = self.env_params['actions']['motion_actions']
             if 'mode_actions' in self.env_params['actions']:
                 self.mode_actions = self.env_params['actions']['mode_actions']
-            # self.actions = self.env_params['actions']
 
         if 'start_prompt' in self.env_params.keys():
             if self.start_prompt == False:
@@ -254,7 +231,7 @@ class PUiGivenAEnv(object):
             self.blocks = int(self.blocks)-1
 
     def _get_user_input(self):
-        # To do: Clean this up, divide to separate functions for next prompt and (next+back)
+        # TODO: Clean this up, divide to separate functions for next prompt and (next+back)
         if 'next_prompt' in self.env_params.keys(): # works only during start_prompt, if user responds with 1,2,3,4 key, will show next prompt
             if self.ready_for_user:
                 self.clear_for_next_prompt = self.env_params['next_prompt']
@@ -266,14 +243,12 @@ class PUiGivenAEnv(object):
                 self.display_timer = False
                 return True
 
-
         if 'next' in self.env_params.keys(): # works only during training, if user presses -> button, will go to next image
             if self.start_training:
                 self.next = self.env_params['next']
                 if self.next:
                     if self.msg_ind < len(self.training_prompts)-1:
                         self.msg_ind += 1
-
                     elif self.msg_ind == len(self.training_prompts)-1:  # if at last training image and press next, start next batch again
                         self.env_params['start_prompt'] = True
                         self.current_block += 1 # increment batch/block
@@ -281,7 +256,6 @@ class PUiGivenAEnv(object):
                         self.img_prompt = ''
                         self.msg_prompt = ''
                         self.reset()
-
                     self.env_params['next'] = False
 
         if 'back' in self.env_params.keys(): # works only during training, if user presses <- goes to previous image
@@ -292,10 +266,7 @@ class PUiGivenAEnv(object):
                         self.msg_ind -= 1
                     self.env_params['back'] = False
 
-
         return False
-
-
 
 if __name__ == '__main__':
     PUiGivenAEnv()

@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 
-# This is a python script for modeling the internal mapping of measured commands from intended action
-# This was written for the paper titled "Do You Really Want To Do that?Customized Handling of Unintended Actions InAssistive Robots" to
-# model personalized distributions for p(u_m|a) from user data
-
 import rospy
 import rospkg
 import os
@@ -12,7 +8,6 @@ from envs.p_ui_given_a_env import PUiGivenAEnv
 import sys
 from random import randrange
 from pyglet.window import key
-from IPython import embed
 
 class PUiGivenASim(object):
     def __init__(self, iterations=1, blocks=1):
@@ -20,16 +15,12 @@ class PUiGivenASim(object):
         # initialization
         rospy.init_node("p_ui_given_a_simulator")
         rospy.on_shutdown(self.shutdown_hook)
-
-        # self.initialize_subscribers()
-
         self.iterations = int(iterations)
         self.blocks = int(blocks)
 
         self.action_list = []
 
-        # To do: change to input argumen using argparse
-        # file_dir = '/home/corrective_mode_switch_assistance/src/envs/sprites/actions'
+        # TODO: change to input argumen using argparse
         file_dir = os.path.join(rospkg.RosPack().get_path('envs'), 'sprites', 'actions')
         self.actions= ['clockwise', 'counterclockwise', 'down', 'up', 'left', 'right',
                         'mode_switch_right_1', 'mode_switch_right_2', 'mode_switch_right_3',
@@ -48,7 +39,7 @@ class PUiGivenASim(object):
 
         self.env = PUiGivenAEnv(env_params)
 
-        # TO DO: cleanup publishers
+        # TODO: cleanup publishers
         self.env.initialize_publishers('action_prompt')
         self.initialize_publishers()
         self.key_input_msg = Command()
@@ -56,9 +47,7 @@ class PUiGivenASim(object):
         self.action_msg = Command()
 
         self.generate_action_list()
-
         r = rospy.Rate(100)
-
         self.env.initialize_viewer()
         self.env.viewer.window.on_key_press = self.key_press_callback
 
@@ -68,7 +57,6 @@ class PUiGivenASim(object):
                 self.publish_action(msg)
             self.env.render()
             r.sleep()
-
 
     # randomize actions
     def generate_action_list(self):
@@ -102,54 +90,40 @@ class PUiGivenASim(object):
         self.action_pub.publish(self.action_msg)
 
     def key_press_callback(self, k, mode):
-
         self.publish_keyboard_input(str(k))
-
         if k==key.S:
             self.env.env_params['start_prompt'] = True
             self.publish_keyboard_input('s')
             self.env.reset()
-
         if k==key._1:
             self.env.env_params['next_prompt'] = True
-            # self.publish_user_response('1')
             b = self.env._get_user_input() # if user was allowed to give a response (i.e. during prompt)
             if b:
                 self.publish_user_response('1')
-
         if k==key._2:
             self.env.env_params['next_prompt'] = True
-            # self.publish_user_response('2')
             b = self.env._get_user_input()
             if b:
                 self.publish_user_response('2')
-
-
         if k==key._3:
             self.env.env_params['next_prompt'] = True
-            # self.publish_user_response('3')
             b = self.env._get_user_input()
             if b:
                 self.publish_user_response('3')
-
         if k==key._4:
             self.env.env_params['next_prompt'] = True
-            # self.publish_user_response('4')
             b = self.env._get_user_input()
             if b:
                 self.publish_user_response('4')
-
         if k==key.LEFT:
             self.env.env_params['back'] = True
             self.env._get_user_input()
-
         if k==key.RIGHT:
             self.env.env_params['next'] = True
             self.env._get_user_input()
 
     def shutdown_hook(self):
         pass
-
 
 if __name__ == '__main__':
     PUiGivenASim(sys.argv[1], sys.argv[2])

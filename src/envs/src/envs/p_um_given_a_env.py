@@ -1,18 +1,7 @@
 from Box2D import (b2EdgeShape, b2FixtureDef, b2PolygonShape, b2Random, b2CircleShape, b2Vec2, b2Color)
 import Box2D
 from backends.rendering import Viewer, Transform, LineWidth
-from utils import RobotSE2, FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS, SCALE, VIEWPORT_W, VIEWPORT_H
-from utils import PI, ROBOT_RADIUS, GOAL_RADIUS, MODE_DISPLAY_RADIUS
-from utils import ROBOT_COLOR_WHEN_MOVING, ROBOT_COLOR_WHEN_COMMAND_REQUIRED, ACTIVE_MODE_COLOR, NONACTIVE_MODE_COLOR, TARGET_MODE_COLOR, TURN_LOCATION_COLOR, MODE_DISPLAY_TEXT_COLOR, MODE_DISPLAY_TEXT_FONTSIZE
-from utils import MODE_DISPLAY_CIRCLE_START_POSITION_S, MODE_DISPLAY_CIRCLE_X_OFFSET_S, MODE_DISPLAY_TEXT_START_POSITION, MODE_DISPLAY_TEXT_X_OFFSET, MODE_DISPLAY_TEXT_Y_ANCHOR
-from utils import TIMER_DISPLAY_POSITION, TIMER_DISPLAY_FONTSIZE, TIMER_COLOR_NEUTRAL, TIMER_COLOR_WARNING, TIMER_COLOR_DANGER, TIMER_DISPLAY_TEXT_Y_ANCHOR, TIMER_DANGER_THRESHOLD, TIMER_WARNING_THRESHOLD
-from utils import TRIAL_OVER_TEXT_DISPLAY_POSITION, TRIAL_OVER_TEXT_FONTSIZE, TRIAL_OVER_TEXT_COLOR, TRIAL_OVER_TEXT_Y_ANCHOR, P_UM_GIVEN_A_MODE_DISPLAY_CIRCLE_START_POSITION_S, P_UM_GIVEN_A_MODE_DISPLAY_TEXT_START_POSITION
-from utils import WP_RADIUS, INFLATION_FACTOR, PATH_HALF_WIDTH, MODE_INDEX_TO_DIM, DIM_TO_MODE_INDEX, MODE_DISPLAY_CIRCLE_Y_OFFSET_S
-from utils import RGOrient, StartDirection, PositionOnLine
-from utils import get_sign_of_number
-from utils import LOW_LEVEL_COMMANDS, HIGH_LEVEL_ACTIONS, TRUE_ACTION_TO_COMMAND, TRUE_COMMAND_TO_ACTION, MODE_SWITCH_TRANSITION, TRANSITION_FOR_ACTION
-from utils import COMMAND_TEXT_COLOR, COMMAND_DISPLAY_POSITION, COMMAND_DISPLAY_FONTSIZE, ACTION_DISPLAY_POSITION, MODE_DISPLAY_CIRCLE_Y_OFFSET_S
-from utils import EXPERIMENT_START_COUNTDOWN
+from utils import *
 import csv
 import math
 import numpy as np
@@ -22,7 +11,6 @@ import rospy
 import threading
 from envs.srv import OptimalAction, OptimalActionRequest, OptimalActionResponse
 import time
-from IPython import embed
 
 class PUmGivenAEnv(object):
     metadata = {
@@ -36,7 +24,6 @@ class PUmGivenAEnv(object):
 
         self.env_params = env_params
         assert self.env_params is not None
-
         assert 'robot_position' in self.env_params      # starting position of robot
         assert 'goal_position' in self.env_params       # goal position
         assert 'robot_orientation' in self.env_params   # starting orientation of robot
@@ -58,7 +45,7 @@ class PUmGivenAEnv(object):
         self.ready_for_new_prompt = True
         self.text_display_delay = 2 # secs
         self.start_msg_ind = 0
-        self.orientaion_thresh = 0.7
+        self.orientation_thresh = 0.7
         self.position_thresh = [3.5, 2.5]
         self.TARGET_TEXT = None
 
@@ -89,7 +76,6 @@ class PUmGivenAEnv(object):
         else:
             curr_on_and_between =  (min(start_x, end_x) <= curr_x <= max(start_x, end_x))  and (min(start_y, end_y) <= curr_y <= max(start_y,end_y))
 
-
         position_on_line = PositionOnLine.NOT_ON_LINE
         if curr_on_and_between:
             position_on_line = PositionOnLine.BETWEEN
@@ -99,7 +85,6 @@ class PUmGivenAEnv(object):
                 position_on_line = PositionOnLine.START
 
         assert position_on_line is not PositionOnLine.NOT_ON_LINE
-
         return position_on_line
 
     def _transform_continuous_position_to_discrete_position(self):
@@ -111,11 +96,9 @@ class PUmGivenAEnv(object):
 
         Returns - discrete location associated with the continuous position, Boolean indicator for ensure that the robot is 'snapped' into position at the end of the line segment
         '''
-
         current_position = self.robot.get_position()
         current_orientation = self.robot.get_angle()
         start_index = int(self.current_discrete_state[0][-1]) #get the number in the location id. That is, if location is p3, retrieve 3. This number is a proxy for which waypoint is the robot at
-        # print start_index
         #only consider line segments from the current index onwards.
         for (turn_id, p, pt) in zip(range(start_index, self.num_locations-1), self.waypoints[start_index:-1], self.waypoints[start_index+1:]):
             if turn_id < self.location_of_turn or turn_id > self.location_of_turn:
@@ -134,7 +117,6 @@ class PUmGivenAEnv(object):
                     elif position_on_line == PositionOnLine.END:
                         return self.WAYPOINTS_TO_LOCATION_DICT[tuple(pt)], True
 
-
         return self.WAYPOINTS_TO_LOCATION_DICT[tuple(self.waypoints[-1])], True
 
     def _transform_continuous_orientation_to_discrete_orientation(self):
@@ -142,7 +124,6 @@ class PUmGivenAEnv(object):
         Retrieves discrete orientation from continuous orientation
         '''
         current_orientation = self.robot.get_angle()
-        # assert current_orientation >= 0.0 and current_orientation <= (PI/2 + 0.1)
         if self.goal_orientation == PI/2:
             assert current_orientation >= 0.0 and current_orientation <= (PI/2 + 0.1)
             if abs(current_orientation - self.goal_orientation) > 0.1:
@@ -155,7 +136,6 @@ class PUmGivenAEnv(object):
                 return 0.0, False
             else:
                 return self.goal_orientation, True
-
 
     def _render_goal(self):
         t = Transform(translation=(self.goal_position[0],self.goal_position[1]))
@@ -213,11 +193,8 @@ class PUmGivenAEnv(object):
 
             if d == self.current_mode:
                 self.viewer.draw_circle(MODE_DISPLAY_RADIUS/SCALE, 30, True, color=ACTIVE_MODE_COLOR).add_attr(t) # just so coloring is consistent with motions (red is current, green is goal)
-            # elif d == self.target_mode:
-            #     self.viewer.draw_circle(MODE_DISPLAY_RADIUS/SCALE, 30, True, color=TARGET_MODE_COLOR).add_attr(t)
             else:
                 self.viewer.draw_circle(MODE_DISPLAY_RADIUS/SCALE, 30, True, color=NONACTIVE_MODE_COLOR).add_attr(t)
-
 
     def _render_mode_display_text(self):
         '''
@@ -257,7 +234,6 @@ class PUmGivenAEnv(object):
 
         self._render_text(COMMAND_DISPLAY_POSITION)
         self.viewer.render(False)
-
         if self.start_msg_ind == len(EXPERIMENT_START_COUNTDOWN):
             return 1
         else:
@@ -276,7 +252,6 @@ class PUmGivenAEnv(object):
             start = rospy.get_rostime()
             self.lock.acquire()
             if self.viewer is not None:
-                # self.viewer.draw_text("   ", x = VIEWPORT_W/2, y=VIEWPORT_H/6, font_size=MODE_DISPLAY_TEXT_FONTSIZE, color=MODE_DISPLAY_TEXT_COLOR, anchor_y='top')
                 self.current_time += 1
             else:
                 pass
@@ -288,16 +263,7 @@ class PUmGivenAEnv(object):
                 rospy.loginfo('took more time')
 
     def render(self, mode='human'):
-        # if self.viewer is None:
-        #     self.viewer = Viewer(VIEWPORT_W, VIEWPORT_H)
-        #     self.viewer.set_bounds(0, VIEWPORT_W/SCALE, 0, VIEWPORT_H/SCALE)
-        #     self.viewer.window.set_location(1650, 300)
-
-        #render location for turning
-        # self._render_turn_location()
-        #render the goal position
         if not self.is_mode_switch:
-            # self._render_goal()
             #render bodies
             self._render_bodies()
             #draw robot direction indicator after the robot has been drawn.
@@ -307,19 +273,12 @@ class PUmGivenAEnv(object):
             self._render_waypoints()
             #render path
             self._render_path()
-
         else:
             self._render_mode_display()
             self._render_mode_display_text()
-        #render virtual mode display
-        # self._render_mode_display()
-        #render dimension text
-        # self._render_mode_display_text()
         self._render_timer_text()
         self._render_text(ACTION_DISPLAY_POSITION)
         return self.viewer.render(False)
-
-
 
     def _init_allowed_directions_of_motion(self):
         #depending on direction of motion and relative position of the goal with respect to the robot make sure only moves in the correct direction
@@ -334,17 +293,14 @@ class PUmGivenAEnv(object):
         # if close enough to goal (based on threshold), then signal that it is done so can move to next trial
         # NOTICE absolute value: assumes direction is already taken care of
         is_done = False
-
         if self.allowed_mode_index == 't':
-            if np.abs(self.goal_orientation - self.robot.get_angle()) < self.orientaion_thresh:
+            if np.abs(self.goal_orientation - self.robot.get_angle()) < self.orientation_thresh:
                 is_done = True
-
         else:
             if np.abs(self.goal_position[self.start_direction.value]-self.robot.get_position()[self.start_direction.value]) < self.position_thresh[self.start_direction.value]:
                 is_done = True
 
         return is_done
-
 
     def _generate_path(self):
         if self.start_direction == StartDirection.X:
@@ -369,16 +325,13 @@ class PUmGivenAEnv(object):
         self.robot = None
         self.waypoints = np.zeros((self.num_locations, 2))
 
-
     def initialize(self):
         self.start_session = self.env_params['start']
-
         self.period = rospy.Duration(1.0)
         self.timer_thread = threading.Thread(target=self._render_timer, args=(self.period,))
         self.lock = threading.Lock()
         self.current_time = 0
         self.max_time = 50
-
 
     def reset(self):
         self._destroy()
@@ -420,45 +373,29 @@ class PUmGivenAEnv(object):
             self._generate_way_points() # generate waypoints (start and edn)
             self._generate_path() # generate outer border
             self.allowed_direction_of_motion = self._init_allowed_directions_of_motion() # for each trial mode/dimension there is a proper direction in which the velocity should be
-
-
         self.robot = RobotSE2(self.world, position=self.robot_position, orientation=self.robot_orientation, robot_color=ROBOT_COLOR_WHEN_COMMAND_REQUIRED, radius=ROBOT_RADIUS/SCALE)
-
-        # self.timer_thread = threading.Thread(target=self._render_timer, args=(self.period,))
-        # self.lock = threading.Lock()
         self.current_time = 0
-
 
     def step(self, input_action):
         assert 'human' in input_action.keys()
         is_done = False
-
-        # if self.start_session:
         if self.is_mode_switch:
-
             self.current_mode_index = rospy.get_param('mode')
             self.current_mode = MODE_INDEX_TO_DIM[self.current_mode_index]
-
             if self.current_mode == self.target_mode:
                 is_done = True
-
-
         else:
             user_vel = np.array([input_action['human'].velocity.data[0], input_action['human'].velocity.data[1], input_action['human'].velocity.data[2]]) #numpyify the velocity data.
             allowed_mode_index = DIM_TO_MODE_INDEX[self.allowed_mode_index] #0,1,2 #get the mode index of the allowed mode of motion
             user_vel[np.setdiff1d(self.DIMENSION_INDICES, allowed_mode_index)] = 0.0 #zero out all velocities except the ones for the allowed mode
-
             # allowed_direction_of_motion = self._init_allowed_directions_of_motion()
             # only allowing velocities in allowed mode. now also check if the direction of user_vel is correct as well.
             if get_sign_of_number(user_vel[allowed_mode_index]) != self.allowed_direction_of_motion:
                 user_vel[allowed_mode_index] = 0.0  # if not, zero that velocity
-
             # if close enough to the goal position/orientation, then move onto next trial.
             is_done = self._is_goal_reached()
-
             self.robot.robot.linearVelocity = b2Vec2(user_vel[0], user_vel[1]) #update robot velocity
             self.robot.robot.angularVelocity = -user_vel[2] # note the negative sign on the 3rd component to account for proper counterclockwise motion
 
         self.world.Step(1.0/FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS) #call box2D step function
-
         return is_done
