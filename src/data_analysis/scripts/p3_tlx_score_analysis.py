@@ -7,6 +7,7 @@ import numpy as np
 import pickle  
 from ast import literal_eval 
 from IPython import embed
+import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import matplotlib.colors as mcolors
@@ -15,6 +16,9 @@ import scipy.stats as ss
 import statsmodels.api as sa
 import scikit_posthocs as sp
 import seaborn as sns
+
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
 
 # read in qualtrics ranking csv with filename
 # remove unused columns from topic csv
@@ -155,10 +159,17 @@ class TLXCompareAssistanceParadigms(object):
                 sig_text.append('*')
 
         plt.style.use('ggplot')
-
-        sns.set(style="whitegrid")
+        sns.set_style("dark")
+        sns.set_context("paper")
+        sns.set_palette("colorblind")
         ax = sns.boxplot(x=df["condition"], y=df[metric])    
         ax = sns.swarmplot(x=df["condition"], y=df[metric], color=".4")    
+
+        plt.subplots_adjust(left=.17)
+        plt.subplots_adjust(right=.96)
+
+        font_size = 20
+        ax.tick_params(labelsize=font_size)
 
         # get y position for all the p-value pairs based on location and significacne
         sig_df = pd.DataFrame({'pair':pairs, 'p_value': p_values, 'text': sig_text})
@@ -169,10 +180,19 @@ class TLXCompareAssistanceParadigms(object):
             y_pos = [y_min+(h*i)]*2 # start and end is same height so *2 
             text_pos_x = sum(sig_df.loc[i, 'pair'])/2 # text position should be in the center of the line connecting the pairs 
             text_pos_y = y_min+(h*i)+0.25
-            plt.plot(sig_df.loc[i, 'pair'], y_pos, lw=1.5, c='k')       
-            plt.text(text_pos_x, text_pos_y, sig_df.loc[i, 'text'], ha='center', va='bottom', color='k')
+            plt.plot(sig_df.loc[i, 'pair'], y_pos, lw=2, c='k')       
+            plt.text(text_pos_x, text_pos_y, sig_df.loc[i, 'text'], ha='center', va='bottom', color='k', fontsize=font_size-2)
         
+        plt.xlabel('')
+        
+        # To do: Clean lablels: 
+        if metric == 'tlx': 
+            plt.ylabel('TLX Score' , fontsize=font_size)
+        elif metric == 'raw_tlx': 
+            plt.ylabel('Raw TLX Score' , fontsize=font_size)
+
         plt.show()
+
 
         # plot_folder = os.path.join(os.path.abspath(os.path.join(os.getcwd(), os.pardir)), 'plots')
         # fig_name = os.path.join(plot_folder, metric+'.png')

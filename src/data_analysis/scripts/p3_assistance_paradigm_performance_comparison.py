@@ -18,6 +18,8 @@ import scipy.stats as ss
 import statsmodels.api as sa
 import scikit_posthocs as sp
 
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
 # import plotly.express as px
 
 
@@ -49,9 +51,11 @@ class CompareAssistanceParadigms(object):
 			print(self.data_dir)
 
 		self.trial_fraction_metric = ['success'] # metrics that are calculated over all trials for a signle condition for each person 
+		# self.labels= ['Filtered', 'Corrective']
 		self.labels= ['No Assistance', 'Filtered', 'Corrective']
 		self.assistance_cond = ['no', 'filter', 'corrective']
 		self.label_to_plot_pos = {'No Assistance': 0, 'Filtered': 1 , 'Corrective': 2}
+		# self.label_to_plot_pos = {'No Assistance': 0, 'Filtered': 0 , 'Corrective': 1}
 		self.v_strong_alpha = 0.001
 		self.strong_alpha = 0.01
 		self.alpha = 0.05
@@ -169,21 +173,23 @@ class CompareAssistanceParadigms(object):
 					indices.append(ind)					
 
 			for cond in self.assistance_cond: 
-				value_list = []
-				for i in indices: # for all tirals of that user, get the trials belogning to certian assistance condition
-					if self.files_name_list[i].split('_')[self.files_name_list[i].split('_').index('assistance')-1] == cond: 
-						value_list.append(self.compute_metric(metric, self.files_path_list[i])) # find value given path file corresponding to filename
+				for block in range(2): # block zero or 1
+					value_list = []
+					for i in indices: # for all tirals of that user, get the trials belogning to certian assistance condition
+						if self.files_name_list[i].split('_')[self.files_name_list[i].split('_').index('assistance')-1] == cond: 
+							if self.files_name_list[i].split('_')[3] == str(block): 
+								value_list.append(self.compute_metric(metric, self.files_path_list[i])) # find value given path file corresponding to filename
 
-				# calculated percentage: 
-				value = 100*sum(value_list)/len(value_list)
-				if cond == 'no': 
-					no_assistance.append(value)
-				elif cond == 'filter': 
-					filtered.append(value)
-				elif cond == 'corrective': 
-					corrected.append(value)
-				else:
-					print('[warning:] unexpected assistance type') 
+					# calculated percentage: 
+					value = 100*sum(value_list)/len(value_list)
+					if cond == 'no': 
+						no_assistance.append(value)
+					elif cond == 'filter': 
+						filtered.append(value)
+					elif cond == 'corrective': 
+						corrected.append(value)
+					else:
+						print('[warning:] unexpected assistance type') 
 
 		return no_assistance, filtered, corrected
 
@@ -239,6 +245,8 @@ class CompareAssistanceParadigms(object):
 				no_assistance, filtered, corrected = self.group_per_metric(metric)
 
 			data = [no_assistance, filtered, corrected]
+			# data = [filtered, corrected]	
+
 			self.parametric_anova_with_post_hoc(data, metric)
 		# TO DO: maybe make a main dataframe that holds all the metrics we looked at and save to pkl or something
 
@@ -248,10 +256,21 @@ class CompareAssistanceParadigms(object):
 		pairs = kwargs.get('pairs', None)
 		p_values = kwargs.get('p_values', None)
 
-		plt.style.use('ggplot')
-		sns.set(style="whitegrid")
+		sns.set_style("dark")
+		sns.set_context("paper")
+		sns.set_palette("colorblind")
+
+		
+
+		# ax = sns.barplot(x=df["condition"], y=df[metric], data=df)  
+
 		ax = sns.boxplot(x=df["condition"], y=df[metric]) 	
 		ax = sns.swarmplot(x=df["condition"], y=df[metric], color=".4")	
+		font_size = 20
+		ax.tick_params(labelsize=font_size)
+
+		plt.subplots_adjust(left=.17)
+		plt.subplots_adjust(right=.96)
 
 		# If significance exists, plot it
 		if not pairs == None: 
@@ -277,11 +296,23 @@ class CompareAssistanceParadigms(object):
 				y_pos = [y_min+(h*i)]*2 # start and end is same height so *2 
 				text_pos_x = sum(sig_df.loc[i, 'pair'])/2 # text position should be in the center of the line connecting the pairs 
 				text_pos_y = y_min+(h*i)+0.25
-				plt.plot(sig_df.loc[i, 'pair'], y_pos, lw=1.5, c='k')		
-				plt.text(text_pos_x, text_pos_y, sig_df.loc[i, 'text'], ha='center', va='bottom', color='k')
+				plt.plot(sig_df.loc[i, 'pair'], y_pos, lw=2, c='k')		
+				plt.text(text_pos_x, text_pos_y, sig_df.loc[i, 'text'], ha='center', va='bottom', color='k', fontsize=font_size-2)
 
-		# plt.ylabel('Distance to Goal')
-		# embed()
+		plt.xlabel('')
+		
+		# To do: Clean lablels: 
+		if metric == 'time': 
+			plt.ylabel('Total Trial Time (s)' , fontsize=font_size)
+		elif metric == 'mode_switches': 
+			plt.ylabel('Successful Trial Mode Switch Count' , fontsize=font_size)
+		elif metric == 'corrections': 
+			plt.ylabel('Average Intervention Counts', fontsize=font_size)
+		elif metric == 'success': 
+			plt.ylabel('Percentage of Successful Trials (%)', fontsize=font_size)
+		elif metric == 'distance': 
+			plt.ylabel('Distance to Goal', fontsize=font_size)
+
 		
 		plt.show()
 
