@@ -9,7 +9,6 @@ from std_msgs.msg import MultiArrayDimension
 from teleop_nodes.msg import CartVelCmd
 from teleop_nodes.msg import ModeSwitch
 from std_msgs.msg import Int16
-from dynamic_reconfigure.server import Server
 from teleop_nodes.cfg import SipPuffModeSwitchParadigmConfig
 from teleop_nodes.srv import SetMode, SetModeRequest, SetModeResponse
 from std_srvs.srv import SetBool, SetBoolResponse
@@ -52,7 +51,7 @@ class SNPInput(ControlInput):
     self.velocity_scale = rospy.get_param("/snp_velocity_scale") #currently scalar. Could be vector for individual dimension scale
     self.gripper_vel_limit = rospy.get_param("/jaco_velocity_limits/gripper_vel_limit")
     self._vel_multiplier = self.velocity_scale*np.ones(self.robot_dim + self.finger_dim)*1
-    ## HACK:
+    ## TODO (deepak). Get different multipler for rotation and assigned indices for rotation dimensions:
     self._vel_multiplier[2] = 0.4*self._vel_multiplier[2]
     self._max_cart_vel = np.ones(self.robot_dim + self.finger_dim)*rospy.get_param("/jaco_velocity_limits/max_cart_vel_mulitplier")
     if self.finger_dim > 0:
@@ -72,10 +71,8 @@ class SNPInput(ControlInput):
     self.send_msg.velocity.data = np.zeros_like(self._cart_vel)
     self.send_msg.header.stamp = rospy.Time.now()
     self.send_msg.header.frame_id = 'snp'
-    # self.send_msg.mode = self._mode
 
     self.publish_mode()
-
 
   def initialize_subscribers(self):
     rospy.Subscriber('/joy_sip_puff', Joy, self.receive)
@@ -87,7 +84,6 @@ class SNPInput(ControlInput):
     self.modepub = rospy.Publisher("/mi/current_mode", Int16, queue_size=1)
 
   def initialize_services(self):
-    # mode_paradigm_srv = Server(SipPuffModeSwitchParadigmConfig, self.reconfigure_cb)
     rospy.Service('/teleop_node/set_mode', SetMode, self.set_mode)
     rospy.Service('/teleop_node/stop_latch', SetBool, self.stop_latch)
 
@@ -107,7 +103,7 @@ class SNPInput(ControlInput):
     status = True
     return status
 
-  # To do: remove this, maybe have arduino listen to the other message and just add one to it
+  # TODO: remove this, maybe have arduino listen to the other message and just add one to it
   def publish_mode(self):
     self.modepub.publish(self._mode+1) # +1 for arduino
 
@@ -167,14 +163,12 @@ class SNPInput(ControlInput):
   def zero_vel(self):
     for i in range(0,self.robot_dim + self.finger_dim):
         self._cart_vel[i] = 0
-        # print 'zero'
 
   def one_mode_zero_vel(self, mode):
     self._cart_vel[mode] = 0
 
   def check_latch_time(self):
     if (rospy.get_time() - self._latch_start_time) > self._latch_command_duration:
-      print "vel check"
       self._latch_lock = 0
       self.zero_vel()
 
@@ -203,7 +197,7 @@ class SNPInput(ControlInput):
 
     # # Paradigm 2: Self-stop latch
     # ####################################
-    # TO DO: May need to zero out velocities during mode switching
+    # TODO: May need to zero out velocities during mode switching
     if self.motion_paradigm == 2:
       if self._latch_lock:
         if msg.buttons[1]==0 and msg.buttons[2]==0 and msg.buttons[0]==0 and msg.buttons[3]==0:
@@ -245,8 +239,7 @@ class SNPInput(ControlInput):
         self._cart_vel[self._mode] = -self._max_cart_vel[self._mode] * msg.axes[0] * self._vel_multiplier[self._mode]
       else:
         self.zero_vel()
-
-    # to do: send zero velocity when mode switch
+    # TODO: send zero velocity when mode switch
 
   # determines whether mode switch should happen, if not, moves robot arm based on mode
   def handle_paradigms(self, msg):
@@ -257,8 +250,6 @@ class SNPInput(ControlInput):
     # send the velocities to robot
     self.send_msg.velocity.data = self._cart_vel
     self.send_msg.header.stamp = rospy.Time.now()
-    # self.send_msg.mode = self._mode
-    # print 'msg', self.send_msg.mode, 'mode:', self._mode
 
 #######################################################################################
 #                                 MAIN FUNCTIONS                                      #
@@ -292,23 +283,7 @@ class SNPInput(ControlInput):
     finally:
       self.lock.release()
 
-  # Mode switching rosparam
-  # def reconfigure_cb(self, config, level):
-  #   self.mode_switch_paradigm = config.snp_mode_switch_paradigm
-  #   self.motion_paradigm = config.snp_motion_paradigm
-  #   t = threading.Thread(target=self.latch_timing_threader)
-  #   if self.motion_paradigm == 1:
-  #     t.daemon = True
-  #     t.start()
-  #   else:
-  #     t.daemon = False
-  #   self._positive_latch = 0
-  #   self._negative_latch = 0
-  #   self._latch_lock = 0
-  #   print "mode switch paradigm", self.mode_switch_paradigm, "motion paradigm", self.motion_paradigm
-  #   return config
-
 if __name__ == '__main__':
   rospy.init_node('sip_puff_node', anonymous=True)
-  snp = SNPInput(robot_dim = 3, finger_dim = 0)
+  snp = SNPInput(robot_dim=3, finger_dim=0)
   rospy.spin()

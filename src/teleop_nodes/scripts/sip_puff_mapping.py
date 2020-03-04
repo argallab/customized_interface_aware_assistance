@@ -14,8 +14,6 @@ from utils import AssistanceType
 
 npa = np.array
 
-from IPython import embed
-
 '''Reads raw sip_and_puff joy data, does thresholding and buffering
  and returns data as hard puff, soft puff, soft sip, hard sip.
  Input and output are both /sensor_msgs/joy'''
@@ -41,7 +39,6 @@ class SNPMapping(object):
     self.hard_sip_max_limit = rospy.get_param("/sip_and_puff_thresholds/hard_sip_max_limit")
 
     # latch limit governs the threshold for direction and main mode switches
-    # self._lock_input = False
     self._ignore_input_counter = 0
     self._num_inputs_to_ignore = 10
     self._button_latch_time = 0.8
@@ -69,7 +66,6 @@ class SNPMapping(object):
     self.before_send_msg.buttons = np.zeros(4) # hard puff, soft puff, soft sip, hard sip
 
     self.assistance_type = rospy.get_param('/assistance_type', 2)
-    # embed()
     if self.assistance_type == 0:
         self.assistance_type = AssistanceType.Filter
     elif self.assistance_type == 1:
@@ -82,7 +78,6 @@ class SNPMapping(object):
     rospy.loginfo("Found mode_inference_and_correction_node")
 
     self.infer_and_correct_service = rospy.ServiceProxy('/mode_switch_inference_and_correction/handle_unintended_commands', InferCorrect)
-
 
   # #######################################################################################
   #                           Check Sip and Puff Limits                                   #
@@ -113,27 +108,21 @@ class SNPMapping(object):
     elif (self.hard_puff_max_limit <= airVelocity < self.hard_puff_min_limit): # register as hard puff
       self.send_msg.header.frame_id = "Hard Puff"
       self.send_msg.buttons[0] = 1
-      # self._lock_input = True
     elif (self.hard_sip_min_limit < airVelocity <= self.hard_sip_max_limit): # register as hard sip
       self.send_msg.header.frame_id = "Hard Sip"
       self.send_msg.buttons[3] = 1
-      # self._lock_input = True
     else:
       if airVelocity < 0:
         self.send_msg.header.frame_id = "Soft-Hard Puff Deadband"
       else:
         self.send_msg.header.frame_id = "Soft-Hard Sip Deadband"
       self.send_msg.buttons = np.zeros(4)
-    # print("      ")
-    # rospy.loginfo("Before")
-    # rospy.loginfo(self.send_msg.header.frame_id)
 
     self.before_send_msg.header.frame_id = self.send_msg.header.frame_id
     self.before_send_msg.buttons = self.send_msg.buttons
     self.before_inference_pub.publish(self.before_send_msg)
 
     self.update_assistance_type()
-    # print self.assistance_type
     if self.assistance_type != AssistanceType.No_Assistance and self.send_msg.header.frame_id != "Zero Band" and self.send_msg.header.frame_id != "Soft-Hard Puff Deadband" and self.send_msg.header.frame_id != "Soft-Hard Sip Deadband" and self.send_msg.header.frame_id != "Input Stopped":
       request = InferCorrectRequest()
       request.um = self.send_msg.header.frame_id
@@ -142,11 +131,6 @@ class SNPMapping(object):
       self.send_msg.buttons = np.zeros(4)
       if self.send_msg.header.frame_id != "Zero Band":
         self.send_msg.buttons[self.command_to_button_index_map[self.send_msg.header.frame_id]] = 1
-        # if self.send_msg.header.frame_id == "Hard Puff" or self.send_msg.header.frame_id == "Hard Sip":
-          # self._lock_input = True
-
-      # rospy.loginfo("After")
-      # print(self.send_msg.header.frame_id, self.send_msg.buttons)
 
     return 0
 
@@ -160,14 +144,8 @@ class SNPMapping(object):
     if self._ignore_input_counter < self._num_inputs_to_ignore: # seems like thread issue if the number to ignore is too high
         self._ignore_input_counter +=1
 
-    # if self._lock_input is False:
     self.send_msg.header.stamp = rospy.Time.now()
     self.send_msg.axes[0] = msg.axes[1]
-  #  # If ramp up to hard puff or sip (i.e. steep angle)
-  #   if abs((msg.axes[0] - self.old_msg.axes[0])/(msg.header.stamp - self.old_msg.header.stamp).to_sec()) >= 5 and (msg.header.stamp - self.old_msg.header.stamp).to_sec()<0.002:
-  #     self.send_msg.header.frame_id = "soft-hard ramp"
-  #     self.send_msg.buttons = np.zeros(4)
-    # else:
     self.checkLimits(msg.axes[1])
     self.after_inference_pub.publish(self.send_msg)
 
@@ -177,8 +155,6 @@ class SNPMapping(object):
       self.send_msg.header.frame_id = "input stopped"
       self.send_msg.buttons = np.zeros(4)
       self.after_inference_pub.publish(self.send_msg)
-      # if self._lock_input is True:
-      #   self._lock_input = False
 
     self.old_msg = msg
 
