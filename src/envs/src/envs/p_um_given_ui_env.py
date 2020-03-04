@@ -9,14 +9,10 @@ import pyglet
 class PUmGivenUIEnv(object):
 
     def __init__(self, env_params):
-
         self.viewer = None
-
         self.env_params = env_params
         assert self.env_params is not None
-
         assert 'text' in self.env_params
-
         self.text = ''
         self.bold = True
 
@@ -33,7 +29,7 @@ class PUmGivenUIEnv(object):
         return self.viewer.render(False)
 
     def reset(self):
-        # (mahdieh to do) Definitely better ways of doing this...
+        # TODO(mahdieh) Definitely better ways of doing this...
         if 'x' in self.env_params.keys():
             self.x = self.env_params['x']
         if 'y' in self.env_params.keys():
