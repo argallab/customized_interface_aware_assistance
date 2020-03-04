@@ -87,10 +87,8 @@ UM_GIVEN_UI_NOISE = 0.01 #Lower the number, lower the error. Between 0 and 1. If
 P_UI_GIVEN_UM = collections.OrderedDict()
 #entropy threshold for assistance. between 0 and 1
 ENTROPY_THRESHOLD = 0.8
-
 #Assistance Type. Choice between Filter and Corrective. TODO. Maybe load it from file
 ASSISTANCE_TYPE = AssistanceType.Corrective
-
 
 def create_state_transition_model():
 	global STATE_TRANSITION_MODEL
@@ -125,7 +123,6 @@ def init_state_transition_model(rgc):
 								new_theta = min(PI/2, s[1] + PI/2) #max angle allowed is PI/2
 							elif TRANSITION_FOR_ACTION[rgc][u][m] == 'prev':
 								new_theta = max(-PI/2, s[1] - PI/2) #min angle allowed is 0.0
-
 							STATE_TRANSITION_MODEL[s][u] = (s[0], new_theta, s[2])
 
 def create_bounds_dict():
