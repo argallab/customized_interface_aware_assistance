@@ -10,10 +10,10 @@ index_second = [int(not bool(i) )for i in index_first]
 index = []
 index.extend(index_first)
 index.extend(index_second)
-# print(index)
+
 final_list.extend(a)
 final_list.extend(a)
-# print(final_list)
+
 order = [ s + '_' + str(ind) for ind, s in zip(index, final_list)]
 first_part = order[:3]
 second_part = order[3:]

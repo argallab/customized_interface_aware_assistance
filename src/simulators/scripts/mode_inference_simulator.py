@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 import rospy
 import time
 from sensor_msgs.msg import Joy
@@ -20,11 +19,9 @@ import os
 from utils import Robot2D, FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS, SCALE, VIEWPORT_W, VIEWPORT_H, DIM_TO_MODE_INDEX
 from utils import ROBOT_RADIUS, GOAL_RADIUS, GOAL_SHAPES, GOAL_COLORS, PI, HUMAN_ROBOT_COLOR, AUTONOMY_ROBOT_COLOR, TRIANGLE_L
 from utils import RGOrient, StartDirection, AssistanceType
-from IPython import embed
 
 class Simulator(object):
 	def __init__(self, subject_id, assistance_block, block_id, training):
-		#TODO pass args as a dict
 		super(Simulator, self).__init__()
 		rospy.init_node("Simulator")
 		rospy.on_shutdown(self.shutdown_hook)
@@ -46,10 +43,8 @@ class Simulator(object):
 		user_vel.header.stamp = rospy.Time.now()
 		user_vel.header.frame_id = 'human_control'
 
-
 		self.input_action = {}
 		self.input_action['human'] = user_vel
-
 		rospy.Subscriber('/user_vel', CartVelCmd, self.joy_callback)
 		self.trial_index = 0
 
@@ -68,7 +63,6 @@ class Simulator(object):
 
 		self.terminate = False
 		self.restart = False
-
 
 		if self.trial_info_dir_path is not None and os.path.exists(self.trial_info_dir_path) and not self.training:
 			print ('LOAD METADATA')
@@ -119,13 +113,11 @@ class Simulator(object):
 		rospy.wait_for_service("/teleop_node/set_mode")
 		rospy.loginfo("teleop_node node service found! ")
 
-
 		#set starting mode for the trial
 		self.set_mode_srv = rospy.ServiceProxy('/teleop_node/set_mode', SetMode)
 		self.set_mode_request = SetModeRequest()
 		self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params['start_mode']]
 		status = self.set_mode_srv(self.set_mode_request)
-
 
 		# instantiate the environement
 		self.env_params['start'] = False
@@ -133,13 +125,6 @@ class Simulator(object):
 		self.env.initialize()
 		self.env.initialize_viewer()
 		self.env.viewer.window.on_key_press = self.key_press
-
-
-		# self.env.reset()
-		# self.env.render()
-		# self.trial_marker_pub.publish('start')
-		# self.trial_index_pub.publish(trial_info_filename_index)
-
 
 		r = rospy.Rate(100)
 		self.trial_start_time = time.time()
@@ -152,28 +137,18 @@ class Simulator(object):
 		self.start = False
 
 		while not rospy.is_shutdown():
-
 			if not self.start:
 				self.start = self.env.start_countdown()
-
 			else:
-
-				if first_trial:
-
+				if first_trial: #if first trial in a block add an extra 2 seconds so that the subject is not surprised
 					time.sleep(2)
-
 					self.trial_marker_pub.publish('start')
 					self.trial_index_pub.publish(trial_info_filename_index)
-
 					self.env.reset()
 					self.env.render()
-
 					self.trial_start_time = time.time()
 					first_trial = False
-
-
 				else:
-
 					if (time.time() - self.trial_start_time) > self.max_time or is_done:
 						if not self.training:
 							print("Move to NEXT TRIAL")
@@ -194,12 +169,10 @@ class Simulator(object):
 							trial_info_dict['env_params']['training'] = self.training
 							self.env_params = trial_info_dict['env_params']
 							print 'ASSISTANCE_TYPE', self.env_params['assistance_type']
-
 							rospy.set_param('assistance_type', self.env_params['assistance_type'])
 							self.set_mode_request = SetModeRequest()
 							self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params['start_mode']]
 							status = self.set_mode_srv(self.set_mode_request)
-
 							self.env.update_params(self.env_params)
 							self.env.reset()
 							self.env.render()
@@ -231,12 +204,10 @@ class Simulator(object):
 						trial_info_dict['env_params']['training'] = self.training
 						self.env_params = trial_info_dict['env_params']
 						print 'ASSISTANCE_TYPE', self.env_params['assistance_type']
-
 						rospy.set_param('assistance_type', self.env_params['assistance_type'])
 						self.set_mode_request = SetModeRequest()
 						self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params['start_mode']]
 						status = self.set_mode_srv(self.set_mode_request)
-
 						self.env.update_params(self.env_params)
 						self.env.reset()
 						self.env.render()
@@ -244,7 +215,6 @@ class Simulator(object):
 						self.trial_index_pub.publish(trial_info_filename_index)
 						self.trial_start_time = time.time()
 						is_done = False
-
 
 				robot_continuous_position, robot_continuous_orientation, robot_linear_velocity, robot_angular_velocity, robot_discrete_state, is_done = self.env.step(self.input_action)
 
@@ -257,7 +227,6 @@ class Simulator(object):
 				self.robot_state.robot_discrete_state.discrete_location = robot_discrete_state[0]
 				self.robot_state.robot_discrete_state.discrete_orientation = robot_discrete_state[1]
 				self.robot_state.robot_discrete_state.mode = robot_discrete_state[2]
-
 				self.robot_state_pub.publish(self.robot_state)
 
 				if self.terminate:
@@ -266,8 +235,6 @@ class Simulator(object):
 
 				self.env.render()
 			r.sleep()
-
-		# isStart = True
 
 	def joy_callback(self, msg):
 		self.input_action['human'] = msg
@@ -288,7 +255,6 @@ class Simulator(object):
 			self.restart = True
 
 if __name__ == '__main__':
-	#TODO parse num turns from launch file
 	subject_id = sys.argv[1]
 	assistance_block = sys.argv[2]
 	block_id = sys.argv[3]

@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 
-# This is a python script for measuring stochastic deviations of input commands from intended commands
-# This was written for the paper titled "Do You Really Want To Do that?Customized Handling of Unintended Actions InAssistive Robots" to
-# model personalized distributions for p(u_i|u_m) from user data
-
 import rospy
 import time
 from sensor_msgs.msg import Joy
@@ -16,17 +12,15 @@ import sys
 from random import randrange
 import threading
 
-
 class PUmGivenUISim(object):
     def __init__(self, duration=1.0, iterations=1):
-
         # initialization
         rospy.init_node("p_um_given_ui_simulator")
         self.initialize_subscribers()
         self.initialize_publishers()
 
         self.duration = float(duration) # duration command text is displayed on screen
-        self.iterations = int(iterations) # number of iterations each command is to be displayed on screen 
+        self.iterations = int(iterations) # number of iterations each command is to be displayed on screen
         self.countdown_duration = 1.0
         self.input_time = rospy.get_rostime()
         self.command_list = []
@@ -39,13 +33,12 @@ class PUmGivenUISim(object):
         self.env = PUmGivenUIEnv(env_params)
         self.env.reset()
 
-        self.generate_command_list() # generate random order of commands 
+        self.generate_command_list() # generate random order of commands
 
         self.event = threading.Event()
         self.lock = threading.Lock()
 
         self.count = 0
-
 
     def initialize_subscribers(self):
         rospy.Subscriber('/keyboard_entry', String, self.keyboard_callback)
@@ -61,43 +54,43 @@ class PUmGivenUISim(object):
         self.command_pub.publish(self.command_msg)
 
     # start experiment
-    def keyboard_callback(self, msg): 
-        # Start experiment 
-        if msg.data == 's':            
-            for i in range(len(EXPERIMENT_START_COUNTDOWN)): 
+    def keyboard_callback(self, msg):
+        # Start experiment
+        if msg.data == 's':
+            for i in range(len(EXPERIMENT_START_COUNTDOWN)):
                 self.call_render(EXPERIMENT_START_COUNTDOWN[i], self.countdown_duration)
             self.command_following_task()
 
-    def joy_callback(self, msg): 
+    def joy_callback(self, msg):
         self.input_time = msg.header.stamp
 
     # randomize commands iterations
     def generate_command_list(self):
-        for i in range(self.iterations): 
+        for i in range(self.iterations):
             commands = LOW_LEVEL_COMMANDS[:]
-            for j in range(len(commands)): 
+            for j in range(len(commands)):
                 rand_index = randrange(len(commands))
-                self.command_list.append(commands[rand_index]) 
+                self.command_list.append(commands[rand_index])
                 commands.pop(rand_index)
         print 'total commands: ', (len(self.command_list))
 
     # display commands for desired duration and (wait for user to stop input before sending next command)
-    def command_following_task(self): 
+    def command_following_task(self):
         i = 0
-        while i < len(self.command_list): 
+        while i < len(self.command_list):
             self.command_time = rospy.get_rostime()
             self.publish_command(self.command_list[i])
-            self.call_render(self.command_list[i], self.duration)    
+            self.call_render(self.command_list[i], self.duration)
             self.publish_command('')
-            self.call_render('', self.countdown_duration)    
-            if (self.input_time < self.command_time): 
-                self.command_list.append(self.command_list[i])   
-            i += 1 
+            self.call_render('', self.countdown_duration)
+            if (self.input_time < self.command_time):
+                self.command_list.append(self.command_list[i])
+            i += 1
         self.call_render('ALL DONE! :D', self.duration)
         self.env.viewer.close()
 
-    # set new text message and render            
-    def call_render(self, msg, duration): 
+    # set new text message and render
+    def call_render(self, msg, duration):
             self.env.env_params['text'] = msg
             self.env.reset()
             self.env.render()
@@ -105,7 +98,6 @@ class PUmGivenUISim(object):
 
     def shutdown_hook(self):
         pass
-
 
 if __name__ == '__main__':
     PUmGivenUISim(sys.argv[1], sys.argv[2])
