@@ -1,3 +1,5 @@
+# Code developed by Deepak Gopinath*, Mahdieh Nejati Javaremi* in February 2020. Copyright (c) 2020. Deepak Gopinath, Mahdieh Nejati Javaremi, Argallab. (*) Equal contribution
+
 import os
 import pickle
 import collections
@@ -16,7 +18,7 @@ def create_experiment_blocks(args):
     metadata_filename = 'assistance_to_pkl_index.pkl'
     subject_id = args.subject_id
     num_blocks = args.num_blocks
-    
+
     assert os.path.exists(os.path.join(metadata_dir, metadata_filename))
     with open(os.path.join(metadata_dir, metadata_filename), 'rb') as fp:
         assistance_to_pkl_index = pickle.load(fp)
