@@ -1,3 +1,5 @@
+# Code developed by Deepak Gopinath*, Mahdieh Nejati Javaremi* in February 2020. Copyright (c) 2020. Deepak Gopinath, Mahdieh Nejati Javaremi, Argallab. (*) Equal contribution
+
 from Box2D import b2CircleShape, b2EdgeShape
 import math
 from enum import Enum

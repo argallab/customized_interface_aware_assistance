@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# Code developed by Deepak Gopinath*, Mahdieh Nejati Javaremi* in February 2020. Copyright (c) 2020. Deepak Gopinath, Mahdieh Nejati Javaremi, Argallab. (*) Equal contribution
+
 import rospy
 from sensor_msgs.msg import Joy
 from std_msgs.msg import String
