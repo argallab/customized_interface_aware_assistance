@@ -1,3 +1,5 @@
+
+# Code developed by Deepak Gopinath*, Mahdieh Nejati Javaremi* in February 2020. Copyright (c) 2020. Deepak Gopinath, Mahdieh Nejati Javaremi, Argallab. (*) Equal contribution
 import plotly.graph_objects as go
 
 top_labels = ['Strongly<br>agree', 'Agree', 'Neutral', 'Disagree',

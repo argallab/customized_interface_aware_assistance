@@ -1,11 +1,12 @@
 #!/usr/bin/python
 
+# Code developed by Deepak Gopinath*, Mahdieh Nejati Javaremi* in February 2020. Copyright (c) 2020. Deepak Gopinath, Mahdieh Nejati Javaremi, Argallab. (*) Equal contribution
 import os
 import argparse
 import pandas as pd
 import numpy as np
-import pickle  
-from ast import literal_eval 
+import pickle
+from ast import literal_eval
 from IPython import embed
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -17,9 +18,9 @@ import plotly.graph_objects as go
 class PostTaskLikertAnalysis(object):
 	def __init__(self, filename, *subject_id):
 
-		# get path to csv file of interest 
+		# get path to csv file of interest
 		self.filename = args.filename
-		# To DO: something about this path 
+		# To DO: something about this path
 		self.file_path = os.path.join(os.path.abspath(os.path.join(os.getcwd(), os.pardir, os.pardir)), 'data_processing/raw_data/qualtrics', self.filename)
 
 		assert os.path.exists(self.file_path)
@@ -41,22 +42,22 @@ class PostTaskLikertAnalysis(object):
 		if subject_id: # if looking at one subject
 			self.subject_id = subject_id[0]
 			self.df = self.df.loc[self.df['ID'] == self.subject_id]
-		else: 
+		else:
 			self.skip_ids() # skip test subjects
 
 		self.labels = ['Strongly Agree', 'Agree', 'Somewhat Agree', 'Neutral', 'Somewhat Disagree', 'Disagree', 'Strongly Disagree']
 		self.label_to_score = {'Strongly Agree': 3, 'Agree': 2, 'Somewhat Agree': 1, 'Neutral': 0, 'Somewhat Disagree': -1, 'Disagree': -2, 'Strongly Disagree': -3}
-			   
+
 	def skip_ids(self):
-		# Id's to skip (test id's, manual cleaning) 
+		# Id's to skip (test id's, manual cleaning)
 		# To do: instead of hardcode add input argument
 		ids = ['dan', 'deepak', 'andrew']
-		for i in range(len(ids)): 
+		for i in range(len(ids)):
 			self.df = self.df[self.df.ID != ids[i]]
 		self.df.reset_index(drop=True, inplace=True)
-		
 
-	def get_percentages(self, data): 
+
+	def get_percentages(self, data):
 
 		data.reset_index(drop=True, inplace=True)
 
@@ -64,33 +65,33 @@ class PostTaskLikertAnalysis(object):
 		# percentes = [question1, question2, etc] where qeustion1=[%(strongly agree), %(agree), %(somewhat agree), %(neutral), etc]
 		percentages = []
 
-		
+
 		total_resondants = float(len(data)) # total number of people who repsonded to quesitonnaire
 
-		for i in self.question_num: 
+		for i in self.question_num:
 			q_responses = list()
-			for j in self.labels: 
+			for j in self.labels:
 				reponse_percent = 100.0*len(data[data[i]==j].index.tolist())/total_resondants
 				q_responses.append(reponse_percent)
 			percentages.append(q_responses)
 		return percentages
 
 
-	def get_mean_rank(self, data): 
+	def get_mean_rank(self, data):
 
 		data.reset_index(drop=True, inplace=True)
 
 		# an array for each quesitons containing the label-to-score value of each respondant's response to that quesiton
 		scores = []
-		for i in self.question_num: 
+		for i in self.question_num:
 			q_score = list()
-			for j in range(len(data)): 
+			for j in range(len(data)):
 				q_score.append(self.label_to_score[data.loc[j, i]])
 			scores.append(q_score)
 		return scores
 
 
-	def plot_mean_rank_horizontal_bar_plot(self, responses, num_resp, title): 
+	def plot_mean_rank_horizontal_bar_plot(self, responses, num_resp, title):
 
 		plt.rcdefaults()
 		fig, ax = plt.subplots()
@@ -112,20 +113,20 @@ class PostTaskLikertAnalysis(object):
 		plt.show()
 
 
-	def group_per_assitance_condition(self): 
+	def group_per_assitance_condition(self):
 
 		# To do: instead of this get Assistance_Type column index levels like R
 		assistance_condition = ['Noas', 'Filtas', 'Coras']
 
-		for i in assistance_condition: 
+		for i in assistance_condition:
 			sub_df = self.df[self.df['Assistance_Type']==i]
 			responses = self.get_mean_rank(sub_df)
 			self.plot_mean_rank_horizontal_bar_plot(responses, len(sub_df), i)
 
 
-	def plot_percentage_bar_plot(self): 
+	def plot_percentage_bar_plot(self):
 		embed(banner1='plotlty')
-		
+
 		top_labels = ['Strongly<br>agree', 'Agree', 'Somewhat<br>agree', 'Neutral', 'Somewhat<br>disagree', 'Disagree',
 			  'Strongly<br>disagree']
 
@@ -231,11 +232,10 @@ if __name__ == '__main__':
 	parser.add_argument('-f', '--filename', help='qaultrics post-task survey', default='post_task_survey.csv', type=str) # has defualt,
 	parser.add_argument('-id', '--subject_id', help='experiment block: subject_id_type_assistance_block', type=str) # no default but optional
 	args = parser.parse_args()
-	if args.subject_id: 
+	if args.subject_id:
 		likert = PostTaskLikertAnalysis(args.filename, args.subject_id)
-	else: 
+	else:
 		likert = PostTaskLikertAnalysis(args.filename)
-	
+
 	likert.group_per_assitance_condition()
 	# likert.plot_percentage_bar_plot()
-	
