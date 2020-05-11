@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Code developed by Deepak Gopinath*, Mahdieh Nejati Javaremi* in February 2020. Copyright (c) 2020. Deepak Gopinath, Mahdieh Nejati Javaremi, Argallab. (*) Equal contribution
 
 import os
 import csv
@@ -42,7 +43,7 @@ class MeasuredCommandGivenActionAnalysis(object):
 
 		self.id = args.id
 		self.file_dir = os.path.join(os.path.abspath(os.path.join(os.getcwd(), os.pardir)), 'raw_data', self.id+'_p_um_given_a')
-		
+
 		self.data = DataParser(self.file_dir)
 
 	def get_nearest_time_stamp(self, tq, time_stamp_array):

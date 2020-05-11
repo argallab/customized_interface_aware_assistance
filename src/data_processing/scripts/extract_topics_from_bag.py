@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Code developed by Deepak Gopinath*, Mahdieh Nejati Javaremi* in February 2020. Copyright (c) 2020. Deepak Gopinath, Mahdieh Nejati Javaremi, Argallab. (*) Equal contribution
 
 import rosbag, sys, csv
 import rospy
@@ -45,7 +46,7 @@ for bagFile in listOfBagFiles:
 
 	#create a new directory
 	folder = os.path.join(os.path.abspath(os.path.join(os.getcwd(), os.pardir)), 'raw_data', folder_name)
-	
+
 	try:	#else already exists
 		os.makedirs(folder)
 	except:
@@ -101,5 +102,5 @@ for bagFile in listOfBagFiles:
 	bag.close()
 print "Done reading all " + numberOfFiles + " bag files."
 
-# example running: 
+# example running:
 # ./extract_topics_from_bag.py ~/.ros/deepak_command_issuing_2020-02-11-23-56-11.bag deepak_command_issuing
