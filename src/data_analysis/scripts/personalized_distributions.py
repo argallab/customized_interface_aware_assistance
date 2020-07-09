@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import pandas as pd
 import numpy  as np
-from IPython import embed
 import pickle
 import sys
 import os

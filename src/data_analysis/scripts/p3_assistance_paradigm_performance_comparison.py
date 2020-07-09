@@ -8,12 +8,9 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
-from IPython import embed
 import sys
-import rospkg
-# sys.path.append(os.path.join(rospkg.RosPack().get_path('simulators'), 'scripts'))
 sys.path.append(os.path.join(os.path.abspath(os.path.join(os.getcwd(), os.pardir, os.pardir)), 'simulators/scripts/'))
-import utils
+import corrective_mode_switch_utils
 import itertools
 import scipy.stats as ss
 import statsmodels.api as sa
@@ -21,8 +18,6 @@ import scikit_posthocs as sp
 
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
-# import plotly.express as px
-
 
 # per individual and over all subjects
 # load dataframes in folder
@@ -34,29 +29,27 @@ matplotlib.rcParams['ps.fonttype'] = 42
 # annova and post-hoc analysis
 
 class CompareAssistanceParadigms(object):
-	def __init__(self, metrics, *subject_id):
-
-
+	def __init__(self, metrics, directory_path, *subject_id):
 		self.directory_list = list()
 		self.metrics = metrics
-		print(self.metrics)
-		if subject_id: # if looking at one subject
-			self.subject_id = subject_id[0]
-			self.data_dir = os.path.join(os.path.abspath(os.path.join(os.getcwd(), os.pardir)), 'data', self.subject_id)
-			self.directory_list.append(self.data_dir)
-			print(self.data_dir)
-		else:
-			self.compute_averages = True # if looking over all subjects, need to get averages (?)
-			self.data_dir = os.path.join(os.path.abspath(os.path.join(os.getcwd(), os.pardir)), 'data')
-			self.get_recursive_folders()
-			print(self.data_dir)
+		self.directory_path = directory_path
+		# print(self.metrics)
+		# if subject_id: # if looking at one subject
+		# 	self.subject_id = subject_id[0]
+		# 	self.data_dir = os.path.join(os.path.abspath(os.path.join(os.getcwd(), os.pardir)), 'data', self.subject_id)
+		# 	self.directory_list.append(self.data_dir)
+		# 	print(self.data_dir)
+		# else:
+		self.compute_averages = True # if looking over all subjects, need to get averages (?)
+		self.data_dir = os.path.join(self.directory_path, 'trial_csvs')
+		print(self.data_dir)
+		self.get_recursive_folders()
+		
 
 		self.trial_fraction_metric = ['success'] # metrics that are calculated over all trials for a signle condition for each person
-		# self.labels= ['Filtered', 'Corrective']
 		self.labels= ['No Assistance', 'Filtered', 'Corrective']
 		self.assistance_cond = ['no', 'filter', 'corrective']
 		self.label_to_plot_pos = {'No Assistance': 0, 'Filtered': 1 , 'Corrective': 2}
-		# self.label_to_plot_pos = {'No Assistance': 0, 'Filtered': 0 , 'Corrective': 1}
 		self.v_strong_alpha = 0.001
 		self.strong_alpha = 0.01
 		self.alpha = 0.05
@@ -68,7 +61,7 @@ class CompareAssistanceParadigms(object):
 		for root, dirs, files in os.walk(self.data_dir, topdown=False):
 			for name in dirs:
 				self.directory_list.append(os.path.join(root, name))
-		print(self.directory_list)
+		# print(self.directory_list)
 		# To do: maybe add check if directory is empty, or loop until empty directory
 
 
@@ -81,7 +74,7 @@ class CompareAssistanceParadigms(object):
 			[self.files_path_list.append(os.path.join(folder, f)) for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f))]
 
 	def load_trial_metadata(self, trial_index):
-		self.metadata_dir = os.path.join(os.path.abspath(os.path.join(os.getcwd(), os.pardir, os.pardir)), 'simulators/scripts/trial_dir', trial_index+'.pkl')
+		self.metadata_dir = os.path.join(self.directory_path, 'trial_dir', trial_index+'.pkl') 
 		trial_metadata = pd.read_pickle(self.metadata_dir)
 		return trial_metadata
 
@@ -155,7 +148,6 @@ class CompareAssistanceParadigms(object):
 	def group_per_trial(self, metric):
 
 		# TO DO: this needs to be looked at, not as generci as it seems, rewally only for percentages within a trial, so if you want mean over traia, need to fix this
-
 		no_assistance = list()
 		filtered = list()
 		corrected = list()
@@ -261,8 +253,6 @@ class CompareAssistanceParadigms(object):
 		sns.set_context("paper")
 		sns.set_palette("colorblind")
 
-
-
 		# ax = sns.barplot(x=df["condition"], y=df[metric], data=df)
 
 		ax = sns.boxplot(x=df["condition"], y=df[metric])
@@ -301,12 +291,14 @@ class CompareAssistanceParadigms(object):
 				plt.text(text_pos_x, text_pos_y, sig_df.loc[i, 'text'], ha='center', va='bottom', color='k', fontsize=font_size-2)
 
 		plt.xlabel('')
+		
 
 		# To do: Clean lablels:
 		if metric == 'time':
 			plt.ylabel('Total Trial Time (s)' , fontsize=font_size)
 		elif metric == 'mode_switches':
 			plt.ylabel('Successful Trial Mode Switch Count' , fontsize=font_size)
+			plt.ylim(0, 30)
 		elif metric == 'corrections':
 			plt.ylabel('Average Intervention Counts', fontsize=font_size)
 		elif metric == 'success':
@@ -361,18 +353,16 @@ class CompareAssistanceParadigms(object):
 
 
 
-
-
-
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-id', '--subject_id', help='experiment block: subject_id_type_assistance_block', type=str)
 	parser.add_argument('-m', '--metrics', help='metrics to analyze', nargs='+', default=['time', 'mode_switches', 'corrections', 'success', 'distance'])
+	parser.add_argument('-p', '--file_path', help='path to folder which contains both trial_csvs and trial_dir folders', default=os.path.join('N:','2020-IROS-UnintendedCommandAssistance', 'data'))
 	args = parser.parse_args()
 	if args.subject_id:
-		comp_assistance = CompareAssistanceParadigms(args.metrics, args.subject_id)
+		comp_assistance = CompareAssistanceParadigms(args.metrics, args.file_path, args.subject_id)
 
 	else:
-		comp_assistance = CompareAssistanceParadigms(args.metrics)
+		comp_assistance = CompareAssistanceParadigms(args.metrics, args.file_path)
 	comp_assistance.load_trial_data()
 	comp_assistance.data_analysis()

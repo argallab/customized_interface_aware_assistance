@@ -7,7 +7,6 @@ import pandas as pd
 import numpy as np
 import pickle
 from ast import literal_eval
-from IPython import embed
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches

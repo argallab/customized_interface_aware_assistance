@@ -9,9 +9,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 from IPython import embed
 import sys
-import rospkg
-sys.path.append(os.path.join(rospkg.RosPack().get_path('simulators'), 'scripts'))
-import utils
+sys.path.append(os.path.join(os.path.abspath(os.path.join(os.getcwd(), os.pardir, os.pardir)), 'simulators/scripts/'))
+import corrective_mode_switch_utils
 
 import scipy.stats as ss
 # import statsmodels.formual.api as sfa
