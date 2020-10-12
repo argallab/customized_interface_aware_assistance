@@ -1,9 +1,11 @@
+// Code developed by Deepak Gopinath*, Mahdieh Nejati Javaremi* in February 2020. Copyright (c) 2020. Deepak Gopinath, Mahdieh Nejati Javaremi, Argallab. (*) Equal contribution
+
 #include <ros/ros.h>
 #include <termios.h>
 #include <std_msgs/String.h>
 
 // General purpose script
-// Publishes keyboard inputs as ros topic 
+// Publishes keyboard inputs as ros topic
 
 char getch()
 {

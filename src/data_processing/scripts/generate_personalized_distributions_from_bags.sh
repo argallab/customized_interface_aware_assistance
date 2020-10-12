@@ -1,4 +1,5 @@
 #!/bin/bash
+# Code developed by Deepak Gopinath*, Mahdieh Nejati Javaremi* in February 2020. Copyright (c) 2020. Deepak Gopinath, Mahdieh Nejati Javaremi, Argallab. (*) Equal contribution
 
 # extract topics from bag files
 # generate p(Um|Ui)
@@ -62,7 +63,7 @@ do
 	hour="$(cut -d'-' -f4 <<<$datetime)"
 	mins="$(cut -d'-' -f5 <<<$datetime)"
 	secs="$(cut -d'-' -f6 <<<$datetime)"
-	secs="$(cut -d'.' -f1 <<<$secs)" 	
+	secs="$(cut -d'.' -f1 <<<$secs)"
 
 	if (( $year == $max_y )); then
 		if (( $month == $max_month )); then

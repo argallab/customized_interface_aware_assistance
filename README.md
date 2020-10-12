@@ -78,4 +78,4 @@ Please let us know if you come across additional requirements when running the s
 
 ### License
 
-This code is released under the MIT License.
+This code is released under the GNU General Public License.
