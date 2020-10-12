@@ -1,12 +1,12 @@
 #!/usr/bin/python3
 
+# Code developed by Deepak Gopinath*, Mahdieh Nejati Javaremi* in February 2020. Copyright (c) 2020. Deepak Gopinath, Mahdieh Nejati Javaremi, Argallab. (*) Equal contribution
 import os
 import argparse
 import pandas as pd
 import numpy as np
-import pickle  
-from ast import literal_eval 
-from IPython import embed
+import pickle
+from ast import literal_eval
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -31,16 +31,16 @@ class TLXCompareAssistanceParadigms(object):
     def __init__(self, filename, metrics, *subject_id):
 
         self.metrics = metrics
-        # get path to csv file of interest 
+        # get path to csv file of interest
         self.filename = args.filename
-        # To DO: something about this path 
+        # To DO: something about this path
         self.block_dir = os.path.join(os.path.abspath(os.path.join(os.getcwd(), os.pardir, os.pardir)), 'data_processing/raw_data/qualtrics', self.filename)
 
         assert os.path.exists(self.block_dir)
 
         # only columns of interest
         columns = ['Progress', 'Duration (in seconds)', 'Finished', 'RecordedDate', 'ID', 'Assistance_Type', 'Block',
-                    'P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10', 'P11', 'P12', 'P13', 'P14', 'P15', 
+                    'P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10', 'P11', 'P12', 'P13', 'P14', 'P15',
                     'Mental_1', 'Frustration_1', 'Physical_1', 'Effort_1', 'Temporal_1', 'Performance_1']
 
         self.pairwise = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10', 'P11', 'P12', 'P13', 'P14', 'P15']
@@ -52,30 +52,30 @@ class TLXCompareAssistanceParadigms(object):
         if subject_id: # if looking at one subject
             self.subject_id = subject_id[0]
             self.df = self.df.loc[self.df['ID'] == self.subject_id]
-        else: 
-            self.skip_ids() # skip test subjects   
+        else:
+            self.skip_ids() # skip test subjects
 
         self.labels= ['No Assistance', 'Filtered', 'Corrective']
         self.label_to_plot_pos = {'No Assistance': 0, 'Filtered': 1 , 'Corrective': 2}
         self.v_strong_alpha = 0.001
         self.strong_alpha = 0.01
-        self.alpha = 0.05            
+        self.alpha = 0.05
 
 
     def skip_ids(self):
-        # Id's to skip (test id's, manual cleaning) 
+        # Id's to skip (test id's, manual cleaning)
         # To do: instead of hardcode add input argument
         ids = ['dan', 'deepak', 'andrew', '0']
-        for i in range(len(ids)): 
+        for i in range(len(ids)):
             self.df = self.df[self.df.ID != ids[i]]
         self.df.reset_index(drop=True, inplace=True)
-        
 
-    def compute_tlx(self, trial_data): 
-        
+
+    def compute_tlx(self, trial_data):
+
         # first find weight of each feature (number of times selected in the 15 pairwise comparisons)
         weight_dict = {'Mental Demand': 0, 'Frustration': 0, 'Physical Demand': 0, 'Effort': 0, 'Temporal Demand': 0, 'Performance':0}
-        for p in self.pairwise: 
+        for p in self.pairwise:
             # for all pairwise comparisons, get the winner and add one to it's cound in the dict
             weight_dict[trial_data.loc[p].splitlines()[0]]+=1 # zero because only interested in first element after spliliens
 
@@ -88,82 +88,82 @@ class TLXCompareAssistanceParadigms(object):
 
 
     def compute_raw_tlx(self, trial_data):
-        
+
         # raw tlx, sum of the ranks divided by the number of features which is 6
         raw_tlx = trial_data[self.features].sum()/len(self.features)
         return raw_tlx
 
 
-    def group_per_metric(self, metric): 
+    def group_per_metric(self, metric):
     # for each file, get the metric of interest and store in corresponding array
 
-        # To Do: maybe save these as globals for each metric? 
+        # To Do: maybe save these as globals for each metric?
         no_assistance = list()
         filtered = list()
         corrected = list()
 
         # for every trial (which is a row in the dataframe)
-        for i in range(len(self.df)): 
+        for i in range(len(self.df)):
 
             # compute either tlx or raw_tlx
-            if metric == 'tlx': 
+            if metric == 'tlx':
                 value = self.compute_tlx(self.df.loc[i])
             if metric == 'raw_tlx':
                 value = self.compute_raw_tlx(self.df.loc[i])
 
-            if self.df.loc[i, 'Assistance_Type'] == 'Noas': 
+            if self.df.loc[i, 'Assistance_Type'] == 'Noas':
                 no_assistance.append(value)
-            elif self.df.loc[i, 'Assistance_Type'] == 'Filtas': 
+            elif self.df.loc[i, 'Assistance_Type'] == 'Filtas':
                 filtered.append(value)
-            elif self.df.loc[i, 'Assistance_Type'] == 'Coras': 
+            elif self.df.loc[i, 'Assistance_Type'] == 'Coras':
                 corrected.append(value)
             else:
-                print('[warning:] unexpected assistance type') 
+                print('[warning:] unexpected assistance type')
 
         return no_assistance, filtered, corrected
 
 
-    def create_dataframe(self, data, metric): 
+    def create_dataframe(self, data, metric):
         # assumes labels are in the same order of the data
         # assign the assistance condition label to each data in the arrays so we can add it as a column in the dataframe
         condition = []
-        for i in range(len(self.labels)): 
-            for j in range(len(data[i])): 
+        for i in range(len(self.labels)):
+            for j in range(len(data[i])):
                 condition.append(self.labels[i])
         df = pd.DataFrame({metric: list(itertools.chain(*data)), 'condition': condition})
-        return df 
+        return df
 
 
-    def data_analysis(self): 
+    def data_analysis(self):
         # for each file, get the metric of interest and store in corresponding array
-        for metric in self.metrics: 
+        for metric in self.metrics:
             no_assistance, filtered, corrected = self.group_per_metric(metric)
             data = [no_assistance, filtered, corrected]
 
             self.parametric_anova_with_post_hoc(data, metric)
 
 
-    def plot_with_significance(self, df, metric, pairs, p_values): 
+    def plot_with_significance(self, df, metric, pairs, p_values):
 
         y_min =  round(df[metric].max()) # get maximum data value (max y)
         h = y_min*0.1
         y_min = y_min + h
 
         sig_text = []
-        for i in p_values: 
-            if i <= self.v_strong_alpha: 
+        for i in p_values:
+            if i <= self.v_strong_alpha:
                 sig_text.append('***')
-            elif i <= self.strong_alpha: 
+            elif i <= self.strong_alpha:
                 sig_text.append('**')
-            elif i <= self.alpha: 
+            elif i <= self.alpha:
                 sig_text.append('*')
 
         plt.style.use('ggplot')
         sns.set_style("dark")
         sns.set_context("paper")
         sns.set_palette("colorblind")
-        ax = sns.boxplot(x=df["condition"], y=df[metric])    
-        ax = sns.swarmplot(x=df["condition"], y=df[metric], color=".4")    
+        ax = sns.boxplot(x=df["condition"], y=df[metric])
+        ax = sns.swarmplot(x=df["condition"], y=df[metric], color=".4")
 
         plt.subplots_adjust(left=.17)
         plt.subplots_adjust(right=.96)
@@ -176,19 +176,19 @@ class TLXCompareAssistanceParadigms(object):
         sig_df = sig_df.sort_values(by=['pair']) # sort so it looks neat when plotting. convert to data frame so can get sig_text with the pairs after sorting
         sig_df.reset_index(drop=True, inplace=True) # reindex after sorting
 
-        for i in range(len(pairs)): 
-            y_pos = [y_min+(h*i)]*2 # start and end is same height so *2 
-            text_pos_x = sum(sig_df.loc[i, 'pair'])/2 # text position should be in the center of the line connecting the pairs 
+        for i in range(len(pairs)):
+            y_pos = [y_min+(h*i)]*2 # start and end is same height so *2
+            text_pos_x = sum(sig_df.loc[i, 'pair'])/2 # text position should be in the center of the line connecting the pairs
             text_pos_y = y_min+(h*i)+0.25
-            plt.plot(sig_df.loc[i, 'pair'], y_pos, lw=2, c='k')       
+            plt.plot(sig_df.loc[i, 'pair'], y_pos, lw=2, c='k')
             plt.text(text_pos_x, text_pos_y, sig_df.loc[i, 'text'], ha='center', va='bottom', color='k', fontsize=font_size-2)
-        
+
         plt.xlabel('')
-        
-        # To do: Clean lablels: 
-        if metric == 'tlx': 
+
+        # To do: Clean lablels:
+        if metric == 'tlx':
             plt.ylabel('TLX Score' , fontsize=font_size)
-        elif metric == 'raw_tlx': 
+        elif metric == 'raw_tlx':
             plt.ylabel('Raw TLX Score' , fontsize=font_size)
 
         plt.show()
@@ -199,36 +199,36 @@ class TLXCompareAssistanceParadigms(object):
         # plt.savefig(fig_name)
 
 
-    def get_significant_pairs(self, df, metric): 
+    def get_significant_pairs(self, df, metric):
 
-        pairwise_comparisons = sp.posthoc_conover(df, val_col=metric, group_col='condition', p_adjust='holm') 
+        pairwise_comparisons = sp.posthoc_conover(df, val_col=metric, group_col='condition', p_adjust='holm')
         # pairwise_comparisons = sp.posthoc_wilcoxon(df, val_col=metric, group_col='condition', p_adjust='holm')
 
-        groups = pairwise_comparisons.keys().to_list() 
-        combinations = list(itertools.combinations(groups, 2)) # possible combinations for pairwise comparison 
+        groups = pairwise_comparisons.keys().to_list()
+        combinations = list(itertools.combinations(groups, 2)) # possible combinations for pairwise comparison
         pairs = []
         p_values = []
-        # get pairs for x: 
+        # get pairs for x:
         for i in range(len(combinations)):
             if pairwise_comparisons.loc[combinations[i][0], combinations[i][1]] <= self.alpha:  # if signifcane between the two pairs is alot, add position
                 pairs.append([self.label_to_plot_pos[combinations[i][0]], self.label_to_plot_pos[combinations[i][1]]])
                 p_values.append(pairwise_comparisons.loc[combinations[i][0], combinations[i][1]])
-            
+
         return pairs, p_values
 
 
     def parametric_anova_with_post_hoc(self, data, metric):
 
-        df = self.create_dataframe(data, metric)    
+        df = self.create_dataframe(data, metric)
 
         # non parametric kruskal wallis test
         H, p = ss.kruskal(*data)
-        # if can reject null hypothesis that population medians of all groups are equel, 
-        if p<= self.alpha: 
+        # if can reject null hypothesis that population medians of all groups are equel,
+        if p<= self.alpha:
             # do posthoc test to learn which groups differ in their medians
             pairs, p_values = self.get_significant_pairs(df, metric)
-        
-        self.plot_with_significance(df, metric, pairs, p_values)        
+
+        self.plot_with_significance(df, metric, pairs, p_values)
 
 
 
@@ -238,10 +238,8 @@ if __name__ == '__main__':
     parser.add_argument('-id', '--subject_id', help='experiment block: subject_id_type_assistance_block', type=str) # no default but optional
     parser.add_argument('-m', '--metrics', help='metrics to analyze', nargs='+', default=['tlx', 'raw_tlx']) # has default
     args = parser.parse_args()
-    if args.subject_id: 
+    if args.subject_id:
         tlx = TLXCompareAssistanceParadigms(args.filename, args.metrics, args.subject_id)
-    else: 
+    else:
         tlx = TLXCompareAssistanceParadigms(args.filename, args.metrics)
     tlx.data_analysis()
-
-
