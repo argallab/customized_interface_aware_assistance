@@ -6,7 +6,7 @@ import argparse
 import pandas as pd
 import pickle
 from ast import literal_eval
-from IPython import embed
+
 
 # read in topic csvs of interest with name and index
 # remove unused columns from topic csv
