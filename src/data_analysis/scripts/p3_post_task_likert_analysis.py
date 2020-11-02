@@ -13,6 +13,7 @@ import matplotlib.patches as mpatches
 import matplotlib.colors as mcolors
 import seaborn as sns
 import itertools
+from IPython import embed
 
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
@@ -23,8 +24,8 @@ class PostTaskLikertAnalysis(object):
 		# get path to csv file of interest
 		self.filename = args.filename
 		# To DO: something about this path
-		self.file_path = os.path.join(os.path.abspath(os.path.join(os.getcwd(), os.pardir, os.pardir)), 'data_processing/raw_data/qualtrics', self.filename)
-
+		# self.file_path = os.path.join(os.path.abspath(os.path.join(os.getcwd(), os.pardir, os.pardir)), 'data_processing/raw_data/qualtrics', self.filename)
+		self.file_path = os.path.join('/mnt/mountpoint/2020-IROS-UnintendedCommandAssistance/data/qualtrics', self.filename)
 		assert os.path.exists(self.file_path)
 
 		# only columns of interest
@@ -133,6 +134,11 @@ class PostTaskLikertAnalysis(object):
 		sns.set_context("paper")
 		sns.set_palette("colorblind")
 
+		embed()
+		df["question"] = df["question"].replace('The robot (red circle) was easy for me to operate.', 'The robot was easy for me to operate.')
+		df["question"] = df["question"].replace('It was easy for me to issue my intended commands.', 'It was easy to issue my intended commands.')
+		df["question"] = df["question"].replace('The autonomous assistance helped me complete the task more efficiently. ', 'The autonomous assistance helped me \n complete the task more effeciently.')
+		df["question"] = df["question"].replace('The autonomous assistance helped me to reduce unwanted mode switches. ', 'The autonomous assistance helped me \n reduce unwanted mode switches.')
 		ax = sns.barplot(x='score', y='question', hue='condition', data=df)
 
 
@@ -147,6 +153,7 @@ class PostTaskLikertAnalysis(object):
 		plt.subplots_adjust(left=.49)
 		plt.subplots_adjust(right=.97)
 		plt.setp(ax.get_legend().get_texts(), fontsize=font_size) # for legend text
+		
 		plt.show()
 
 
