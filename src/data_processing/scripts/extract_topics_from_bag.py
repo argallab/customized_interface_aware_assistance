@@ -8,7 +8,6 @@ import string
 import os #for file management make directory
 import shutil #for file management, copy file
 import ntpath
-from IPython import embed
 
 #verify correct input arguments: 1 or 2
 if (len(sys.argv) > 3):

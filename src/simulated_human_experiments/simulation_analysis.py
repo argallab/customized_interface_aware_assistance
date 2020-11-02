@@ -8,7 +8,7 @@ sys.path.append(os.path.join(rospkg.RosPack().get_path('simulators'), 'scripts')
 import os
 import numpy as np
 import argparse
-from utils import StartDirection, AssistanceType, PI
+from corrective_mode_switch_utils import StartDirection, AssistanceType, PI
 import matplotlib.pyplot as plt
 import itertools
 

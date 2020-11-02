@@ -3,7 +3,8 @@
 from Box2D import (b2EdgeShape, b2FixtureDef, b2PolygonShape, b2Random, b2CircleShape, b2Vec2, b2Color)
 import Box2D
 from backends.rendering import Viewer, Transform
-from utils import *
+sys.path.append(os.path.join(rospkg.RosPack().get_path('simulators'), 'scripts'))
+from corrective_mode_switch_utils import *
 import csv
 import math
 import numpy as np

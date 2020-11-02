@@ -9,7 +9,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import bisect
-from IPython import embed
 import pickle
 import sys
 import os

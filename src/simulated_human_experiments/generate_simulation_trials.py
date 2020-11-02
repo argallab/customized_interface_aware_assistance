@@ -8,7 +8,7 @@ import collections
 import sys
 import rospkg
 sys.path.append(os.path.join(rospkg.RosPack().get_path('simulators'), 'scripts'))
-from utils import StartDirection, AssistanceType, PI
+from corrective_mode_switch_utils import StartDirection, AssistanceType, PI
 
 START_MODE_DICT = {StartDirection.X: {-1: 't', 1: 'y'},
               StartDirection.Y: {-1: 'x', 1: 't'}}
