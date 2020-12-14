@@ -91,7 +91,7 @@ TIMER_WARNING_THRESHOLD = 20
 TIMER_DANGER_THRESHOLD = 30
 
 #DICTIONARIES
-DIM_TO_MODE_INDEX = {'x': 0, 'y':1, 't': 2}
+DIM_TO_MODE_INDEX = {'x': 0, 'y':1, 't': 2, 'gr':3}
 MODE_INDEX_TO_DIM = {v:k for k,v in DIM_TO_MODE_INDEX.items()}
 
 ASSISTANCE_CODE_NAME = {0: 'Filtas', 1: 'Coras', 2: 'Noas'}
@@ -106,7 +106,8 @@ HIGH_LEVEL_ACTIONS = ['move_p', 'move_n', 'mode_r', 'mode_l']
 #true mapping of a to u
 TRUE_ACTION_TO_COMMAND = collections.OrderedDict({'x': collections.OrderedDict({'move_p': 'Soft Puff', 'move_n':'Soft Sip', 'mode_r':'Hard Puff', 'mode_l': 'Hard Sip'}),
 												  'y': collections.OrderedDict({'move_p': 'Soft Puff', 'move_n':'Soft Sip', 'mode_r':'Hard Puff', 'mode_l': 'Hard Sip'}),
-												  't': collections.OrderedDict({'move_p': 'Soft Sip', 'move_n':'Soft Puff', 'mode_r':'Hard Puff', 'mode_l': 'Hard Sip'})})
+												  't': collections.OrderedDict({'move_p': 'Soft Sip', 'move_n':'Soft Puff', 'mode_r':'Hard Puff', 'mode_l': 'Hard Sip'}),
+												  'gr': collections.OrderedDict({'move_p': 'Soft Puff', 'move_n':'Soft Sip', 'mode_r':'Hard Puff', 'mode_l': 'Hard Sip'})}) #for gripper mode, move_p refers to closing the gripper and move_n refers to opening the gripper
 #true inverse mapping of u to a
 TRUE_COMMAND_TO_ACTION = collections.OrderedDict()
 for k in TRUE_ACTION_TO_COMMAND.keys():
@@ -116,6 +117,11 @@ for k in TRUE_ACTION_TO_COMMAND.keys():
 MODE_SWITCH_TRANSITION = {'x': {'Hard Puff': 'y', 'Hard Sip': 't', 'Soft Puff': 'x', 'Soft Sip': 'x'},
 						  'y': {'Hard Puff': 't', 'Hard Sip': 'x', 'Soft Puff': 'y', 'Soft Sip': 'y'},
 						  't': {'Hard Puff': 'x', 'Hard Sip': 'y', 'Soft Puff': 't', 'Soft Sip': 't'}}
+
+MODE_SWITCH_TRANSITION_4D = {'x': {'Hard Puff': 'y', 'Hard Sip': 'gr', 'Soft Puff': 'x', 'Soft Sip': 'x'},
+							'y': {'Hard Puff': 't', 'Hard Sip': 'x', 'Soft Puff': 'y', 'Soft Sip': 'y'},
+							't': {'Hard Puff': 'gr', 'Hard Sip': 'y', 'Soft Puff': 't', 'Soft Sip': 't'},
+							'gr': {'Hard Puff': 'x', 'Hard Sip': 't', 'Soft Puff': 'gr', 'Soft Sip': 'gr'}}
 #Depending on the configuration of the initial robot position and goal position, the motion commands will result in either moving towards the
 #next location or the previous location
 #Enum defintions
@@ -195,6 +201,52 @@ class RobotSE2(object):
 
 	def set_orientation(self, orientation):
 		self.robot.angle = orientation
+
+class Robot4D(object):
+	def __init__(self, world, position, orientation, gripper_angle=PI/2, robot_color=(1.0, 0.0, 0.0), radius=3, type='kinematic'):
+		self.robot = world.CreateKinematicBody(position=position, angle=orientation, shapes=[b2CircleShape(pos=position, radius=radius)])
+		self.robot_color = robot_color
+		self.radius = radius
+		self.gripper_angle = gripper_angle
+
+	def set_robot_color(self, robot_color):
+		self.robot_color = robot_color
+	
+	#GETTERS
+	def get_direction_marker_end_points(self):
+		return (self.robot.position[0], self.robot.position[1]), (self.robot.position[0] + 2*self.radius*math.cos(self.robot.angle), self.robot.position[1] + 2*self.radius*math.sin(self.robot.angle))
+
+	def get_position(self):
+		return [self.robot.position[0], self.robot.position[1]]
+
+	def get_angle(self):
+		return self.robot.angle
+	
+	def get_gripper_angle(self):
+		return self.gripper_angle
+
+	def get_linear_velocity(self):
+		return [self.robot.linearVelocity[0], self.robot.linearVelocity[1]]
+
+	def get_angular_velocity(self):
+		return self.robot.angularVelocity
+
+	#Setters
+	def set_position(self, position):
+		self.robot.position = position
+
+	def set_orientation(self, orientation):
+		self.robot.angle = orientation
+	
+	def set_gripper_angle(self, gripper_angle):
+		self.gripper_angle = gripper_angle
+	
+	def update(self, input_action):
+
+		self.robot.linearVelocity = [combined_velocity[0], combined_velocity[1]]
+        self.robot.angularVelocity = combined_velocity[2]
+		self.gripper_angle_update(combined_velocity[3])
+	
 
 class Goal(object):
 	"""docstring forGoal."""

@@ -114,7 +114,7 @@ def init_state_transition_model(rgc):
 								new_loc_next = LOCATIONS[min(LOCATIONS.index(s[0]) + 1, len(LOCATIONS)-1 )]
 								STATE_TRANSITION_MODEL[s][u] = (new_loc_next, s[1], s[2])
 							elif TRANSITION_FOR_ACTION[rgc][u][m] == 'prev':
-								print LOCATIONS, s
+								# print LOCATIONS, s
 								new_loc_prev = LOCATIONS[max(LOCATIONS.index(s[0]) - 1, 0 )]
 								if m == MODES_MOTION_ALLOWED[new_loc_prev][0]:
 									STATE_TRANSITION_MODEL[s][u] = (new_loc_prev, s[1], s[2])
@@ -295,11 +295,18 @@ def init_p_ui_given_a():
 			if u == TRUE_ACTION_TO_COMMAND[k]:
 				P_UI_GIVEN_A[k][u] = 1.0 #try to weight the true command more for realistic purposes. Can be offset by using a high UI_GIVEN_A_NOISE
 			else:
-				P_UI_GIVEN_A[k][u] = np.random.random()*UI_GIVEN_A_NOISE #IF UI_GIVEN_A_NOISE is 0, then the p(ui|a) is a deterministic mapping
+				# P_UI_GIVEN_A[k][u] = np.random.random()*UI_GIVEN_A_NOISE #IF UI_GIVEN_A_NOISE is 0, then the p(ui|a) is a deterministic mapping
+				P_UI_GIVEN_A[k][u] = 0.0
+		
+		delta_dist = np.array(P_UI_GIVEN_A[k].values())
+		uniform_dist = (1.0/len(LOW_LEVEL_COMMANDS)) * np.ones(len(LOW_LEVEL_COMMANDS))
+		blended_dist = (1 - UI_GIVEN_A_NOISE) * delta_dist + UI_GIVEN_A_NOISE * uniform_dist #np.array
+		for index, u in enumerate(LOW_LEVEL_COMMANDS):
+			P_UI_GIVEN_A[k][u] = blended_dist[index]
 
-		normalization_constant = sum(P_UI_GIVEN_A[k].values())
+		# normalization_constant = sum(P_UI_GIVEN_A[k].values())
 		#normalize the entries for a valid probability distribution
-		P_UI_GIVEN_A[k] = collections.OrderedDict({u:(v/normalization_constant) for u, v in P_UI_GIVEN_A[k].items()})
+		# P_UI_GIVEN_A[k] = collections.OrderedDict({u:(v/normalization_constant) for u, v in P_UI_GIVEN_A[k].items()})
 
 def init_p_um_given_ui():
 	'''
@@ -312,15 +319,22 @@ def init_p_um_given_ui():
 			if i == j:
 				P_UM_GIVEN_UI[i][j] = 1.0#try to weight the true command more for realistic purposes. Can be offset by using a high UM_GIVEN_UI_NOISE
 			else:
-				P_UM_GIVEN_UI[i][j] = np.random.random()*UM_GIVEN_UI_NOISE#IF UM_GIVEN_UI_NOISE is 0, then the p(um|ui) is a deterministic mapping
-
-		normalization_constant = sum(P_UM_GIVEN_UI[i].values())
+				# P_UM_GIVEN_UI[i][j] = np.random.random()*UM_GIVEN_UI_NOISE#IF UM_GIVEN_UI_NOISE is 0, then the p(um|ui) is a deterministic mapping
+				P_UM_GIVEN_UI[i][j] = 0.0
+		
+		delta_dist = np.array(P_UM_GIVEN_UI[i].values())
+		uniform_dist = (1.0/len(LOW_LEVEL_COMMANDS)) * np.ones(len(LOW_LEVEL_COMMANDS))
+		blended_dist = (1 - UM_GIVEN_UI_NOISE) * delta_dist + UM_GIVEN_UI_NOISE * uniform_dist #np.array
+		for index, j in enumerate(LOW_LEVEL_COMMANDS):
+			P_UM_GIVEN_UI[i][j] = blended_dist[index]
+		# normalization_constant = sum(P_UM_GIVEN_UI[i].values())
 		#normalize the entries for a valid probability distribution
-		P_UM_GIVEN_UI[i] = collections.OrderedDict({u:(v/normalization_constant) for u, v in P_UM_GIVEN_UI[i].items()})
+		# P_UM_GIVEN_UI[i] = collections.OrderedDict({u:(v/normalization_constant) for u, v in P_UM_GIVEN_UI[i].items()})
+		
 
 
 #SIMULATED HUMAN
-def sample_a_given_s(s): #this is essentially a look up from optimal_action_dict
+def sample_a_given_s(s): #this is essentially a deterministic look up from optimal_action_dict
 	global OPTIMAL_ACTION_DICT
 	assert s in OPTIMAL_ACTION_DICT, "Error in key. Current state not in optimal action dict" #sanity check
 	a = OPTIMAL_ACTION_DICT[s]
@@ -366,7 +380,7 @@ def infer_intended_commands(a, um):
 	compute_p_ui_given_um(a, um)
 	p_ui_given_um_vector = np.array(P_UI_GIVEN_UM.values())
 	p_ui_given_um_vector = p_ui_given_um_vector + np.finfo(p_ui_given_um_vector.dtype).tiny #need to add realmin to avoid nan issues with entropy calculation is p_ui_given_um_vector is delta distribution
-	u_intended = P_UI_GIVEN_UM.keys()[np.argmax(p_ui_given_um_vector)] #argmax computation for u_intended
+	u_inferred = P_UI_GIVEN_UM.keys()[np.argmax(p_ui_given_um_vector)] #argmax computation for u_inferred
 
 	#uniform distribution for compute max entropy. which is used as a normalizer. Could be moved to global scope
 	uniform_distribution = np.array([1.0/p_ui_given_um_vector.size]*p_ui_given_um_vector.size)
@@ -374,19 +388,19 @@ def infer_intended_commands(a, um):
 
 	#compute entropy
 	normalized_h_of_p_ui_given_um = -np.dot(p_ui_given_um_vector, np.log2(p_ui_given_um_vector))/max_entropy
-	if u_intended != um:
+	if u_inferred != um:
 		#check entropy to decide whether to intervene or not
 		if normalized_h_of_p_ui_given_um < ENTROPY_THRESHOLD: #intervene
 			if ASSISTANCE_TYPE == AssistanceType.Filter:
 				u_corrected = None
 			elif ASSISTANCE_TYPE == AssistanceType.Corrective:
-				u_corrected = u_intended
+				u_corrected = u_inferred
 		else:
 			u_corrected = um #Maybe keep this as None? because u intended is not same as um?
 	else:
 		u_corrected = um
 
-	return u_corrected, normalized_h_of_p_ui_given_um, (normalized_h_of_p_ui_given_um <= ENTROPY_THRESHOLD), (u_intended == um)
+	return u_corrected, (u_corrected == um), u_inferred, normalized_h_of_p_ui_given_um, (normalized_h_of_p_ui_given_um < ENTROPY_THRESHOLD), (u_inferred == um), (normalized_h_of_p_ui_given_um < ENTROPY_THRESHOLD) and (u_inferred != um)
 
 def simulate_snp_interaction(args):
 	'''
@@ -442,6 +456,7 @@ def simulate_snp_interaction(args):
 
 		init_p_ui_given_a()
 		init_p_um_given_ui()
+		
 
 		simulation_results = collections.OrderedDict()
 		simulation_results['index'] = index
@@ -453,27 +468,49 @@ def simulate_snp_interaction(args):
 			num_steps = 0
 			simulation_results['trials'][rep] = collections.defaultdict(list)
 			while current_state[0] != LOCATIONS[-1]:
-				a = sample_a_given_s(current_state) #sample action given state
+				a = sample_a_given_s(current_state) #sample action given state #deterministic
 				ui = sample_ui_given_a(a) #sample ui given action
 				um = sample_um_given_ui(ui) #sample um given ui
 				simulation_results['trials'][rep]['s'].append(current_state)
 				simulation_results['trials'][rep]['a'].append(a)
 				simulation_results['trials'][rep]['ui'].append(ui)
 				simulation_results['trials'][rep]['um_before'].append(um)
+				um_originally_issued_match_with_ground_truth = (um == TRUE_ACTION_TO_COMMAND[a])
 				if ASSISTANCE_TYPE != AssistanceType.No_Assistance: #if assistance flag is true, activate assistanced
-					um, normalized_h_of_p_ui_given_um, is_normalized_entropy_less_than_threshold, is_u_intended_equals_um = infer_intended_commands(a, um)
+					u_corrected, is_u_corrected_equals_um, u_inferred, normalized_h_of_p_ui_given_um, is_normalized_entropy_less_than_threshold, is_u_inferred_equals_um, did_assistance_intervene = infer_intended_commands(a, um)
 
-				assistance_match_with_ground_truth = (um == TRUE_ACTION_TO_COMMAND[a])
-				simulation_results['trials'][rep]['assistance_match_with_ground_truth'].append(assistance_match_with_ground_truth)
-				simulation_results['trials'][rep]['normalized_h_of_p_ui_given_um'].append(normalized_h_of_p_ui_given_um)
-				simulation_results['trials'][rep]['is_normalized_entropy_less_than_threshold'].append(is_normalized_entropy_less_than_threshold)
-				simulation_results['trials'][rep]['is_u_intended_equals_um'].append(is_u_intended_equals_um)
-				simulation_results['trials'][rep]['um_after'].append(um)
-				next_state = sample_sp_given_s_um(current_state, um) #sample next state
-				simulation_results['trials'][rep]['sp'].append(next_state)
+					assistance_match_with_ground_truth = (u_corrected == TRUE_ACTION_TO_COMMAND[a])
+					u_inferred_match_with_ground_truth = (u_inferred == TRUE_ACTION_TO_COMMAND[a])
+					simulation_results['trials'][rep]['um_originally_issued_match_with_ground_truth'].append(um_originally_issued_match_with_ground_truth) #can happen despite randomness. 
+					simulation_results['trials'][rep]['u_inferred_match_with_ground_truth'].append(u_inferred_match_with_ground_truth)
+					simulation_results['trials'][rep]['assistance_match_with_ground_truth'].append(assistance_match_with_ground_truth)
+					simulation_results['trials'][rep]['u_inferred'].append(u_inferred)
+					simulation_results['trials'][rep]['did_assistance_intervene'].append(did_assistance_intervene)
+					simulation_results['trials'][rep]['normalized_h_of_p_ui_given_um'].append(normalized_h_of_p_ui_given_um)
+					simulation_results['trials'][rep]['is_normalized_entropy_less_than_threshold'].append(is_normalized_entropy_less_than_threshold)
+					simulation_results['trials'][rep]['is_u_corrected_equals_um'].append(is_u_corrected_equals_um)
+					simulation_results['trials'][rep]['is_u_inferred_equals_um'].append(is_u_inferred_equals_um)
+					simulation_results['trials'][rep]['um_after'].append(u_corrected)
+					next_state = sample_sp_given_s_um(current_state, u_corrected) #sample next state
+					simulation_results['trials'][rep]['sp'].append(next_state)
+				else:
+					# assistance_match_with_ground_truth = (um == TRUE_ACTION_TO_COMMAND[a]) #the 
+					simulation_results['trials'][rep]['um_originally_issued_match_with_ground_truth'].append(um_originally_issued_match_with_ground_truth)
+					simulation_results['trials'][rep]['assistance_match_with_ground_truth'].append(None) #NA for No Assistance
+					simulation_results['trials'][rep]['u_inferred_match_with_ground_truth'].append(None)
+					simulation_results['trials'][rep]['u_inferred'].append(None) #NA for No Assistance
+					simulation_results['trials'][rep]['did_assistance_intervene'].append(None)
+					simulation_results['trials'][rep]['normalized_h_of_p_ui_given_um'].append(None)
+					simulation_results['trials'][rep]['is_normalized_entropy_less_than_threshold'].append(None)
+					simulation_results['trials'][rep]['is_u_corrected_equals_um'].append(None)
+					simulation_results['trials'][rep]['is_u_inferred_equals_um'].append(None)
+					simulation_results['trials'][rep]['um_after'].append(um) #same as um_before for no assistance
+					next_state = sample_sp_given_s_um(current_state, um) #sample next state
+					simulation_results['trials'][rep]['sp'].append(next_state)
 				num_steps += 1 #number of steps.
 				current_state = next_state
 				if num_steps > MAX_SIM_STEPS:
+					print("Reached max steps")
 					break
 
 			simulation_results['trials'][rep]['total_steps'] = num_steps
@@ -492,7 +529,7 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--simulation_trial_dir', dest='simulation_trial_dir',default=os.path.join(os.path.dirname(os.getcwd()), 'simulated_human_experiments', 'simulation_trial_dir'), help="The directory where trials will be stored are")
 	parser.add_argument('--num_reps_per_condition', action='store', type=int, default=10, help="number of repetetions for single combination of conditions ")
-	parser.add_argument('--simulation_results_dir', dest='simulation_results_dir',default=os.path.join(os.path.dirname(os.getcwd()), 'simulation_scripts', 'simulation_results_with_entropy'), help="The directory where the simulation trials will be stored")
+	parser.add_argument('--simulation_results_dir', dest='simulation_results_dir',default=os.path.join(os.path.dirname(os.getcwd()), 'simulated_human_experiments', 'simulation_results_with_higher_entropy_with_proper_noise'), help="The directory where the simulation trials will be stored")
 
 	args = parser.parse_args()
 	simulate_snp_interaction(args)

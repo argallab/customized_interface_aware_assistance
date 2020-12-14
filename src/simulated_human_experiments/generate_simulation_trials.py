@@ -21,7 +21,7 @@ ASSISTANCE_TYPE = [AssistanceType.Filter, AssistanceType.Corrective, AssistanceT
 START_MODE = [-1, 1]
 UI_GIVEN_A_NOISE = [i/10.0 for i in range(1, 9, 2)]
 UM_GIVEN_UI_NOISE = [i/10.0 for i in range(1, 9, 2)]
-ENTROPY_THRESHOLD = [i/10.0 for i in range(5, 10)]
+ENTROPY_THRESHOLD = [i/10.0 for i in range(5,10)]
 TARGET_ORIENTATIONS = [-PI/2, PI/2]
 
 def generate_simulation_trials(args):
