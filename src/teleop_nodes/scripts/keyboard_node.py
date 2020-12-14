@@ -2,6 +2,7 @@
 # Code developed by Mahdieh Nejati Javaremi*, Deepak Gopinath* in December 2020. Copyright (c) 2020. Deepak Gopinath, Mahdieh Nejati Javaremi, Argallab. (*) Equal contribution
 
 import rospy
+import sys
 import numpy as np
 import threading
 from control_input import ControlInput
@@ -138,7 +139,7 @@ class KeyTeleop(ControlInput):
 
   def initialize_services(self):
     rospy.Service('/teleop_node/set_mode', SetMode, self.set_mode)
-    # paradigm_reconfigure_srv = DynamicReconfigureServer(KeyboardModeSwitchParadigmConfig, self.reconfig_paradigm_cb)
+    paradigm_reconfigure_srv = DynamicReconfigureServer(KeyboardModeSwitchParadigmConfig, self.reconfig_paradigm_cb)
 
   #######################################################################################
   #                           FUNCTIONS FOR SWITCHING MODES                             #
@@ -194,17 +195,15 @@ class KeyTeleop(ControlInput):
 
   
   def reconfig_paradigm_cb(self, config, level):
-    self.mode_switch_paradigm = level
-    print('mode changed to %d', level)
+    self.mode_switch_paradigm = config.keyboard_switch_paradigm
     return config
 
   # checks whether to switch mode, and changes cyclically
   def handle_mode_switching(self, msg):
-
     #Paradigm 1: One-way mode switching
     ####################################
     if self.mode_switch_paradigm == 1:
-      if msg == curses.KEY_NPAGE:
+      if int(msg) == 338: # to do: not working with curses.NPAGE, figure this out
         self._mode = (self._mode+1) % self.num_modes
 
     # Paradigm 2: Two-way mode switching
@@ -267,7 +266,8 @@ class KeyTeleop(ControlInput):
     axes = str(self.mode_binding[self._mode])
     self._interface.write_line(2, 'mode is %d' % (self.mode_binding[self._mode]))
     self._interface.write_line(4, 'Use up down arrows to move in dimension %s' % (axes[0]))
-    self._interface.write_line(5, 'Use left-right arrows to move in dimension %s' % (axes[1]))
+    if len(axes)>1:
+      self._interface.write_line(5, 'Use left-right arrows to move in dimension %s' % (axes[1]))
     self._interface.write_line(7, 'q to exit')
     self._interface.refresh()
 
@@ -309,12 +309,12 @@ class KeyTeleop(ControlInput):
 
 def main(stdscr, robot_dim, finger_dim): 
   rospy.init_node('keyboard_node', anonymous=True)
-  app = KeyTeleop( TextWindow(stdscr), robot_dim, finger_dim)
+  app = KeyTeleop( TextWindow(stdscr), int(robot_dim), int(finger_dim))
   app.run()
 
 
 if __name__ == '__main__':
   try: 
-    curses.wrapper(main, robot_dim=4, finger_dim=0)
+    curses.wrapper(main, sys.argv[1], sys.argv[2])
   except rospy.ROSInterruptException:
     pass 
