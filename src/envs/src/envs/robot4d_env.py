@@ -205,7 +205,10 @@ class Robot4DEnv(object):
         self.viewer.draw_circle(8*WP_RADIUS/SCALE, 4, True, color=TURN_LOCATION_COLOR).add_attr(t) # TODO Look into how to properly render a box instead of a circle with 4 points!
 
     def _render_gripper_location(self):
-        pass
+        location_of_gripper_action = self.waypoints[self.location_of_gripper_action]
+        t =  Transform(translation=(location_of_gripper_action[0], location_of_gripper_action[1]))
+        self.viewer.draw_circle(8*WP_RADIUS/SCALE, 4, True, color=GRIPPER_ACTION_LOCATION_COLOR).add_attr(t)
+
 
     def _render_goal(self):
         t = Transform(translation=(self.goal_position[0],self.goal_position[1]))
@@ -318,6 +321,9 @@ class Robot4DEnv(object):
 
         self.viewer.draw_text('Start', x=start_text_location[0], y=start_text_location[1], font_size=TRIAL_OVER_TEXT_FONTSIZE-6, color=(0,0,0,255), bold=False)
         self.viewer.draw_text('Goal', x=goal_text_location[0], y=goal_text_location[1], font_size=TRIAL_OVER_TEXT_FONTSIZE-6, color=(0,0,0,255), bold=False)
+
+    def _render_trial_over_text(self):
+        self.viewer.draw_text("TRIAL OVER", x=TRIAL_OVER_TEXT_DISPLAY_POSITION[0], y=TRIAL_OVER_TEXT_DISPLAY_POSITION[1], font_size=TRIAL_OVER_TEXT_FONTSIZE, color=TRIAL_OVER_TEXT_COLOR, anchor_y=TRIAL_OVER_TEXT_Y_ANCHOR, bold=True)
 
     def _render_timer(self, period):
         while not rospy.is_shutdown():
