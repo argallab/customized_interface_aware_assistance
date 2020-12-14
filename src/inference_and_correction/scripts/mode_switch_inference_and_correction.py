@@ -13,8 +13,8 @@ import collections
 import math
 import sys
 sys.path.append(os.path.join(rospkg.RosPack().get_path('simulators'), 'scripts'))
-from utils import TRUE_ACTION_TO_COMMAND, LOW_LEVEL_COMMANDS
-from utils import AssistanceType
+from corrective_mode_switch_utils import TRUE_ACTION_TO_COMMAND, LOW_LEVEL_COMMANDS
+from corrective_mode_switch_utils import AssistanceType
 
 class ModeSwitchInferenceAndCorrection(object):
     def __init__(self, subject_id, optim):

@@ -2,11 +2,12 @@
 # Code developed by Deepak Gopinath*, Mahdieh Nejati Javaremi* in February 2020. Copyright (c) 2020. Deepak Gopinath, Mahdieh Nejati Javaremi, Argallab. (*) Equal contribution
 
 from backends.rendering import Viewer, Transform
-from utils import SCALE, VIEWPORT_W, VIEWPORT_H, VIEWPORT_WS, VIEWPORT_HS, ROBOT_RADIUS
-from utils import COMMAND_TEXT_COLOR, COMMAND_DISPLAY_POSITION, COMMAND_DISPLAY_FONTSIZE
-from utils import LOW_LEVEL_COMMANDS, MODE_DISPLAY_RADIUS, MODE_DISPLAY_TEXT_FONTSIZE, MODE_DISPLAY_TEXT_COLOR
-from utils import ACTIVE_MODE_COLOR, NONACTIVE_MODE_COLOR, ACTIVE_MODE_COLOR_ERROR
-from utils import MODE_DISPLAY_TEXT_Y_ANCHOR
+sys.path.append(os.path.join(rospkg.RosPack().get_path('simulators'), 'scripts'))
+from corrective_mode_switch_utils import SCALE, VIEWPORT_W, VIEWPORT_H, VIEWPORT_WS, VIEWPORT_HS, ROBOT_RADIUS
+from corrective_mode_switch_utils import COMMAND_TEXT_COLOR, COMMAND_DISPLAY_POSITION, COMMAND_DISPLAY_FONTSIZE
+from corrective_mode_switch_utils import LOW_LEVEL_COMMANDS, MODE_DISPLAY_RADIUS, MODE_DISPLAY_TEXT_FONTSIZE, MODE_DISPLAY_TEXT_COLOR
+from corrective_mode_switch_utils import ACTIVE_MODE_COLOR, NONACTIVE_MODE_COLOR, ACTIVE_MODE_COLOR_ERROR
+from corrective_mode_switch_utils import MODE_DISPLAY_TEXT_Y_ANCHOR
 import pyglet
 import time
 

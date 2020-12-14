@@ -7,7 +7,6 @@ import argparse
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from IPython import embed
 import pickle
 import collections
 import rospkg

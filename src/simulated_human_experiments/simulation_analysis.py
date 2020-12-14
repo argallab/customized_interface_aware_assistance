@@ -4,11 +4,11 @@ import pickle
 import sys
 import collections
 import rospkg
-sys.path.append(os.path.join(rospkg.RosPack().get_path('simulators'), 'scripts'))
 import os
+sys.path.append(os.path.join(rospkg.RosPack().get_path('simulators'), 'scripts'))
 import numpy as np
 import argparse
-from utils import StartDirection, AssistanceType, PI
+from corrective_mode_switch_utils import StartDirection, AssistanceType, PI
 import matplotlib.pyplot as plt
 import itertools
 
@@ -65,15 +65,89 @@ class SimulationAnalysis(object):
         self.START_MODE = [-1, 1]
         self.UI_GIVEN_A_NOISE = [i/10.0 for i in range(1, 9, 2)]
         self.UM_GIVEN_UI_NOISE = [i/10.0 for i in range(1, 9, 2)]
-        self.ENTROPY_THRESHOLD = [i/10.0 for i in range(5, 10)]
+        # self.ENTROPY_THRESHOLD = [i/10.0 for i in range(5, 10)]
+        self.ENTROPY_THRESHOLD = [i/10.0 for i in range(1, 9,2)]
         self.TARGET_ORIENTATIONS = [-PI/2, PI/2]
 
     def perform_analysis(self, force_compute_list=[False, False, True]):
         self._check_accuracy_of_corrected_um(force_compute_list[0])
-        self._compare_mode_switches_between_assistance_conditions(force_compute_list[1])
-        self._compute_percentage_of_intervened(force_compute_list[2])
-
+        # self._compare_mode_switches_between_assistance_conditions(force_compute_list[1])
+        # self._compute_percentage_of_intervened(force_compute_list[2])
+    
     def _compute_percentage_of_intervened(self, force_compute=False):
+        print("COMPUTE PERCENTAGE INTERVENED")
+        criteria = collections.OrderedDict()
+        for key in self.combination_dict_keys:
+            criteria[key] = 'all'
+        
+        #for those keys that need to be filtered. replace 'all' with a list containing the allowed values for the key
+        criteria['assistance_type'] = [AssistanceType.Corrective, AssistanceType.Filter]
+
+        subset_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'subsets')
+        if not os.path.exists(subset_path):
+            os.makedirs(subset_path)
+
+        results_dir_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results')
+        if not os.path.exists(results_dir_path):
+            os.makedirs(results_dir_path)
+        
+        
+        only_corrective_and_filtered_subset_pkl_name = os.path.join(subset_path,'only_corrective_and_filtered_subset.pkl')
+        if os.path.exists(only_corrective_and_filtered_subset_pkl_name):
+            with open(only_corrective_and_filtered_subset_pkl_name, 'rb') as fp:
+                sim_files_that_satisfies_criteria = pickle.load(fp)
+        else:
+            
+            sim_files_that_satisfies_criteria = self.data_parser.parse_sim_files_for_specific_criteria(criteria)
+            with open(only_corrective_and_filtered_subset_pkl_name, 'wb') as fp:
+                pickle.dump(sim_files_that_satisfies_criteria, fp)
+                #save this list and use it for later.
+        
+        ui_a_vs_um_ui_matrix_filename = os.path.join(results_dir_path, 'ui_a_vs_um_ui_matrix_for_u_inferred_match_with_ground_truth.pkl')
+        did_assistance_intervene_list_filename = os.path.join(results_dir_path, 'u_inferred_match_with_ground_truth_list.pkl')
+        if os.path.exists(ui_a_vs_um_ui_matrix_filename) and not force_compute: #assumes that if one file exists the other does too
+            with open(did_assistance_intervene_list_filename, 'rb') as fp:
+                did_assistance_intervene_list_filename = pickle.load(fp)
+
+            with open(ui_a_vs_um_ui_matrix_filename, 'rb') as fp:
+                ui_a_vs_um_ui_matrix = pickle.load(fp)
+        else:
+
+            did_assistance_intervene_list = collections.OrderedDict()
+            for ui_a in self.UI_GIVEN_A_NOISE:
+                did_assistance_intervene_list[ui_a] = collections.defaultdict(list)
+            
+            
+            print('TOTAL NUMBER OF SIM FILES SATISFYING CRITERIA', len(sim_files_that_satisfies_criteria))
+            for k, sf in enumerate(sim_files_that_satisfies_criteria):
+                if k % 200 == 0:
+                    print('Extracting info from file num ', k)
+                with open(sf, 'rb') as fp:
+                    simulation_result = pickle.load(fp)
+
+                ui_a = simulation_result['combination_dict']['ui_given_a_noise']
+                um_ui = simulation_result['combination_dict']['um_given_ui_noise']
+                did_assistance_intervene_list[ui_a][um_ui].extend(simulation_result['data']['did_assistance_intervene'])
+            
+
+            with open(did_assistance_intervene_list_filename, 'wb') as fp:
+                pickle.dump(did_assistance_intervene_list, fp)
+            
+            ui_a_vs_um_ui_matrix = np.zeros((len(self.UI_GIVEN_A_NOISE), len(self.UM_GIVEN_UI_NOISE)))
+
+            for i, ui_a in enumerate(self.UI_GIVEN_A_NOISE):
+                for j, um_ui in enumerate(self.UM_GIVEN_UI_NOISE):
+                    percentage_of_assistive_interventions = float(sum(did_assistance_intervene_list[ui_a][um_ui]))/len(did_assistance_intervene_list[ui_a][um_ui])
+                    ui_a_vs_um_ui_matrix[i, j] = percentage_of_assistive_interventions
+
+            with open(ui_a_vs_um_ui_matrix_filename, 'wb') as fp:
+                pickle.dump(ui_a_vs_um_ui_matrix, fp)
+        
+        print('UI_A vs UM_UI for PERCENTAGE OF ASSISTIVE INTERVENTIONS', ui_a_vs_um_ui_matrix)
+
+        
+
+    def _compute_percentage_of_intervened_old(self, force_compute=False):
         print("COMPUTE PERCENTAGE INTERVENED")
         criteria = collections.OrderedDict()
         for key in self.combination_dict_keys:
@@ -87,7 +161,10 @@ class SimulationAnalysis(object):
             with open(compare_mode_switches_between_assistance_conditions_pklnames, 'rb') as fp:
                 sim_files_that_satisfies_criteria = pickle.load(fp)
         else:
-            sim_files_that_satisfies_criteria = sorted(self.data_parser.return_all_sim_files())
+            sim_files_that_satisfies_criteria = self.data_parser.parse_sim_files_for_specific_criteria(criteria)
+            with open(compare_mode_switches_between_assistance_conditions_pklnames, 'wb') as fp:
+                pickle.dump(sim_files_that_satisfies_criteria, fp)
+            # sim_files_that_satisfies_criteria = sorted(self.data_parser.return_all_sim_files())
 
 
         results_dir_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results')
@@ -295,7 +372,7 @@ class SimulationAnalysis(object):
             criteria[key] = 'all'
 
         #for those keys that need to be filtered. replace 'all' with a list containing the allowed values for the key
-        criteria['assistance_type'] = [AssistanceType.Corrective]
+        criteria['assistance_type'] = [AssistanceType.Corrective, AssistanceType.Filter]
 
         subset_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'subsets')
         if not os.path.exists(subset_path):
@@ -304,58 +381,69 @@ class SimulationAnalysis(object):
         results_dir_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results')
         if not os.path.exists(results_dir_path):
             os.makedirs(results_dir_path)
-        only_corrective_subset_pkl_name = os.path.join(subset_path,'only_corrective_subset.pkl')
-        if os.path.exists(only_corrective_subset_pkl_name):
-            with open(only_corrective_subset_pkl_name, 'rb') as fp:
+        
+        
+        only_corrective_and_filtered_subset_pkl_name = os.path.join(subset_path,'only_corrective_and_filtered_subset.pkl')
+        if os.path.exists(only_corrective_and_filtered_subset_pkl_name):
+            with open(only_corrective_and_filtered_subset_pkl_name, 'rb') as fp:
                 sim_files_that_satisfies_criteria = pickle.load(fp)
         else:
             sim_files_that_satisfies_criteria = self.data_parser.parse_sim_files_for_specific_criteria(criteria)
-            with open(only_corrective_subset_pkl_name, 'wb') as fp:
+            with open(only_corrective_and_filtered_subset_pkl_name, 'wb') as fp:
                 pickle.dump(sim_files_that_satisfies_criteria, fp)
                 #save this list and use it for later.
 
-        ui_a_vs_um_ui_matrix_filename = os.path.join(results_dir_path, 'ui_a_vs_um_ui_matrix_for_assistance_match_with_ground_truth.pkl')
-        assistance_match_with_ground_truth_list_filename = os.path.join(results_dir_path, 'assistance_match_with_ground_truth_list.pkl')
+        ui_a_vs_um_ui_matrix_filename = os.path.join(results_dir_path, 'ui_a_vs_um_ui_matrix_for_u_inferred_match_with_ground_truth.pkl')
+        u_inferred_match_with_ground_truth_list_filename = os.path.join(results_dir_path, 'u_inferred_match_with_ground_truth_list.pkl')
         if os.path.exists(ui_a_vs_um_ui_matrix_filename) and not force_compute: #assumes that if one file exists the other does too
-            with open(assistance_match_with_ground_truth_list_filename, 'rb') as fp:
-                assistance_match_with_ground_truth_list = pickle.load(fp)
+            with open(u_inferred_match_with_ground_truth_list_filename, 'rb') as fp:
+                u_inferred_match_with_ground_truth_list = pickle.load(fp)
 
             with open(ui_a_vs_um_ui_matrix_filename, 'rb') as fp:
                 ui_a_vs_um_ui_matrix = pickle.load(fp)
         else:
 
-            assistance_match_with_ground_truth_list = collections.OrderedDict()
+            u_inferred_match_with_ground_truth_list = collections.OrderedDict()
             for ui_a in self.UI_GIVEN_A_NOISE:
-                assistance_match_with_ground_truth_list[ui_a] = collections.defaultdict(list)
+                u_inferred_match_with_ground_truth_list[ui_a] = collections.defaultdict(list)
+
+            print('TOTAL NUMBER OF SIM FILES SATISFYING CRITERIA', len(sim_files_that_satisfies_criteria))
 
             for k, sf in enumerate(sim_files_that_satisfies_criteria):
+                if k % 200 == 0:
+                    print('Extracting info from file num ', k)
                 with open(sf, 'rb') as fp:
                     simulation_result = pickle.load(fp)
 
                 ui_a = simulation_result['combination_dict']['ui_given_a_noise']
                 um_ui = simulation_result['combination_dict']['um_given_ui_noise']
-                assistance_match_with_ground_truth_list[ui_a][um_ui].extend(simulation_result['data']['assistance_match_with_ground_truth'])
+                # is_normalized_entropy_less_than_threshold = simulation_result['data']['is_normalized_entropy_less_than_threshold']
+                # is_normalized_entropy_less_than_threshold_true_indices = [i for i, val in enumerate(is_normalized_entropy_less_than_threshold) if val]
+                # if is_normalized_entropy_less_than_threshold:
+                    # print(sum(simulation_result['data']['normalized_h_of_p_ui_given_um'])/len(simulation_result['data']['normalized_h_of_p_ui_given_um']))
+                u_inferred_match_with_ground_truth_list[ui_a][um_ui].extend(simulation_result['data']['u_inferred_match_with_ground_truth'])
+                # else:
+                #     print('Skip')
 
-
-            with open(assistance_match_with_ground_truth_list_filename, 'wb') as fp:
-                pickle.dump(assistance_match_with_ground_truth_list, fp)
+            with open(u_inferred_match_with_ground_truth_list_filename, 'wb') as fp:
+                pickle.dump(u_inferred_match_with_ground_truth_list, fp)
 
             ui_a_vs_um_ui_matrix = np.zeros((len(self.UI_GIVEN_A_NOISE), len(self.UM_GIVEN_UI_NOISE)))
 
             for i, ui_a in enumerate(self.UI_GIVEN_A_NOISE):
                 for j, um_ui in enumerate(self.UM_GIVEN_UI_NOISE):
-                    percentage_of_correct_assistance = float(sum(assistance_match_with_ground_truth_list[ui_a][um_ui]))/len(assistance_match_with_ground_truth_list[ui_a][um_ui])
-                    ui_a_vs_um_ui_matrix[i, j] = percentage_of_correct_assistance
+                    percentage_of_correct_inference = float(sum(u_inferred_match_with_ground_truth_list[ui_a][um_ui]))/len(u_inferred_match_with_ground_truth_list[ui_a][um_ui])
+                    ui_a_vs_um_ui_matrix[i, j] = percentage_of_correct_inference
 
             with open(ui_a_vs_um_ui_matrix_filename, 'wb') as fp:
                 pickle.dump(ui_a_vs_um_ui_matrix, fp)
 
-        print('UI_A vs UM_UI for ASSISTANCE MATCH WITH GROUND TRUTH', ui_a_vs_um_ui_matrix)
+        print('UI_A vs UM_UI for U INFERRED WITH GROUND TRUTH', ui_a_vs_um_ui_matrix)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--simulation_results_dir', dest='simulation_results_dir',default=os.path.join(os.path.dirname(os.getcwd()), 'simulation_scripts', 'simulation_results_with_entropy'), help="The directory where the simulation trials will be stored")
+    parser.add_argument('--simulation_results_dir', dest='simulation_results_dir',default=os.path.join(os.path.dirname(os.getcwd()), 'simulated_human_experiments', 'simulation_results_with_higher_entropy_with_proper_noise'), help="The directory where the simulation trials will be stored")
     args = parser.parse_args()
-    force_compute_list = [False, False, False]
+    force_compute_list = [True, True, True]
     sa = SimulationAnalysis(args)
     sa.perform_analysis(force_compute_list)

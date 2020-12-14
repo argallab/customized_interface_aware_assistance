@@ -2,6 +2,7 @@
 # Code developed by Deepak Gopinath*, Mahdieh Nejati Javaremi* in February 2020. Copyright (c) 2020. Deepak Gopinath, Mahdieh Nejati Javaremi, Argallab. (*) Equal contribution
 
 import rospy
+import sys
 import numpy as np
 import threading
 from control_input import ControlInput
@@ -15,6 +16,7 @@ from teleop_nodes.cfg import SipPuffModeSwitchParadigmConfig
 from teleop_nodes.srv import SetMode, SetModeRequest, SetModeResponse
 from std_srvs.srv import SetBool, SetBoolResponse
 npa = np.array
+
 
 
 class SNPInput(ControlInput):
@@ -42,12 +44,12 @@ class SNPInput(ControlInput):
     self._latch_start_time = rospy.get_time()
     self._latch_command_duration = 0.5 #seconds
     self._lock_input = True # to prevent constant mode switching
-    self.mode_switch_paradigm = 2
-    self.motion_paradigm = 3
+    self.mode_switch_paradigm = 2 #two-way mode switching
+    self.motion_paradigm = 3 #constant velocity paradigm
 
     # Set up velocity command and load velocity limits to be sent to hand nodes
     if self.finger_dim > 0:
-        self.effective_finger_dim = 1
+        self.effective_finger_dim = 1 #a single dimension's velocity is mapped to ALL the fingers of the robot
     else:
         self.effective_finger_dim = 0
     self.velocity_scale = rospy.get_param("/snp_velocity_scale") #currently scalar. Could be vector for individual dimension scale
@@ -95,7 +97,7 @@ class SNPInput(ControlInput):
 
   # Response to Set Mode Service (eg. if homing)
   def set_mode(self, setmode):
-    # 0: X, 1: Y, 2: Z, 3: Roll, 4: Pictch, 5: Yaw, 6: Gripper
+    # 0: X, 1: Y, 2: Z, 3: Roll, 4: Pitch, 5: Yaw, 6: Gripper
     self._mode = setmode.mode_index
     print "Current mode is ", self._mode
     status = SetModeResponse()
@@ -116,7 +118,7 @@ class SNPInput(ControlInput):
     self.modeswitch_msg.mode = self._mode
     self.modeswitch_msg.num_switches = self._mode_switch_count
     self.mode_switch_pub.publish(self.modeswitch_msg)
-    rospy.set_param('mode',self._mode)
+    rospy.set_param('mode',self._mode) #update the param server so that the update function in the env can read the current mode. Needed to determine what dimensions need to be zeroed out
     print "Num of mode switches %d" % self._mode_switch_count
 
   # checks whether to switch mode, and changes cyclically
@@ -287,5 +289,7 @@ class SNPInput(ControlInput):
 
 if __name__ == '__main__':
   rospy.init_node('sip_puff_node', anonymous=True)
-  snp = SNPInput(robot_dim=3, finger_dim=0)
+  robot_dim = int(sys.argv[1])
+  finger_dim = int(sys.argv[2])
+  snp = SNPInput(robot_dim=robot_dim, finger_dim=finger_dim) #this robot dim has to be a parameter. Need to be changed for the 4D robot
   rospy.spin()

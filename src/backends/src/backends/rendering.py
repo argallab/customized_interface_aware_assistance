@@ -111,6 +111,12 @@ class Viewer(object):
         _add_attrs(geom, attrs)
         self.add_onetime(geom)
         return geom
+    
+    def draw_sector(self, radius, res=30, start_angle=0.0, end_angle=math.pi/4, filled=True, **attrs):
+        geom = make_sector(radius=radius, res=res, start_angle=start_angle, end_angle=end_angle, filled=filled)
+        _add_attrs(geom, attrs)
+        self.add_onetime(geom)
+        return geom
 
     def draw_polygon(self, v, filled=True, **attrs):
         geom = make_polygon(v=v, filled=filled)
@@ -124,8 +130,9 @@ class Viewer(object):
         self.add_onetime(geom)
         return geom
 
-    def draw_line(self, start, end, **attrs):
+    def draw_line(self, start, end, lw=1, **attrs):
         geom = Line(start, end)
+        geom.set_linewidth(lw)
         _add_attrs(geom, attrs)
         self.add_onetime(geom)
         return geom
@@ -249,6 +256,16 @@ def make_circle(radius=10, res=30, filled=True):
     points = []
     for i in range(res):
         ang = 2*math.pi*i / res
+        points.append((math.cos(ang)*radius, math.sin(ang)*radius))
+    if filled:
+        return FilledPolygon(points)
+    else:
+        return PolyLine(points, True)
+
+def make_sector(radius=10, res=30, start_angle=0.0, end_angle=math.pi/4, filled=True):
+    points = [(0.0,0.0)] #need to have the center
+    for i in range(res+1):
+        ang = start_angle + (end_angle-start_angle)*i / res
         points.append((math.cos(ang)*radius, math.sin(ang)*radius))
     if filled:
         return FilledPolygon(points)

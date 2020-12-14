@@ -2,9 +2,9 @@
 # Code developed by Deepak Gopinath*, Mahdieh Nejati Javaremi* in February 2020. Copyright (c) 2020. Deepak Gopinath, Mahdieh Nejati Javaremi, Argallab. (*) Equal contribution
 
 from backends.rendering import Viewer
-from utils import SCALE, VIEWPORT_W, VIEWPORT_H
-from utils import COMMAND_TEXT_COLOR, COMMAND_DISPLAY_POSITION, COMMAND_DISPLAY_FONTSIZE
-
+sys.path.append(os.path.join(rospkg.RosPack().get_path('simulators'), 'scripts'))
+from corrective_mode_switch_utils import SCALE, VIEWPORT_W, VIEWPORT_H
+from corrective_mode_switch_utils import COMMAND_TEXT_COLOR, COMMAND_DISPLAY_POSITION, COMMAND_DISPLAY_FONTSIZE
 import pyglet
 
 class PUmGivenUIEnv(object):

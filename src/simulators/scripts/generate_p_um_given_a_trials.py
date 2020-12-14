@@ -3,8 +3,8 @@
 # Code developed by Deepak Gopinath*, Mahdieh Nejati Javaremi* in February 2020. Copyright (c) 2020. Deepak Gopinath, Mahdieh Nejati Javaremi, Argallab. (*) Equal contribution
 
 import sys
-from utils import SCALE, VIEWPORT_W, VIEWPORT_H, ROBOT_RADIUS, GOAL_RADIUS, PI, VIEWPORT_HS, VIEWPORT_WS
-from utils import AssistanceType, StartDirection, RGOrient
+from corrective_mode_switch_utils import SCALE, VIEWPORT_W, VIEWPORT_H, ROBOT_RADIUS, GOAL_RADIUS, PI, VIEWPORT_HS, VIEWPORT_WS
+from corrective_mode_switch_utils import AssistanceType, StartDirection, RGOrient
 import numpy as np
 import os
 import pickle
