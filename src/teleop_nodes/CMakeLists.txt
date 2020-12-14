@@ -102,6 +102,7 @@ generate_dynamic_reconfigure_options(
   cfg/ModeSwitchParadigm.cfg
   cfg/SipPuffModeSwitchParadigm.cfg
   cfg/HeadarrayModeSwitchParadigm.cfg
+  cfg/KeyboardModeSwitchParadigm.cfg
 )
 
 ###################################
@@ -115,9 +116,9 @@ generate_dynamic_reconfigure_options(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
  INCLUDE_DIRS include
-#  LIBRARIES mico_interaction
-#  CATKIN_DEPENDS roscpp rospy std_msgs
-#  DEPENDS system_lib
+ LIBRARIES teleop_nodes
+ CATKIN_DEPENDS roscpp rospy std_msgs dynamic_reconfigure
+ DEPENDS system_lib
 )
 
 ###########

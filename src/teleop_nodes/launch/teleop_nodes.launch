@@ -1,8 +1,10 @@
 <?xml version="1.0"?>
+
 <launch>
 
 	<!-- INPUT METHOD -->
 	<arg name="SNP" default="false" />
+	<arg name="KEY" default="false" />
 	<arg name="JOINT" default="false"/>
 	<arg name="CHIN_PORT" default="/dev/chin_switch_arduino" />
 
@@ -19,7 +21,14 @@
 		<node pkg="teleop_nodes" type="sip_and_puff_node.py" name="sip_and_puff_node" output="screen">
 			<param name="snp_paradigm" value="$(find teleop_nodes)/cfg/SipPuffModeSwitchParadigm.cfg"/>
 		</node>
-		<node pkg="rosserial_python" name="chin_button_arduino" type="serial_node.py" args="$(arg CHIN_PORT)"/>
+	<!--<node pkg="rosserial_python" name="chin_button_arduino" type="serial_node.py" args="$(arg CHIN_PORT)"/>-->
+	</group>
+
+	<group if="$(arg KEY)">
+        <node pkg="teleop_nodes" type="keyboard_node.py" name="keyboard_node" output="screen" launch-prefix="xterm -e">
+			<param name="keyboard_paradigm" value="$(find teleop_nodes)/cfg/KeyboardModeSwitchParadigm.cfg"/>
+		</node>
+        <!-- <node pkg="teleop_nodes" type="test.py" name="keyboard_node" output="screen" launch-prefix="xterm -e"/> -->
 	</group>
 
 
