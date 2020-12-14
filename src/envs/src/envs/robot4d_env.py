@@ -179,7 +179,32 @@ class Robot4DEnv(object):
         pass
 
     def _init_modes_in_which_motion_allowed_dict(self):
-        pass
+        '''
+        Specifies, for each location, the modes in which motion is allowed
+        '''
+        for i, s in enumerate(self.LOCATIONS[:-1]): #for all locations before the end location
+            if self.start_direction == StartDirection.X:
+                if i % 2 == 0:
+                    self.MODES_MOTION_ALLOWED[s] = ['x', 'y'] # primary mode is the first place. Tthe secondary mode is the one in which the autonomous controller will be active. 
+                else:
+                    self.MODES_MOTION_ALLOWED[s] = ['y', 'x']
+                
+                if i == self.location_of_turn:
+                    self.MODES_MOTION_ALLOWED[s].append('t')
+                if i == self.location_of_gripper_action:
+                    self.MODES_MOTION_ALLOWED[s].append('gr')
+            
+            elif self.start_direction == StartDirection.Y:
+                if i % 2 == 0:
+                    self.MODES_MOTION_ALLOWED[s] = ['y', 'x']
+                else:
+                    self.MODES_MOTION_ALLOWED[s] = ['x', 'y']
+                if i == self.location_of_turn:
+                    self.MODES_MOTION_ALLOWED[s].append('t')
+                if i == self.location_of_gripper_action:
+                    self.MODES_MOTION_ALLOWED[s].append('gr')
+            
+        self.MODES_MOTION_ALLOWED[self.LOCATIONS[-1]] = self.MODES_MOTION_ALLOWED[self.LOCATIONS[-2]][0] #for the last location, copy the linear mode in which the motion is allowed for the second last location
 
     def _create_state_transition_model(self):
         for s in self.STATES: #(cartesian product of x, y, orientation angle and gripper angle)
@@ -188,8 +213,47 @@ class Robot4DEnv(object):
                 self.STATE_TRANSITION_MODEL[s][u] = None
 
     def _init_state_transition_model(self):
-        pass
+        rgc = self.r_to_g_relative_orientation
+        for s in self.STATE_TRANSITION_MODEL.keys(): #for all states in the world
+            for u in self.STATE_TRANSITION_MODEL[s].keys(): #for all available low level commands, hp, hs, ss, sp
+                if u == 'Hard Puff' or u == 'Hard Sip':
+                    self.STATE_TRANSITION_MODEL[s][u] = (s[0], s[1], MODE_SWITCH_TRANSITION_4D[s[2]][u], s[3]) #perform state conditioned mode switch
+                if u == 'Soft Puff' or u == 'Soft Sip':
+                    allowed_modes_for_motion = self.MODES_MOTION_ALLOWED[s[0]] #this is a list of modes in which the motion is allowed. 
+                    self.STATE_TRANSITION_MODEL[s][u] = (s[0], s[1], s[2], s[3]) #by default store the same state as next state. Because if no motion happens, the resultant state is also the same state
+                    for i, m in enumerate(allowed_modes_for_motion):
+                        #0th is the primary allowed mode
+                        #1th is the second allowed mode in which the discrete transition remains the same, because the autonomous controller is supposed to bring it back to original continuous position
+                        if i == 0 or i == 2: #Is the primary mode, so discrete transition is possible
+                            if m == s[2]: #make sure that the allowed mode matches the mode in the state s. If it doesn't no motion will happen
+                                if m != 't' and m != 'gr':
+                                    if TRANSITION_FOR_ACTION_4D[rgc][u][m] == 'next':
+                                        new_loc_next = self.LOCATIONS[min(self.LOCATIONS.index(s[0]) + 1, len(self.LOCATIONS)-1 )]
+                                        self.STATE_TRANSITION_MODEL[s][u] = (new_loc_next, s[1], s[2], s[3])
+                                
+                                    elif TRANSITION_FOR_ACTION_4D[rgc][u][m] == 'prev':
+                                        new_loc_prev = self.LOCATIONS[max(self.LOCATIONS.index(s[0]) - 1, 0 )]
+                                        if m == self.MODES_MOTION_ALLOWED[new_loc_prev][0]:
+                                            self.STATE_TRANSITION_MODEL[s][u] = (new_loc_prev, s[1], s[2], s[3])
+                                
+                                elif m == 't' and m != 'gr': #rotation mode
+                                    new_theta = s[1]
+                                    if TRANSITION_FOR_ACTION_4D[rgc][u][m] == 'next':
+                                        new_theta = min(PI/2, s[1] + PI/2) #max angle allowed is PI/2
+                                    elif TRANSITION_FOR_ACTION_4D[rgc][u][m] == 'prev':
+                                        new_theta = max(-PI/2, s[1] - PI/2) #min angle allowed is 0.0
 
+                                    self.STATE_TRANSITION_MODEL[s][u] = (s[0], new_theta, s[2], s[3])
+
+                                elif m == 'gr': #gripper mode
+                                    new_gripper_angle = s[3]
+                                    if TRANSITION_FOR_ACTION_4D[rgc][u][m] == 'next': #close the gripper
+                                        new_gripper_angle = max(0.0, s[3] - PI/2)
+                                    elif TRANSITION_FOR_ACTION_4D[rgc][u][m] == 'prev': #open the gripper
+                                        new_gripper_angle = min(PI/2, s[3] + PI/2)
+                                    
+                                    self.STATE_TRANSITION_MODEL[s][u] = (s[0], s[1], s[2], new_gripper_angle)
+                
     def _create_optimal_next_state_dict(self):
         pass
 
@@ -197,6 +261,9 @@ class Robot4DEnv(object):
         pass
 
     def _init_allowed_directions_of_motion(self):
+        pass
+    
+    def _retrieve_allowed_direction_motion_in_allowed_mode(self):
         pass
     
     def _render_turn_location(self):
@@ -240,9 +307,10 @@ class Robot4DEnv(object):
                     path.append(path[0])
                     self.viewer.draw_polyline(path, color=(1.0, 0.0, 0.0), linewidth=2)
     
-    def _render_robot_direction_indicators(self):
-        ep_markers = self.robot.get_direction_marker_end_points()
-        self.viewer.draw_line(ep_markers[0], ep_markers[1], linewidth=3.0)
+    def _render_robot_gripper(self):
+        gripper_handles = self.robot.get_gripper_handle_markers()
+        for gripper_handle in gripper_handles:
+            self.viewer.draw_line(gripper_handle[0], gripper_handle[1], linewidth=3.0)
     
     def _render_waypoints(self):
         #render the waypoints
@@ -261,10 +329,15 @@ class Robot4DEnv(object):
 
     def _render_mode_display(self):
         for i, d in enumerate(self.DIMENSIONS):
-            if d == 'y':
-                t = Transform(translation=(MODE_DISPLAY_CIRCLE_START_POSITION_S[0] + i*MODE_DISPLAY_CIRCLE_X_OFFSET_S, MODE_DISPLAY_CIRCLE_START_POSITION_S[1]))
-            else:
-                t = Transform(translation=(MODE_DISPLAY_CIRCLE_START_POSITION_S[0] + i*MODE_DISPLAY_CIRCLE_X_OFFSET_S, MODE_DISPLAY_CIRCLE_START_POSITION_S[1] - MODE_DISPLAY_CIRCLE_Y_OFFSET_S))
+            if d == 'x':
+                t = Transform(translation=(MODE_DISPLAY_CIRCLE_START_POSITION_S[0], MODE_DISPLAY_CIRCLE_START_POSITION_S[1]))
+            elif d == 'y':
+                t = Transform(translation=(MODE_DISPLAY_CIRCLE_START_POSITION_S[0] + 2*MODE_DISPLAY_CIRCLE_X_OFFSET_S, MODE_DISPLAY_CIRCLE_START_POSITION_S[1]))
+            elif d == 't':
+                t = Transform(translation=(MODE_DISPLAY_CIRCLE_START_POSITION_S[0] + 2*MODE_DISPLAY_CIRCLE_X_OFFSET_S, MODE_DISPLAY_CIRCLE_START_POSITION_S[1] - MODE_DISPLAY_CIRCLE_Y_OFFSET_S))
+            elif d == 'gr':
+                t = Transform(translation=(MODE_DISPLAY_CIRCLE_START_POSITION_S[0], MODE_DISPLAY_CIRCLE_START_POSITION_S[1] - MODE_DISPLAY_CIRCLE_Y_OFFSET_S))
+            
             if d == self.current_mode:
                 self.viewer.draw_circle(MODE_DISPLAY_RADIUS/SCALE, 30, True, color=ACTIVE_MODE_COLOR).add_attr(t)
             else:
@@ -274,10 +347,11 @@ class Robot4DEnv(object):
         '''
         Note that the coordinates of the text should in real pixels. Which is why here there is a multiplicative factor of SCALE.
         '''
-        self.viewer.draw_text("Horizontal", x=MODE_DISPLAY_TEXT_START_POSITION[0], y=MODE_DISPLAY_TEXT_START_POSITION[1] - MODE_DISPLAY_CIRCLE_Y_OFFSET_S*SCALE , font_size=MODE_DISPLAY_TEXT_FONTSIZE, color=MODE_DISPLAY_TEXT_COLOR, anchor_y=MODE_DISPLAY_TEXT_Y_ANCHOR)
-        self.viewer.draw_text("Vertical", x=MODE_DISPLAY_TEXT_START_POSITION[0] + MODE_DISPLAY_TEXT_X_OFFSET, y=MODE_DISPLAY_TEXT_START_POSITION[1], font_size=MODE_DISPLAY_TEXT_FONTSIZE, color=MODE_DISPLAY_TEXT_COLOR, anchor_y=MODE_DISPLAY_TEXT_Y_ANCHOR)
+        self.viewer.draw_text("Horizontal", x=MODE_DISPLAY_TEXT_START_POSITION[0], y=MODE_DISPLAY_TEXT_START_POSITION[1] , font_size=MODE_DISPLAY_TEXT_FONTSIZE, color=MODE_DISPLAY_TEXT_COLOR, anchor_y=MODE_DISPLAY_TEXT_Y_ANCHOR)
+        self.viewer.draw_text("Vertical", x=MODE_DISPLAY_TEXT_START_POSITION[0] + 2*MODE_DISPLAY_TEXT_X_OFFSET, y=MODE_DISPLAY_TEXT_START_POSITION[1], font_size=MODE_DISPLAY_TEXT_FONTSIZE, color=MODE_DISPLAY_TEXT_COLOR, anchor_y=MODE_DISPLAY_TEXT_Y_ANCHOR)
         self.viewer.draw_text("Rotation", x=MODE_DISPLAY_TEXT_START_POSITION[0] + 2*MODE_DISPLAY_TEXT_X_OFFSET, y=MODE_DISPLAY_TEXT_START_POSITION[1] - MODE_DISPLAY_CIRCLE_Y_OFFSET_S*SCALE, font_size=MODE_DISPLAY_TEXT_FONTSIZE, color=MODE_DISPLAY_TEXT_COLOR, anchor_y=MODE_DISPLAY_TEXT_Y_ANCHOR)
-
+        self.viewer.draw_text("Gripper", x=MODE_DISPLAY_TEXT_START_POSITION[0], y=MODE_DISPLAY_TEXT_START_POSITION[1] - MODE_DISPLAY_CIRCLE_Y_OFFSET_S*SCALE, font_size=MODE_DISPLAY_TEXT_FONTSIZE, color=MODE_DISPLAY_TEXT_COLOR, anchor_y=MODE_DISPLAY_TEXT_Y_ANCHOR)
+    
     def _render_timer_text(self):
         if self.current_time < TIMER_WARNING_THRESHOLD:
             self.viewer.draw_text(str(self.current_time), x=TIMER_DISPLAY_POSITION[0], y=TIMER_DISPLAY_POSITION[1], font_size=TIMER_DISPLAY_FONTSIZE, color=TIMER_COLOR_NEUTRAL, anchor_y=TIMER_DISPLAY_TEXT_Y_ANCHOR, bold=True)
@@ -373,7 +447,7 @@ class Robot4DEnv(object):
         #render bodies
         self._render_bodies()
         #draw robot direction indicator after the robot has been drawn.
-        self._render_robot_direction_indicators()
+        self._render_robot_gripper()
         #render waypoints
         self._render_waypoints()
         #render path
