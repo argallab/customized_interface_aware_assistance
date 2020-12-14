@@ -86,6 +86,7 @@ class Simulator(object):
 		else:
 			if not self.training:
 				self.env_params = dict()
+				self.env_params['training'] = False
 				self.env_params['num_turns'] = 3
 				self.env_params['robot_position'] = ((VIEWPORT_W)/4/SCALE, (3*VIEWPORT_H)/4/SCALE)
 				self.env_params['goal_position'] = ((3*VIEWPORT_W)/4/SCALE, (VIEWPORT_H)/4/SCALE)

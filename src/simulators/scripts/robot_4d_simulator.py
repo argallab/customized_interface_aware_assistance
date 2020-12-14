@@ -31,7 +31,7 @@ class Simulator(object):
         self.shutdown_pub = rospy.Publisher('/shutdown', String, queue_size=1)
         self.trial_marker_pub = rospy.Publisher('/trial_marker', String, queue_size=1)
         self.trial_index_pub = rospy.Publisher('/trial_index', Int8, queue_size=1)
-        self.robot_state_pub = rospy.Publisher('/robot_state', State, queue_size=1)
+        self.robot_state_pub = rospy.Publisher('/robot_state', State4D, queue_size=1)
 
         self.robot_state = State4D()
         self.dim = 4
@@ -51,8 +51,8 @@ class Simulator(object):
         self.trial_index = 0
 
         self.env_params = None
-        self.trial_info_dir_path = os.path.join(os.path.dirname(__file__), 'trial_dir')
-        self.metadata_dir = os.path.join(os.path.dirname(__file__), 'metadata_dir')
+        self.trial_info_dir_path = os.path.join(os.path.dirname(__file__), 'trial_dir_4d')
+        self.metadata_dir = os.path.join(os.path.dirname(__file__), 'metadata_dir_4d')
 
         self.subject_id = subject_id
         self.assistance_block = assistance_block #pass these things from launch file
@@ -61,10 +61,10 @@ class Simulator(object):
         self.total_blocks = 6
 
         self.testing_block_filename = self.subject_id + '_' + self.assistance_block + '_assistance_' + self.block_id + '_num_blocks_' + str(self.total_blocks) + '.pkl'
-		print "TRAINING BLOCK FILENAME and IS TRAINING MODE", self.testing_block_filename, self.training
+        print "TRAINING BLOCK FILENAME and IS TRAINING MODE", self.testing_block_filename, self.training
 
-		self.terminate = False
-		self.restart = False
+        self.terminate = False
+        self.restart = False
 
         if self.trial_info_dir_path is not None and os.path.exists(self.trial_info_dir_path) and not self.training:
             print ('LOAD METADATA')
@@ -85,12 +85,15 @@ class Simulator(object):
             print 'ASSISTANCE_TYPE', self.env_params['assistance_type']
         else:
             if not self.training:
+                trial_info_filename_index = 0
                 self.env_params = dict()
+                self.env_params['training'] = False
                 self.env_params['num_turns'] = 3
                 self.env_params['robot_position'] = ((VIEWPORT_W)/4/SCALE, (3*VIEWPORT_H)/4/SCALE)
                 self.env_params['goal_position'] = ((3*VIEWPORT_W)/4/SCALE, (VIEWPORT_H)/4/SCALE)
                 self.env_params['robot_orientation'] = 0.0
                 self.env_params['goal_orientation'] = PI/2
+                self.env_params['start_gripper_angle'] = PI/2
                 self.env_params['r_to_g_relative_orientation'] = RGOrient.BOTTOM_RIGHT
                 self.env_params['start_direction'] = StartDirection.Y
                 self.env_params['start_mode'] = 't'
@@ -103,6 +106,7 @@ class Simulator(object):
             else:
                 print ('LOADING TRAINING TRIAL')
                 trial_info_filename_index = 100
+                assert os.path.exists(self.trial_info_dir_path)
                 trial_info_filepath = os.path.join(self.trial_info_dir_path, 'training_trial.pkl')
                 assert os.path.exists(trial_info_filepath) is not None
                 with open(trial_info_filepath, 'rb') as fp:
@@ -113,16 +117,16 @@ class Simulator(object):
                 self.env_params = trial_info_dict['env_params']
                 print  'ASSISTANCE_TYPE', self.env_params['assistance_type']
 
-        rospy.set_param('assistance_type', self.env_params['assistance_type'])
-        rospy.loginfo("Waiting for teleop_node ")
-        rospy.wait_for_service("/teleop_node/set_mode")
-        rospy.loginfo("teleop_node node service found! ")
+        # rospy.set_param('assistance_type', self.env_params['assistance_type'])
+        # rospy.loginfo("Waiting for teleop_node ")
+        # rospy.wait_for_service("/teleop_node/set_mode")
+        # rospy.loginfo("teleop_node node service found! ")
 
-        #set starting mode for the trial
-        self.set_mode_srv = rospy.ServiceProxy('/teleop_node/set_mode', SetMode)
-        self.set_mode_request = SetModeRequest()
-        self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params['start_mode']]
-        status = self.set_mode_srv(self.set_mode_request)
+        # #set starting mode for the trial
+        # self.set_mode_srv = rospy.ServiceProxy('/teleop_node/set_mode', SetMode)
+        # self.set_mode_request = SetModeRequest()
+        # self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params['start_mode']]
+        # status = self.set_mode_srv(self.set_mode_request)
 
         # instantiate the environement
         self.env_params['start'] = False
@@ -221,6 +225,7 @@ class Simulator(object):
                         self.trial_start_time = time.time()
                         is_done = False
                 
+                print(self.input_action)
                 robot_continuous_position, robot_continuous_orientation, robot_gripper_angle, robot_linear_velocity, robot_angular_velocity, robot_discrete_state, is_done = self.env.step(self.input_action)
 
                 self.robot_state.header.stamp = rospy.Time.now()
