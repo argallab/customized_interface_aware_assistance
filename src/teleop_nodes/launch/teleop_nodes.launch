@@ -27,7 +27,7 @@
 	</group>
 
 	<group if="$(arg KEY)">
-        <node pkg="teleop_nodes" type="keyboard_node.py" name="keyboard_node" output="screen" launch-prefix="xterm -e">
+        <node pkg="teleop_nodes" type="keyboard_node.py" name="keyboard_node" output="screen" launch-prefix="xterm -e" args="$(arg robot_dim) $(arg finger_dim)">
 			<param name="keyboard_paradigm" value="$(find teleop_nodes)/cfg/KeyboardModeSwitchParadigm.cfg"/>
 		</node>
 	</group>
