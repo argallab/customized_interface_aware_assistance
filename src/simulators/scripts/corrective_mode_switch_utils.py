@@ -1,6 +1,6 @@
 # Code developed by Deepak Gopinath*, Mahdieh Nejati Javaremi* in February 2020. Copyright (c) 2020. Deepak Gopinath, Mahdieh Nejati Javaremi, Argallab. (*) Equal contribution
 
-from Box2D import b2CircleShape, b2EdgeShape
+from Box2D import b2CircleShape, b2EdgeShape, b2Vec2
 import math
 from enum import Enum
 import collections
@@ -241,11 +241,13 @@ class Robot4D(object):
 	def set_gripper_angle(self, gripper_angle):
 		self.gripper_angle = gripper_angle
 	
-	def update(self, input_action):
+	def gripper_angle_update(self, gripper_vel):
+		self.gripper_angle = self.gripper_angle + 0.1
 
-		self.robot.linearVelocity = [combined_velocity[0], combined_velocity[1]]
-        self.robot.angularVelocity = combined_velocity[2]
-		self.gripper_angle_update(combined_velocity[3])
+	def update(self, velocity):
+		self.robot.linearVelocity = b2Vec2(velocity[0], velocity[1])
+		self.robot.angularVelocity = -velocity[2]
+		self.gripper_angle_update(velocity[3])
 	
 
 class Goal(object):
