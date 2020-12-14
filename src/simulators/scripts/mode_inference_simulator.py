@@ -18,9 +18,9 @@ from pyglet.window import key
 import random
 import sys
 import os
-from utils import Robot2D, FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS, SCALE, VIEWPORT_W, VIEWPORT_H, DIM_TO_MODE_INDEX
-from utils import ROBOT_RADIUS, GOAL_RADIUS, GOAL_SHAPES, GOAL_COLORS, PI, HUMAN_ROBOT_COLOR, AUTONOMY_ROBOT_COLOR, TRIANGLE_L
-from utils import RGOrient, StartDirection, AssistanceType
+from corrective_mode_switch_utils import Robot2D, FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS, SCALE, VIEWPORT_W, VIEWPORT_H, DIM_TO_MODE_INDEX
+from corrective_mode_switch_utils import ROBOT_RADIUS, GOAL_RADIUS, GOAL_SHAPES, GOAL_COLORS, PI, HUMAN_ROBOT_COLOR, AUTONOMY_ROBOT_COLOR, TRIANGLE_L
+from corrective_mode_switch_utils import RGOrient, StartDirection, AssistanceType
 
 class Simulator(object):
 	def __init__(self, subject_id, assistance_block, block_id, training):

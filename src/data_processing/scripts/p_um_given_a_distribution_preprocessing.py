@@ -9,14 +9,13 @@ import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from IPython import embed
 import pickle
 import itertools
 import collections
 import bisect
 import rospkg
 sys.path.append(os.path.join(rospkg.RosPack().get_path('simulators'), 'scripts'))
-from utils import TRUE_ACTION_TO_COMMAND
+from corrective_mode_switch_utils import TRUE_ACTION_TO_COMMAND
 
 class DataParser(object):
 	def __init__(self, file_dir):

@@ -8,7 +8,7 @@ import collections
 import sys
 import rospkg
 sys.path.append(os.path.join(rospkg.RosPack().get_path('simulators'), 'scripts'))
-from utils import StartDirection, AssistanceType, PI
+from corrective_mode_switch_utils import StartDirection, AssistanceType, PI
 
 START_MODE_DICT = {StartDirection.X: {-1: 't', 1: 'y'},
               StartDirection.Y: {-1: 'x', 1: 't'}}
@@ -21,7 +21,7 @@ ASSISTANCE_TYPE = [AssistanceType.Filter, AssistanceType.Corrective, AssistanceT
 START_MODE = [-1, 1]
 UI_GIVEN_A_NOISE = [i/10.0 for i in range(1, 9, 2)]
 UM_GIVEN_UI_NOISE = [i/10.0 for i in range(1, 9, 2)]
-ENTROPY_THRESHOLD = [i/10.0 for i in range(5, 10)]
+ENTROPY_THRESHOLD = [i/10.0 for i in range(5,10)]
 TARGET_ORIENTATIONS = [-PI/2, PI/2]
 
 def generate_simulation_trials(args):
