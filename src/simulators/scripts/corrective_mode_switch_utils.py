@@ -155,6 +155,12 @@ TRANSITION_FOR_ACTION =   { RGOrient.TOP_RIGHT:   {'Soft Puff': {'x': 'next', 'y
 						   RGOrient.BOTTOM_RIGHT: {'Soft Puff': {'x': 'next', 'y': 'prev', 't': 'prev'}, 'Soft Sip': {'x': 'prev', 'y': 'next', 't': 'next'}},
 						   RGOrient.BOTTOM_LEFT:  {'Soft Puff': {'x': 'prev', 'y': 'prev', 't': 'prev'}, 'Soft Sip': {'x': 'next', 'y': 'next', 't': 'next'}}
 							}
+
+TRANSITION_FOR_ACTION_4D =   {  RGOrient.TOP_RIGHT:    {'Soft Puff': {'x': 'next', 'y': 'next', 't': 'prev', 'gr': 'next'}, 'Soft Sip': {'x': 'prev', 'y': 'prev',  't': 'next', 'gr': 'prev'}},
+								RGOrient.TOP_LEFT:     {'Soft Puff': {'x': 'prev', 'y': 'next', 't': 'prev', 'gr': 'next'}, 'Soft Sip': {'x': 'next', 'y': 'prev', 't': 'next', 'gr': 'prev'}},
+								RGOrient.BOTTOM_RIGHT: {'Soft Puff': {'x': 'next', 'y': 'prev', 't': 'prev', 'gr': 'next'}, 'Soft Sip': {'x': 'prev', 'y': 'next', 't': 'next', 'gr': 'prev'}},
+								RGOrient.BOTTOM_LEFT:  {'Soft Puff': {'x': 'prev', 'y': 'prev', 't': 'prev', 'gr': 'next'}, 'Soft Sip': {'x': 'next', 'y': 'next', 't': 'next', 'gr': 'prev'}}
+								}
 #utility functions
 def get_sign_of_number(x):
 	'''
@@ -217,6 +223,11 @@ class Robot4D(object):
 	def get_direction_marker_end_points(self):
 		return (self.robot.position[0], self.robot.position[1]), (self.robot.position[0] + 2*self.radius*math.cos(self.robot.angle), self.robot.position[1] + 2*self.radius*math.sin(self.robot.angle))
 
+	def get_gripper_handle_markers(self):
+		handle_1 = (self.robot.position[0], self.robot.position[1]), (self.robot.position[0] + 2*self.radius*math.cos(self.robot.angle + self.gripper_angle/2.0), self.robot.position[1] + 2*self.radius*math.sin(self.robot.angle + self.gripper_angle/2.0))
+		handle_2 = (self.robot.position[0], self.robot.position[1]), (self.robot.position[0] + 2*self.radius*math.cos(self.robot.angle - self.gripper_angle/2.0), self.robot.position[1] + 2*self.radius*math.sin(self.robot.angle - self.gripper_angle/2.0)) 
+		return [handle_1, handle_2]
+
 	def get_position(self):
 		return [self.robot.position[0], self.robot.position[1]]
 
@@ -243,7 +254,11 @@ class Robot4D(object):
 		self.gripper_angle = gripper_angle
 	
 	def gripper_angle_update(self, gripper_vel):
-		self.gripper_angle = self.gripper_angle + 0.1
+		if gripper_vel > 0.0:
+			self.gripper_angle = max(0.0, self.gripper_angle - 0.05)
+		elif gripper_vel < 0.0:
+			self.gripper_angle = min(PI/2, self.gripper_angle + 0.05)
+		
 
 	def update(self, velocity):
 		self.robot.linearVelocity = b2Vec2(velocity[0], velocity[1])
