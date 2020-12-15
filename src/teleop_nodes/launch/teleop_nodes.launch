@@ -8,9 +8,11 @@
 	<arg name="JOINT" default="false"/>
 	<arg name="CHIN_PORT" default="/dev/chin_switch_arduino" />
 	<arg name="robot_dim" default="3"/>
-	<arg name="finger_dim" default="0"/>
+	<arg name="finger_dim" default="1"/>
 
 	<rosparam param="snp_velocity_scale">13</rosparam>
+	<rosparam param="mode_switch_paradigm">2</rosparam>
+	<rosparam param="interface_dim">1</rosparam>
 
 	<!-- Sip and PUff -->
 	<group if="$(arg SNP)">
