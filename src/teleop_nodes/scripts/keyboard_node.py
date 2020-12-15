@@ -11,7 +11,7 @@ from std_msgs.msg import Bool
 from std_msgs.msg import MultiArrayDimension
 from teleop_nodes.msg import CartVelCmd
 from teleop_nodes.msg import ModeSwitch
-from std_msgs.msg import Int16
+from std_msgs.msg import Int16MultiArray
 from dynamic_reconfigure.server import Server as DynamicReconfigureServer
 from teleop_nodes.cfg import KeyboardModeSwitchParadigmConfig
 from teleop_nodes.srv import SetMode, SetModeRequest, SetModeResponse
@@ -20,7 +20,7 @@ import curses
 npa = np.array
 
 
-# Code taken from ros-teleop/teleop_tools/key_teleop.py from PAL Robotics SL (Author Siegfried-A. Gevatter)
+# Code adapted from ros-teleop/teleop_tools/key_teleop.py from PAL Robotics SL (Author Siegfried-A. Gevatter)
 class TextWindow(): 
   _screen = None
   _window = None 
@@ -64,7 +64,9 @@ class KeyTeleop(ControlInput):
   
     # Initialize
     self._interface = interface
-    ControlInput.__init__(self, robot_dim, finger_dim)
+    self.robot_dim = robot_dim
+    self.finger_dim = finger_dim
+    ControlInput.__init__(self, self.robot_dim, self.finger_dim)
 
     self.initialize_variables()
     self.initialize_publishers()
@@ -84,23 +86,32 @@ class KeyTeleop(ControlInput):
 
     # Initialize Mode Switching Related
     self.modeswitch_msg = ModeSwitch()
-    self.mode_msg = Int16()
+    self.mode_msg = Int16MultiArray()
 
     self._mode = 0
     self._mode_switch_count = 0
-    self.mode_switch_paradigm = 2 #rospy.get_param()
+    self.mode_switch_paradigm = rospy.get_param("/mode_switch_paradigm", 1)
+    self.interface_dim = rospy.get_param("/interface_dim", 1)
     self._last_pressed = {}
 
+    # keys that correspond to motion axes
     self.movement_bindings = {
           curses.KEY_UP:    ( 1,  0),
           curses.KEY_DOWN:  (-1,  0),
           curses.KEY_LEFT:  ( 0,  1),
           curses.KEY_RIGHT: ( 0, -1),
         }
+    # text used for feedback corresponding to movement_bindings
+    self.motion_binding_text = {
+      0: 'up and down arrow',
+      1: 'left and right arrow'
+    }
+    # keys that correspond to mode switching (page up and page down)
     self.mode_switch_bindings = {
           curses.KEY_NPAGE: 1,
           curses.KEY_PPAGE: -1, 
     }
+    # control mode based on control space dimension and interface dimension
     self.mode_binding = self.get_mode_dimension()
 
     self._linear_rate = rospy.get_param("/jaco_velocity_limits/linear_rate", 1)
@@ -115,7 +126,7 @@ class KeyTeleop(ControlInput):
     self._vel_multiplier[2] = self._angular_rate
     self._max_cart_vel = np.ones(self.robot_dim + self.finger_dim)*rospy.get_param("/jaco_velocity_limits/max_cart_vel_mulitplier", 1)
     if self.finger_dim > 0:
-        for j in range(finger_dim):
+        for j in range(self.finger_dim):
             self._max_cart_vel[self.robot_dim + j] = self.gripper_vel_limit
     if not len(self._max_cart_vel) == self.robot_dim + self.finger_dim:
         rospy.logerr('Length of max_cart_vel does not equal number of joints!')
@@ -135,7 +146,7 @@ class KeyTeleop(ControlInput):
   def initialize_publishers(self):
     self.startSend('/user_vel')
     self.mode_switch_pub = rospy.Publisher('/mode_switches', ModeSwitch, queue_size=1)
-    self.modepub = rospy.Publisher("/mi/current_mode", Int16, queue_size=1)
+    self.modepub = rospy.Publisher("/mi/current_mode", Int16MultiArray, queue_size=1)
 
   def initialize_services(self):
     rospy.Service('/teleop_node/set_mode', SetMode, self.set_mode)
@@ -149,22 +160,28 @@ class KeyTeleop(ControlInput):
     # TO DO(mahdieh): I don't think the current mode method is efficient, I would prefer
     # the mode display code (on arduino side) to look for list of strings instead of the way it is now. Will make 
     # code here and there more straight forward and can remove get_digits function. 
-    # keyboard is 2-D so number of modes is the quotient of robot dimension/2, plus another dim if there is a remainder or if there is a gripper
-    # TO DO(mahdieh):  (make 1-D or 3-D an option)
-    quotient, remainder = divmod(self.robot_dim, 2)
+    # The number of modes is the quotient of robot dimension/interface dimension, plus another dim if there is a remainder or if there is a gripper
+    # 1-D and 2-D have been tested and validated
+    quotient, remainder = divmod(self.robot_dim, self.interface_dim)
     # if gripper exists, add to the remainder mode (which will be either 0 or 1)
     j = 1
     mode_bindings = {}
     for i in range(quotient): 
-      # mode_bindings[i] = eval(f"{j}{j+1}") # nicer and faster but only works for python 3
-      mode_bindings[i] = int(str(j)+str(j+1))
-      j+=2
+      mode_axes = []
+      for k in range(self.interface_dim): 
+        mode_axes.append(j)
+        j+=1
+      mode_bindings[i] = mode_axes
     # figuring out if last mode is two dimensional or only one dimensional
     additional_mode = remainder + self.effective_finger_dim
-    if additional_mode == 2: 
-      mode_bindings[i+1] = int(str(j)+str(j+1))
-    elif additional_mode == 1: 
-      mode_bindings[i+1] = j
+    if additional_mode == 1: 
+      mode_bindings[i+1] = [j]
+    elif additional_mode == 2: # to do: might have to change logic for 3D (I haven't gone through this part of the login with pen and paper)
+      mode_axes = []
+      for k in range(self.interface_dim): 
+        mode_axes.append(j)
+        j+=1
+      mode_bindings[i+1]=mode_axes
     # number of modes is equal to the quotient and one more if either there is a remainder, gripper, or both
     self.num_modes = quotient + (additional_mode > 0) 
     return mode_bindings    
@@ -172,7 +189,7 @@ class KeyTeleop(ControlInput):
   # Response to Set Mode Service (eg. if homing)
   def set_mode(self, setmode):
     self._mode = setmode.mode_index
-    print "Current mode is ", self._mode, ":", self.mode_binding[self._mode]
+    print("Current mode is ", self._mode, ":", self.mode_binding[self._mode])
     status = SetModeResponse()
     self.publish_mode()
     self.modeswitch_msg.header.frame_id = 'service'
@@ -181,7 +198,7 @@ class KeyTeleop(ControlInput):
     return status
 
   def publish_mode(self):
-    self.modepub.publish(self.mode_binding[self._mode]) # +1 for arduino
+    self.modepub.publish(self.mode_msg) 
 
   # publishes mode and updates parameter server
   def publish_modeswitch(self):
@@ -191,11 +208,10 @@ class KeyTeleop(ControlInput):
     self.modeswitch_msg.num_switches = self._mode_switch_count
     self.mode_switch_pub.publish(self.modeswitch_msg)
     rospy.set_param('mode',self._mode)
-    print "Num of mode switches %d" % self._mode_switch_count
-
   
   def reconfig_paradigm_cb(self, config, level):
-    self.mode_switch_paradigm = config.keyboard_switch_paradigm
+    self.mode_switch_paradigm = config.mode_switch_paradigm
+    self.interface_dim = config.keyboard_dimension
     return config
 
   # checks whether to switch mode, and changes cyclically
@@ -211,12 +227,10 @@ class KeyTeleop(ControlInput):
     elif self.mode_switch_paradigm == 2:
       self._mode = (self._mode + self.mode_switch_bindings[msg]) % self.num_modes
 
-    # print "************MODE IS NOW ", self._mode, " *******************, \n"
-    # print(self.mode_binding[self._mode])
+    self.mode_msg.data = self.mode_binding[self._mode]
     self.modeswitch_msg.header.frame_id = 'user'
     self.publish_modeswitch()
     self.publish_mode()
-
 
   #######################################################################################
   #                           FUNCTIONS FOR SETTING VELOCITIES                          #
@@ -238,13 +252,13 @@ class KeyTeleop(ControlInput):
     for a in self._last_pressed: 
       if now - self._last_pressed[a] < 0.4: 
         keys.append(a)
-    dim = [0.0, 0.0]
-    # two dimensional control 
-    for k in keys: 
-      d1, d2 = self.movement_bindings[k]
-      dim[0] += d1 
-      dim[1] += d2 
-    axes = str(self.mode_binding[self._mode])
+    dim = np.zeros(self.interface_dim)
+    for d in range(len(dim)): 
+      for k in keys: 
+        vel = self.movement_bindings[k]
+        dim[d] += vel[d]
+        print('dim', dim, 'dim[d]:', dim[d], 'vel:', vel)   
+    axes = self.mode_binding[self._mode]
     for i in range(len(axes)):
       self._cart_vel[int(axes[i])-1] = dim[i]
     
@@ -263,11 +277,10 @@ class KeyTeleop(ControlInput):
     
   def write_to_terminal(self): 
     self._interface.clear()
-    axes = str(self.mode_binding[self._mode])
-    self._interface.write_line(2, 'mode is %d' % (self.mode_binding[self._mode]))
-    self._interface.write_line(4, 'Use up down arrows to move in dimension %s' % (axes[0]))
-    if len(axes)>1:
-      self._interface.write_line(5, 'Use left-right arrows to move in dimension %s' % (axes[1]))
+    axes = self.mode_binding[self._mode]
+    self._interface.write_line(2, 'mode is %s' % (str(self.mode_binding[self._mode])))
+    for i in range(len(axes)): 
+      self._interface.write_line(3+i, 'Use %s to move in dimension %s' % (self.motion_binding_text[i], axes[i]))
     self._interface.write_line(7, 'q to exit')
     self._interface.refresh()
 
