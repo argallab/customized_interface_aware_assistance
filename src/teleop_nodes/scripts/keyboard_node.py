@@ -77,7 +77,7 @@ class KeyTeleop(ControlInput):
 
   def initialize_variables(self): 
 
-    self._hz = rospy.get_param('~hz', 10)
+    self._hz = rospy.get_param('~hz', 100)
 
     if self.finger_dim > 0:
         self.effective_finger_dim = 1
@@ -114,11 +114,11 @@ class KeyTeleop(ControlInput):
     # control mode based on control space dimension and interface dimension
     self.mode_binding = self.get_mode_dimension()
 
-    self._linear_rate = rospy.get_param("/jaco_velocity_limits/linear_rate", 1)
-    self._angular_rate = rospy.get_param("/jaco_velocity_limits/angular_rate", 1)
+    self._linear_rate = rospy.get_param("/jaco_velocity_limits/linear_rate", 10)
+    self._angular_rate = rospy.get_param("/jaco_velocity_limits/angular_rate", 10)
 
     # Set up velocity command and load velocity limits to be sent to hand nodes
-    self.gripper_vel_limit = rospy.get_param("/jaco_velocity_limits/gripper_vel_limit", 1)
+    self.gripper_vel_limit = rospy.get_param("/jaco_velocity_limits/gripper_vel_limit", 7)
     # initliaze velocity multiplier to proper length
     self._vel_multiplier = np.ones(self.robot_dim + self.finger_dim)*1
     # set linear and angular rates
@@ -184,6 +184,7 @@ class KeyTeleop(ControlInput):
       mode_bindings[i+1]=mode_axes
     # number of modes is equal to the quotient and one more if either there is a remainder, gripper, or both
     self.num_modes = quotient + (additional_mode > 0) 
+    print(mode_bindings)
     return mode_bindings    
 
   # Response to Set Mode Service (eg. if homing)
@@ -257,10 +258,10 @@ class KeyTeleop(ControlInput):
       for k in keys: 
         vel = self.movement_bindings[k]
         dim[d] += vel[d]
-        print('dim', dim, 'dim[d]:', dim[d], 'vel:', vel)   
+        # print('dim', dim, 'dim[d]:', dim[d], 'vel:', vel)   
     axes = self.mode_binding[self._mode]
     for i in range(len(axes)):
-      self._cart_vel[int(axes[i])-1] = dim[i]
+      self._cart_vel[int(axes[i])-1] = dim[i] * self._vel_multiplier[i]
     
 #######################################################################################
 #                                 FUNCTIONS FOR TERMINAL                                      #
