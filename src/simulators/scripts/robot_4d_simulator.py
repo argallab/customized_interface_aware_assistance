@@ -84,6 +84,8 @@ class Simulator(object):
             self.env_params = trial_info_dict['env_params']
             print 'ASSISTANCE_TYPE', self.env_params['assistance_type']
         else:
+            print('Create env on the fly')
+            self.metadata_index = [1]
             if not self.training:
                 trial_info_filename_index = 0
                 self.env_params = dict()
@@ -93,6 +95,7 @@ class Simulator(object):
                 self.env_params['goal_position'] = ((3*VIEWPORT_W)/4/SCALE, (VIEWPORT_H)/4/SCALE)
                 self.env_params['robot_orientation'] = 0.0
                 self.env_params['goal_orientation'] = PI/2
+                self.env_params['goal_gripper_angle'] = PI/8
                 self.env_params['start_gripper_angle'] = PI/2
                 self.env_params['r_to_g_relative_orientation'] = RGOrient.BOTTOM_RIGHT
                 self.env_params['start_direction'] = StartDirection.Y
@@ -117,16 +120,16 @@ class Simulator(object):
                 self.env_params = trial_info_dict['env_params']
                 print  'ASSISTANCE_TYPE', self.env_params['assistance_type']
 
-        # rospy.set_param('assistance_type', self.env_params['assistance_type'])
-        # rospy.loginfo("Waiting for teleop_node ")
-        # rospy.wait_for_service("/teleop_node/set_mode")
-        # rospy.loginfo("teleop_node node service found! ")
+        rospy.set_param('assistance_type', self.env_params['assistance_type'])
+        rospy.loginfo("Waiting for teleop_node ")
+        rospy.wait_for_service("/teleop_node/set_mode")
+        rospy.loginfo("teleop_node node service found! ")
 
         # #set starting mode for the trial
-        # self.set_mode_srv = rospy.ServiceProxy('/teleop_node/set_mode', SetMode)
-        # self.set_mode_request = SetModeRequest()
-        # self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params['start_mode']]
-        # status = self.set_mode_srv(self.set_mode_request)
+        self.set_mode_srv = rospy.ServiceProxy('/teleop_node/set_mode', SetMode)
+        self.set_mode_request = SetModeRequest()
+        self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params['start_mode']]
+        status = self.set_mode_srv(self.set_mode_request)
 
         # instantiate the environement
         self.env_params['start'] = False
@@ -138,7 +141,7 @@ class Simulator(object):
         r = rospy.Rate(100)
         self.trial_start_time = time.time()
         if not self.training:
-            self.max_time = 50
+            self.max_time = 100
         else:
             self.max_time = 1000
         is_done = False
@@ -225,7 +228,7 @@ class Simulator(object):
                         self.trial_start_time = time.time()
                         is_done = False
                 
-                print(self.input_action)
+                # print(self.input_action)
                 robot_continuous_position, robot_continuous_orientation, robot_gripper_angle, robot_linear_velocity, robot_angular_velocity, robot_discrete_state, is_done = self.env.step(self.input_action)
 
                 self.robot_state.header.stamp = rospy.Time.now()

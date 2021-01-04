@@ -114,7 +114,7 @@ class Robot4DEnv(object):
             if abs(curr_y -start_y) < 0.1 and abs(curr_x - start_x) < 0.1:
                 position_on_line = PositionOnLine.START
 
-        assert position_on_line is not PositionOnLine.NOT_ON_LINE
+        # assert position_on_line is not PositionOnLine.NOT_ON_LINE
         return position_on_line
         
     def _transform_continuous_position_to_discrete_position(self):
@@ -173,10 +173,41 @@ class Robot4DEnv(object):
         Return values: Discrete gripper angle and bool indicating whether goal was reached or not. 
         '''
         current_gripper_angle = self.robot.get_gripper_angle()
-        return 0.0, False
+        if self.goal_gripper_angle == PI/2:
+            assert current_gripper_angle >= PI/8 and current_gripper_angle <= (PI/2 + 0.1)
+            if abs(current_gripper_angle - self.goal_gripper_angle) > 0.1:
+                return PI/8, False
+            else:
+                return self.goal_gripper_angle, True
+        elif self.goal_gripper_angle == PI/8:
+            assert current_gripper_angle >= (PI/8 - 0.1) and current_gripper_angle <= PI/2
+            if abs(current_gripper_angle - self.goal_gripper_angle) > 0.1: #hasn't reached goal.
+                return PI/2, False
+            else:
+                return self.goal_gripper_angle, True
+
 
     def _retrieve_current_allowed_mode(self):
-        pass
+        '''
+        For a given discrete state, retrieves the mode/dimension in which motion is supposed to happen.
+
+        '''
+        location = self.current_discrete_state[0]
+        orientation =  self.current_discrete_state[1]
+        gripper_angle = self.current_discrete_state[2]
+        if location !=  self.LOCATIONS[self.location_of_turn] and location != self.LOCATIONS[self.location_of_gripper_action]:
+            return self.MODES_MOTION_ALLOWED[location][0] #primary mode in which user is supposed to move, [1] is the secondar mode in which the blending should happen
+        elif location != self.LOCATIONS[self.location_of_gripper_action]:
+            if orientation == 0.0:
+                return self.MODES_MOTION_ALLOWED[location][-1] #'t'
+            else: #has reached orientation
+                return self.MODES_MOTION_ALLOWED[location][0] #primary mode, second dimension would be [1]
+        else:
+            if (gripper_angle == PI/8 and self.goal_gripper_angle == PI/2) or (gripper_angle == PI/2 and self.goal_gripper_angle == PI/8): #hasn't reached the goal gripper angle
+                return self.MODES_MOTION_ALLOWED[location][-1] #'g'
+            else:
+                return self.MODES_MOTION_ALLOWED[location][0] #primary mode
+
 
     def _init_modes_in_which_motion_allowed_dict(self):
         '''
@@ -262,7 +293,6 @@ class Robot4DEnv(object):
 
     def _init_allowed_directions_of_motion(self):
         pass
-    
     def _retrieve_allowed_direction_motion_in_allowed_mode(self):
         pass
     
@@ -581,6 +611,8 @@ class Robot4DEnv(object):
         self.start_direction = self.env_params['start_direction']
         self.start_mode = self.env_params['start_mode']
         self.start_gripper_angle = self.env_params['start_gripper_angle']
+        self.goal_gripper_angle = self.env_params['goal_gripper_angle']
+        assert self.start_gripper_angle != self.goal_gripper_angle, "starting gripper angle and goal gripper angles need to be different. "
         self.training = self.env_params['training']
         self.assistance_type = ASSISTANCE_CODE_NAME[self.env_params['assistance_type']] # label assistance type
         self.location_of_turn = self.env_params['location_of_turn'] #corresponds to the index in self.waypoints list
@@ -600,6 +632,7 @@ class Robot4DEnv(object):
         self.current_mode = self.start_mode
         self.current_gripper_angle = self.start_gripper_angle
         self.mode_display_label = None
+        self.dim = len(self.DIMENSIONS)
 
         #create and initialize the dictionary which contains info regarding which modes/dimension allow motion for each location
         self.MODES_MOTION_ALLOWED = collections.OrderedDict()
@@ -643,7 +676,7 @@ class Robot4DEnv(object):
         self.timer_thread = threading.Thread(target=self._render_timer, args=(self.period,))
         self.lock = threading.Lock()
         self.current_time = 0
-        self.max_time = 50
+        self.max_time = 100
     
     def step(self, input_action):
         assert 'human' in input_action.keys()
@@ -660,16 +693,21 @@ class Robot4DEnv(object):
             self.robot.set_orientation(current_discrete_orientation) #if snap is true then force orientation to be that of the target orientation
             current_discrete_orientation, should_snap = self._transform_continuous_orientation_to_discrete_orientation() #recompute the discrete orientation
         
-        current_discrete_gripper_angle = PI/2
+        current_discrete_gripper_angle, should_snap = self._transform_continuous_continuous_gripper_angle_to_discrete_gripper_angle()
+        if should_snap:
+            self.robot.set_gripper_angle(current_discrete_gripper_angle)
+            current_discrete_gripper_angle, should_snap = self._transform_continuous_continuous_gripper_angle_to_discrete_gripper_angle()
 
         #restrict the nonzero components of the velocity only to the allowed modes.
-        # self.current_mode_index = rospy.get_param('mode') #0,1,2,3 #get current mode index
-        self.current_mode_index = 0 #TODO use get param when the teleop node is running and remove this line.
+        self.current_mode_index = rospy.get_param('mode') #0,1,2,3 #get current mode index
+        # print(self.current_mode_index)
         self.current_mode =  MODE_INDEX_TO_DIM[self.current_mode_index] #x,y,t,g #get current mode
+        # self.current_mode = 0
         self.current_discrete_state = (current_discrete_position, current_discrete_orientation, current_discrete_gripper_angle, self.current_mode) #update the current discrete state.
-        # current_allowed_mode = self._retrieve_current_allowed_mode() #x,y,t,gr #for the given location, retrieve what is the allowed mode of motion.
-        current_allowed_mode = 'x'
+        current_allowed_mode = self._retrieve_current_allowed_mode() #x,y,t,gr #for the given location, retrieve what is the allowed mode of motion.
+        # current_allowed_mode = 'x'
         current_allowed_mode_index = DIM_TO_MODE_INDEX[current_allowed_mode] #0,1,2 #get the mode index of the allowed mode of motion
+        print(current_allowed_mode_index)
         user_vel = np.array([input_action['human'].velocity.data[0], input_action['human'].velocity.data[1], input_action['human'].velocity.data[2], input_action['human'].velocity.data[3]]) #numpyify the velocity data. note the negative sign on the 3rd component.To account for proper counterclockwise motion
         user_vel[np.setdiff1d(self.DIMENSION_INDICES, current_allowed_mode_index)] = 0.0 #zero out all velocities except the ones for the allowed mode
 
@@ -679,6 +717,7 @@ class Robot4DEnv(object):
         #     user_vel[current_allowed_mode_index] = 0.0 #if not, zero the velocity out
 
         rospy.set_param('current_discrete_state', self.current_discrete_state)
+        print(self.current_discrete_state)
         # self.robot.robot.linearVelocity = b2Vec2(user_vel[0], user_vel[1]) #update robot velocity
         # self.robot.robot.angularVelocity = -user_vel[2]
         if self.current_time >= self.max_time and not self.training:

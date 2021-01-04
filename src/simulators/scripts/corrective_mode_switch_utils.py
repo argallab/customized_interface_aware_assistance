@@ -156,7 +156,7 @@ TRANSITION_FOR_ACTION =   { RGOrient.TOP_RIGHT:   {'Soft Puff': {'x': 'next', 'y
 						   RGOrient.BOTTOM_LEFT:  {'Soft Puff': {'x': 'prev', 'y': 'prev', 't': 'prev'}, 'Soft Sip': {'x': 'next', 'y': 'next', 't': 'next'}}
 							}
 
-TRANSITION_FOR_ACTION_4D =   {  RGOrient.TOP_RIGHT:    {'Soft Puff': {'x': 'next', 'y': 'next', 't': 'prev', 'gr': 'next'}, 'Soft Sip': {'x': 'prev', 'y': 'prev',  't': 'next', 'gr': 'prev'}},
+TRANSITION_FOR_ACTION_4D =   {  RGOrient.TOP_RIGHT:    {'Soft Puff': {'x': 'next', 'y': 'next', 't': 'prev', 'gr': 'next'}, 'Soft Sip': {'x': 'prev', 'y': 'prev', 't': 'next', 'gr': 'prev'}},
 								RGOrient.TOP_LEFT:     {'Soft Puff': {'x': 'prev', 'y': 'next', 't': 'prev', 'gr': 'next'}, 'Soft Sip': {'x': 'next', 'y': 'prev', 't': 'next', 'gr': 'prev'}},
 								RGOrient.BOTTOM_RIGHT: {'Soft Puff': {'x': 'next', 'y': 'prev', 't': 'prev', 'gr': 'next'}, 'Soft Sip': {'x': 'prev', 'y': 'next', 't': 'next', 'gr': 'prev'}},
 								RGOrient.BOTTOM_LEFT:  {'Soft Puff': {'x': 'prev', 'y': 'prev', 't': 'prev', 'gr': 'next'}, 'Soft Sip': {'x': 'next', 'y': 'next', 't': 'next', 'gr': 'prev'}}
@@ -262,7 +262,7 @@ class Robot4D(object):
 
 	def update(self, velocity):
 		self.robot.linearVelocity = b2Vec2(velocity[0], velocity[1])
-		self.robot.angularVelocity = -velocity[2]
+		self.robot.angularVelocity = velocity[2]
 		self.gripper_angle_update(velocity[3])
 	
 

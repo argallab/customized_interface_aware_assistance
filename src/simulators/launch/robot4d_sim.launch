@@ -26,12 +26,13 @@
 
   <!-- <node pkg="inference_and_correction" output="screen" type="mode_switch_inference_and_correction.py" name="mode_switch_inference_and_correction"  args="$(arg subject_id) $(arg optim)"/> -->
 
-  <!-- <include file="$(find teleop_nodes)/launch/teleop_nodes.launch">
+  <include file="$(find teleop_nodes)/launch/teleop_nodes.launch">
     <arg name="SNP" value="$(arg SNP)"/>
     <arg name="KEY" value="$(arg KEY)"/>
     <arg name="JOINT" value="$(arg JOINT)"/>
-    <arg name="robot_dim" value="4"/>
-  </include> -->
+    <arg name="robot_dim" value="3"/>
+    <arg name="finger_dim" value="1"/>
+  </include>
   
 
 </launch>
