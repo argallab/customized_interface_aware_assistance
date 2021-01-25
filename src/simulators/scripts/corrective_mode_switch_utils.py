@@ -136,6 +136,13 @@ class PositionOnLine(Enum):
 	BETWEEN = 1
 	END = 2
 	NOT_ON_LINE = 3
+	ON_LINE = 4 #could be beyond the end points
+
+class OrientationOnArc(Enum):
+	START = 0
+	BETWEEN = 1
+	END = 2
+	ON_EXTENDED_ARC = 3
 
 class StartDirection(Enum):
 	X = 0

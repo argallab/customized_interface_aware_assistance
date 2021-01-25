@@ -141,7 +141,7 @@ class Simulator(object):
         r = rospy.Rate(100)
         self.trial_start_time = time.time()
         if not self.training:
-            self.max_time = 100
+            self.max_time = 200
         else:
             self.max_time = 1000
         is_done = False

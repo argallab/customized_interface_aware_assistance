@@ -98,17 +98,21 @@ class Robot4DEnv(object):
         start_x, end_x, curr_x = start_position[0], end_position[0], current_position[0]
         start_y, end_y, curr_y = start_position[1], end_position[1], current_position[1]
 
-        if not start_x == end_x: #slope is not infinite #parallel to y axis
+        if not start_x == end_x: #slope is not infinite #this is parallel to x axis
             m = (end_y - start_y)/(end_x - start_x) #compute finite slope
             curr_on = (curr_y - start_y) == m * (curr_x - start_x) #check if the current point is ON the line
             curr_between = (min(start_x, end_x) <= curr_x <= max(start_x, end_x)) and (min(start_y, end_y) <= curr_y <= max(start_y, end_y)) #check if the current point is between the end points
-            curr_on_and_between = curr_on and curr_between #Logical AND of ON and BETWEEN
+            # curr_on_and_between = curr_on and curr_between #Logical AND of ON and BETWEEN
+            curr_on_and_between = curr_on #removing the need to be BETWEEN the end points so that the movement can be extended beyond the end points. The stabilizing controller will have to become active to bring it back
         else:
-            curr_on_and_between =  (min(start_x, end_x) <= curr_x <= max(start_x, end_x))  and (min(start_y, end_y) <= curr_y <= max(start_y,end_y))
+            # curr_on_and_between = (min(start_x, end_x) <= curr_x <= max(start_x, end_x))  and (min(start_y, end_y) <= curr_y <= max(start_y,end_y))
+            curr_on_and_between = (min(start_x, end_x) <= curr_x <= max(start_x, end_x)) # can go beyond the y limits, but still on the line. 
 
+        print(curr_on_and_between)
         position_on_line = PositionOnLine.NOT_ON_LINE
         if curr_on_and_between:
-            position_on_line = PositionOnLine.BETWEEN
+            # position_on_line = PositionOnLine.BETWEEN
+            position_on_line = PositionOnLine.ON_LINE
             if abs(curr_y - end_y) < 0.1 and abs(curr_x - end_x) < 0.1: #TODO (deepak.gopinath) Define these thresholds in utils.py folder.
                 position_on_line = PositionOnLine.END
             if abs(curr_y -start_y) < 0.1 and abs(curr_x - start_x) < 0.1:
@@ -132,20 +136,25 @@ class Robot4DEnv(object):
         #only consider line segments from the current index onwards.
         for (turn_id, p, pt) in zip(range(start_index, self.num_locations-1), self.waypoints[start_index:-1], self.waypoints[start_index+1:]):
             if turn_id < self.location_of_turn or turn_id > self.location_of_turn:
-                position_on_line =  self._check_continuous_position_on_line_joining_waypoints(p, pt, current_position) #check if the current position of the robot is at the START, BETWEEN or END of the line segment
-                if position_on_line == PositionOnLine.START or position_on_line == PositionOnLine.BETWEEN:
+                position_on_line =  self._check_continuous_position_on_line_joining_waypoints(p, pt, current_position) #check if the current position of the robot is at the START, BETWEEN or END of the line segment or ON the line
+                print(position_on_line)
+                if position_on_line == PositionOnLine.START or position_on_line == PositionOnLine.BETWEEN or position_on_line == PositionOnLine.ON_LINE:
                     return self.WAYPOINTS_TO_LOCATION_DICT[tuple(p)], False
                 elif position_on_line == PositionOnLine.END:
                     return self.WAYPOINTS_TO_LOCATION_DICT[tuple(pt)], True
+                elif position_on_line == PositionOnLine.NOT_ON_LINE:
+                    import IPython; IPython.embed(banner1='robot not on line segment')
             elif turn_id == self.location_of_turn:
-                if abs(current_orientation - self.goal_orientation) > 0.1: #hasn't turned or is turning
+                if abs(current_orientation - self.goal_orientation) > 0.1: #hasn't turned or is turning. Might have to take care of rotation. #TODO Convert this check for goal orientation to a functoin
                     return self.WAYPOINTS_TO_LOCATION_DICT[tuple(p)], False
                 elif abs(current_orientation - self.goal_orientation) < 0.1: #finished turning
                     position_on_line =  self._check_continuous_position_on_line_joining_waypoints(p, pt, current_position)
-                    if position_on_line == PositionOnLine.START or position_on_line == PositionOnLine.BETWEEN:
+                    if position_on_line == PositionOnLine.START or position_on_line == PositionOnLine.BETWEEN or position_on_line == PositionOnLine.ON_LINE:
                         return self.WAYPOINTS_TO_LOCATION_DICT[tuple(p)], False
                     elif position_on_line == PositionOnLine.END:
                         return self.WAYPOINTS_TO_LOCATION_DICT[tuple(pt)], True
+                    elif position_on_line == PositionOnLine.NOT_ON_LINE:
+                        import IPython; IPython.embed(banner1='robot not on line segment at turning location')
 
         return self.WAYPOINTS_TO_LOCATION_DICT[tuple(self.waypoints[-1])], True
 
@@ -154,14 +163,15 @@ class Robot4DEnv(object):
         Retrieves discrete orientation from continuous orientation
         '''
         current_orientation = self.robot.get_angle()
+        print(current_orientation)
         if self.goal_orientation == PI/2:
-            assert current_orientation >= 0.0 and current_orientation <= (PI/2 + 0.1)
-            if abs(current_orientation - self.goal_orientation) > 0.1:
+            # assert current_orientation >= 0.0 and current_orientation <= (PI/2 + 0.1) #this is to ensure that the rotation doesn't happen in the "wrong" direction
+            if abs(current_orientation - self.goal_orientation) > 0.1:# (todo add wraparound so that reaching goal from the wrong direction is valud)
                 return 0.0, False
             else:
                 return self.goal_orientation, True
         elif self.goal_orientation == -PI/2:
-            assert current_orientation >= (-PI/2 - 0.1) and current_orientation <= 0.0
+            # assert current_orientation >= (-PI/2 - 0.1) and current_orientation <= 0.0
             if abs(current_orientation - self.goal_orientation) > 0.1:
                 return 0.0, False
             else:
@@ -185,7 +195,6 @@ class Robot4DEnv(object):
                 return PI/2, False
             else:
                 return self.goal_gripper_angle, True
-
 
     def _retrieve_current_allowed_mode(self):
         '''
@@ -707,7 +716,7 @@ class Robot4DEnv(object):
         current_allowed_mode = self._retrieve_current_allowed_mode() #x,y,t,gr #for the given location, retrieve what is the allowed mode of motion.
         # current_allowed_mode = 'x'
         current_allowed_mode_index = DIM_TO_MODE_INDEX[current_allowed_mode] #0,1,2 #get the mode index of the allowed mode of motion
-        print(current_allowed_mode_index)
+        # print(current_allowed_mode_index)
         user_vel = np.array([input_action['human'].velocity.data[0], input_action['human'].velocity.data[1], input_action['human'].velocity.data[2], input_action['human'].velocity.data[3]]) #numpyify the velocity data. note the negative sign on the 3rd component.To account for proper counterclockwise motion
         user_vel[np.setdiff1d(self.DIMENSION_INDICES, current_allowed_mode_index)] = 0.0 #zero out all velocities except the ones for the allowed mode
 
