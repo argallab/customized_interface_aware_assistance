@@ -137,8 +137,8 @@ class Robot4DEnv(object):
             # curr_on_and_between = (min(start_x, end_x) <= curr_x <= max(start_x, end_x))  and (min(start_y, end_y) <= curr_y <= max(start_y,end_y))
             curr_on_and_between = (min(start_x, end_x) <= curr_x <= max(start_x, end_x)) # can go beyond the y limits, but still on the line. 
 
-    def _transform_continuous_position_to_discrete_position(self):
-        pass
+    # def _transform_continuous_position_to_discrete_position(self):
+    #     pass
 
     def _transform_continuous_position_to_discrete_position(self):
         '''
