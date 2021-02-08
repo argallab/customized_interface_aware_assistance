@@ -120,7 +120,26 @@ class Robot4DEnv(object):
 
         # assert position_on_line is not PositionOnLine.NOT_ON_LINE
         return position_on_line
+    
+    def _check_continuous_position_in_relation_to_current_segment(self, start_position, end_position, current_position):
         
+        #start and end points of the current line segment. 
+        start_x, end_x, curr_x = start_position[0], end_position[0], current_position[0]
+        start_y, end_y, curr_y = start_position[1], end_position[1], current_position[1]
+
+        if not start_x == end_x: #slope is not infinite #this is parallel to x axis
+            m = (end_y - start_y)/(end_x - start_x) #compute finite slope
+            curr_on = (curr_y - start_y) == m * (curr_x - start_x) #check if the current point is ON the line
+            curr_between = (min(start_x, end_x) <= curr_x <= max(start_x, end_x)) and (min(start_y, end_y) <= curr_y <= max(start_y, end_y)) #check if the current point is between the end points
+            # curr_on_and_between = curr_on and curr_between #Logical AND of ON and BETWEEN
+            curr_on_and_between = curr_on #removing the need to be BETWEEN the end points so that the movement can be extended beyond the end points. The stabilizing controller will have to become active to bring it back
+        else:
+            # curr_on_and_between = (min(start_x, end_x) <= curr_x <= max(start_x, end_x))  and (min(start_y, end_y) <= curr_y <= max(start_y,end_y))
+            curr_on_and_between = (min(start_x, end_x) <= curr_x <= max(start_x, end_x)) # can go beyond the y limits, but still on the line. 
+
+    def _transform_continuous_position_to_discrete_position(self):
+        pass
+
     def _transform_continuous_position_to_discrete_position(self):
         '''
         Transforms continuous robot position to a discrete position id.
@@ -225,7 +244,7 @@ class Robot4DEnv(object):
         for i, s in enumerate(self.LOCATIONS[:-1]): #for all locations before the end location
             if self.start_direction == StartDirection.X:
                 if i % 2 == 0:
-                    self.MODES_MOTION_ALLOWED[s] = ['x', 'y'] # primary mode is the first place. Tthe secondary mode is the one in which the autonomous controller will be active. 
+                    self.MODES_MOTION_ALLOWED[s] = ['x', 'y'] # primary mode is the first place. The secondary mode is the one in which the autonomous controller will be active. 
                 else:
                     self.MODES_MOTION_ALLOWED[s] = ['y', 'x']
                 
@@ -689,7 +708,6 @@ class Robot4DEnv(object):
     
     def step(self, input_action):
         assert 'human' in input_action.keys()
-
         #Todo potentially replace all of the 'snapping functionality with some sort of stablization controller which gets activated when in the vicinity of the set point?
         current_discrete_position, should_snap = self._transform_continuous_position_to_discrete_position() #transform the continuous robot position to a discrete state representation. Easier for computing the optimal action etc
         if should_snap:
@@ -712,7 +730,7 @@ class Robot4DEnv(object):
         # print(self.current_mode_index)
         self.current_mode =  MODE_INDEX_TO_DIM[self.current_mode_index] #x,y,t,g #get current mode
         # self.current_mode = 0
-        self.current_discrete_state = (current_discrete_position, current_discrete_orientation, current_discrete_gripper_angle, self.current_mode) #update the current discrete state.
+        self.current_discrete_state = (current_discrete_position, current_discrete_orientation, self.current_mode, current_discrete_gripper_angle) #update the current discrete state.
         current_allowed_mode = self._retrieve_current_allowed_mode() #x,y,t,gr #for the given location, retrieve what is the allowed mode of motion.
         # current_allowed_mode = 'x'
         current_allowed_mode_index = DIM_TO_MODE_INDEX[current_allowed_mode] #0,1,2 #get the mode index of the allowed mode of motion
