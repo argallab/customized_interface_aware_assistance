@@ -45,9 +45,21 @@ class Simulator(object):
         user_vel.header.stamp = rospy.Time.now()
         user_vel.header.frame_id = 'human_control'
 
+        stabilizing_control = CartVelCmd()
+        _dim = [MultiArrayDimension()]
+        _dim[0].label = 'cartesian_velocity_sc'
+        _dim[0].size = self.dim
+        _dim[0].stride = self.dim
+        stabilizing_control.velocity.layout.dim = _dim
+        stabilizing_control.velocity.data = np.zeros(self.dim)
+        stabilizing_control.header.stamp = rospy.Time.now()
+        stabilizing_control.header.frame_id = 'stabilizing_control'
+
         self.input_action = {}
         self.input_action['human'] = user_vel
         rospy.Subscriber('/user_vel', CartVelCmd, self.joy_callback)
+        self.input_action['stabilizing_control'] = stabilizing_control
+        rospy.Subscriber('/stabilizing_control_action', CartVelCmd, self.sc_callback)
         self.trial_index = 0
 
         self.env_params = None
@@ -253,6 +265,9 @@ class Simulator(object):
     
     def joy_callback(self, msg):
         self.input_action['human'] = msg
+    
+    def sc_callback(self, msg):
+        self.input_action['stabilizing_control'] = msg
     
     def shutdown_hook(self, msg_string='DONE'):
         if not self.called_shutdown:
