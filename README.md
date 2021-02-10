@@ -1,6 +1,6 @@
 # Customized Handling of Unintended Interface Operation in Assistive Robots
 
-This repository includes the authors' implementation of the shared control assistance system presented in "Customized Handling of Unintended Interface Operation in Assistive Robots". This work has been submitted to IROS 2020. The main contributions of this work are three-fold.
+This repository includes the authors' implementation of the shared control assistance system presented in "Customized Handling of Unintended Interface Operation in Assistive Robots". This work has been submitted to ICRA 2021. The main contributions of this work are three-fold.
 
 1. Mathematical modeling of stochastic deviations in user input
 2. Model-based inference of intended interface operation
