@@ -290,7 +290,7 @@ if __name__ == '__main__':
     block_id = sys.argv[3]
     training = int(sys.argv[4])
     print type(subject_id), type(block_id), type(training)
-    Simulator(subject_id, assistance_block, block_id, training)
+    s = Simulator(subject_id, assistance_block, block_id, training)
     rospy.spin()
 
 

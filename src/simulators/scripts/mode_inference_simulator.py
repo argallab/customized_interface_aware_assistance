@@ -76,6 +76,7 @@ class Simulator(object):
 			trial_info_filename_index = self.metadata_index[self.trial_index]
 			trial_info_filepath = os.path.join(self.trial_info_dir_path, str(trial_info_filename_index) + '.pkl')
 			assert os.path.exists(trial_info_filepath) is not None
+			
 			with open(trial_info_filepath, 'rb') as fp:
 				trial_info_dict = pickle.load(fp) #this dict could have other info related to autonomy params. We are only interested in the environment params for the time being
 

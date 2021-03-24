@@ -10,7 +10,7 @@ ag0
 (lp5
 S'r_to_g_relative_orientation'
 p6
-acutils
+accorrective_mode_switch_utils
 RGOrient
 p7
 (I1
@@ -23,7 +23,7 @@ aI3
 aa(lp12
 S'start_direction'
 p13
-acutils
+accorrective_mode_switch_utils
 StartDirection
 p14
 (I0

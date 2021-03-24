@@ -3,6 +3,9 @@
 
 import os
 from backends.rendering import Viewer
+import sys
+import os
+import rospkg
 sys.path.append(os.path.join(rospkg.RosPack().get_path('simulators'), 'scripts'))
 from corrective_mode_switch_utils import SCALE, VIEWPORT_W, VIEWPORT_H
 from corrective_mode_switch_utils import COMMAND_TEXT_COLOR, COMMAND_DISPLAY_POSITION, COMMAND_DISPLAY_FONTSIZE, OPTION_DISPLAY_FONTSIZE, OPTIONS_TEXT_COLOR, OPTION_DISPLAY_OFFSET, OPTION_TEXT_DISPLAY_OFFSET
