@@ -2,7 +2,7 @@ import numpy as np
 import collections
 import itertools
 from mdp_class import DiscreteMDP
-from envs.utils import *
+from mdp_utils import *
 import math
 from scipy import sparse
 
@@ -38,6 +38,7 @@ class MDPDiscreteSE2GridWorldWithModes(DiscreteMDP):
         self.obstacle_penalty = self.env_params['obstacle_penalty']
         self.step_penalty = self.env_params['step_penalty']
         self.goal_reward = self.env_params['goal_reward']
+        self.num_discrete_orientations = self.env_params['num_discrete_orientations']
 
         self.orientations = [i*2*PI/self.num_discrete_orientations for i in range(self.num_discrete_orientations)]
         self.orientations_index_dict = collections.OrderedDict()
@@ -76,9 +77,13 @@ class MDPDiscreteSE2GridWorldWithModes(DiscreteMDP):
                     state_id = self._convert_grid_coords_to_1D_state(state_coord)
                     new_state_id = self._convert_grid_coords_to_1D_state(new_state_coord)
                     T[state_id, new_state_id] = 1
-                goal_state_id = self._convert_grid_coords_to_1D_state(self.goal_state) #goal state is (x, y, t)
-                T[goal_state_id, :] = 0
-                T[goal_state_id, goal_state_id] = 1
+                
+                for mode in CARTESIAN_MODE_SET_OPTIONS[self.robot_type][self.mode_set_type].keys(): #it doesn't matter what the final mode is for the goal state.
+                    goal_state_tuple = (self.goal_state[Dim.X.value], self.goal_state[Dim.Y.value], self.goal_state[Dim.Theta.value], mode) #make (gx, gy, gt, m) for all m
+                    goal_state_id = self._convert_grid_coords_to_1D_state(goal_state_tuple) #()
+                    T[goal_state_id, :] = 0
+                    T[goal_state_id, goal_state_id] = 1
+                
                 self.P[action_id] = sparse.csr_matrix(T)
             
             del T #delete the temporary matrix
@@ -97,7 +102,7 @@ class MDPDiscreteSE2GridWorldWithModes(DiscreteMDP):
                 action_goal_weight = action_vector[3]
                 R = np.zeros((self.num_states, self.num_states), dtype=np.int) #all INVALID transitions will have 0. 
                 for state_coord in self.state_coords:
-                    new_state_coord, transition_type = self._transition(state_coord, action)
+                    new_state_coord, transition_type = self._transition(state_coord, task_level_action)
                     state_id = self._convert_grid_coords_to_1D_state(state_coord)
                     new_state_id = self._convert_grid_coords_to_1D_state(new_state_coord)
                     if transition_type == TransitionType.INTO_OBSTACLE:
@@ -109,9 +114,13 @@ class MDPDiscreteSE2GridWorldWithModes(DiscreteMDP):
                     elif transition_type == TransitionType.INTO_WALL:
                         R[state_id, new_state_id] = self.obstacle_penalty
                 
-                goal_state_id = self._convert_grid_coords_to_1D_state(self.goal_state)
-                R[goal_state_id, :] = 0
-                R[goal_state_id, goal_state_id] = self.goal_reward
+                for mode in CARTESIAN_MODE_SET_OPTIONS[self.robot_type][self.mode_set_type].keys(): #it doesn't matter what the final mode is for the goal state. 
+                    goal_state_tuple = (self.goal_state[Dim.X.value], self.goal_state[Dim.Y.value], self.goal_state[Dim.Theta.value], mode) #make (gx, gy, gt, m) for all m
+                    goal_state_id = self._convert_grid_coords_to_1D_state(goal_state_tuple) #()
+                    R[goal_state_id, :] = 0
+                    R[goal_state_id, goal_state_id] = self.goal_reward
+                
+
                 self.R[action_id] = sparse.csr_matrix(R)
             
             del R
@@ -123,7 +132,7 @@ class MDPDiscreteSE2GridWorldWithModes(DiscreteMDP):
         if self._check_in_obstacle(state_coord):
             return state_coord, TransitionType.INVALID
         else:
-            remapped_action_tuple = self._remapped_task_level_action(task_level_action, state_coord)
+            remapped_action_tuple = self._remapped_task_level_action(state_coord, task_level_action)
             (vel_tuple, mode_switch_command) = remapped_action_tuple
             if vel_tuple != (0,0,0):
                 assert mode_switch_command is None
@@ -152,15 +161,16 @@ class MDPDiscreteSE2GridWorldWithModes(DiscreteMDP):
 
             return new_state_coord, transition_type
     
-    def _remapped_task_level_action(task_level_action, state_coord):
+    def _remapped_task_level_action(self, state_coord, task_level_action):
         action_vector = [0]*self.dims #4d action to decide whether increment or decrement happens along which dimension
         # deal with movement type actions
         if task_level_action == 'move_p' or task_level_action == 'move_n':
             action_val = self.ACTION_VALS[task_level_action] #increment of decrement in the mode that allow movement
             action_vector[state_coord[Dim.ModeSE2.value]-1] = action_val # -1 because 1,2,3 are the mode values
-        elif action_val == 'to_mode_r' or task_level_action == 'to_mode_l': #mode switch action
+        elif task_level_action == 'to_mode_r' or task_level_action == 'to_mode_l': #mode switch action
+            action_val = self.ACTION_VALS[task_level_action]
             action_vector[-1] = action_val # [0,0,0,-1/+1]
-        remapped_action_tuple = self._create_action_tuple(action_vector)
+        remapped_action_tuple = self._create_action_tuple(action_vector, state_coord)
         return remapped_action_tuple #((x,y,t), mode_switch)
     
     def _create_action_tuple(self, action_vector, state_coord):
@@ -262,15 +272,19 @@ class MDPDiscreteSE2GridWorldWithModes(DiscreteMDP):
             return self.get_zero_action()
         else:
             s = np.random.rand()
+            # print(self.sparsity_factor, self.rand_direction_factor)
             if s < self.sparsity_factor and not return_optimal:
+                # print('sparse')
                 return self.get_zero_action()
             else:
                 d = np.random.rand()
                 if d < self.rand_direction_factor and not return_optimal:
+                    # print('rand')
                     return self.get_random_action()
                 else:
                     state_id = self._convert_grid_coords_to_1D_state(state_coord)
                     action_id = self.rl_algo.policy[state_id]
+                    # print('optimal')
                     # print('state, optimal action', state_coord, self.action_id_to_task_level_action_map[action_id])
                     return self.action_id_to_task_level_action_map[action_id] # movep, moven, mode_l, mode_r
 
