@@ -274,17 +274,17 @@ class MDPDiscreteSE2GridWorldWithModes(DiscreteMDP):
             s = np.random.rand()
             # print(self.sparsity_factor, self.rand_direction_factor)
             if s < self.sparsity_factor and not return_optimal:
-                # print('sparse')
+                print('sparse')
                 return self.get_zero_action()
             else:
                 d = np.random.rand()
                 if d < self.rand_direction_factor and not return_optimal:
-                    # print('rand')
+                    print('rand')
                     return self.get_random_action()
                 else:
                     state_id = self._convert_grid_coords_to_1D_state(state_coord)
                     action_id = self.rl_algo.policy[state_id]
-                    # print('optimal')
+                    print('optimal')
                     # print('state, optimal action', state_coord, self.action_id_to_task_level_action_map[action_id])
                     return self.action_id_to_task_level_action_map[action_id] # movep, moven, mode_l, mode_r
 
