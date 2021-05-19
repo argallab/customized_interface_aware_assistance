@@ -1,6 +1,6 @@
 import mdptoolbox
 import numpy as np 
-from envs.utils import *
+from mdp_utils import *
 import collections
 
 class DiscreteMDP(object):
@@ -26,11 +26,11 @@ class DiscreteMDP(object):
         self._define_mdp()
         print('TOTAL NUM STATES', self.num_states)
 
-        self.actions = collections.OrderedDict()
-        self.action_id_to_action_map = collections.OrderedDict()
-        self.action_to_action_id_map = collections.OrderedDict()
+        self.task_level_actions = collections.OrderedDict()
+        self.action_id_to_task_level_action_map = collections.OrderedDict()
+        self.task_level_action_to_action_id_map = collections.OrderedDict()
         self.create_action_dict()
-        self.num_actions = len(self.actions) #discrte actions
+        self.num_actions = len(self.task_level_actions) #discrte actions
         print('TOTAL NUM ACTIONS', self.num_actions)
         print('CREATING TRANSITION MATRIX')
         self._create_transition_matrix()
@@ -93,7 +93,7 @@ class DiscreteMDP(object):
     
     def get_random_action(self):
         rand_action_id = np.random.randint(self.num_actions) #random action
-        return self.action_id_to_action_map[rand_action_id]
+        return self.action_id_to_task_level_action_map[rand_action_id]
 
     def get_value_function(self):
         if self.rl_algo_type == RlAlgoType.QLearning:
