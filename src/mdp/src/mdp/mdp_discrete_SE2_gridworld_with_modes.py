@@ -341,3 +341,17 @@ class MDPDiscreteSE2GridWorldWithModes(DiscreteMDP):
         else:
             return 0.0
     
+    def get_prob_a_given_s(self, state_coord, task_level_action):
+        assert task_level_action in self.action_id_to_task_level_action_map.values()
+        state_id = self._convert_grid_coords_to_1D_state(state_coord)
+        action_id = self.task_level_action_to_action_id_map[task_level_action]
+        if self.rl_algo_type == RlAlgoType.QLearning:
+            p_vec = np.exp(self.boltzmann_factor * self.rl_algo.Q[state_id, :]) / np.sum(np.exp(self.boltzmann_factor * self.rl_algo.Q[state_id, :])) 
+            return p_vec[action_id] #probability associated with action
+        else:
+            #use deterministic policy
+            if self.rl_algo.policy[state_id] == action_id:
+                return 1 - self.rand_direction_factor + self.rand_direction_factor/self.num_actions
+            else:
+                return self.rand_direction_factor/self.num_actions
+    
