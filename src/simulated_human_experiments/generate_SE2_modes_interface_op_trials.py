@@ -5,6 +5,7 @@ import argparse
 import collections
 import sys
 
+MAX_SIM_STEPS = 200
 NUM_GOALS_LEVELS = [2,3,4]
 OCCUPANCY_LEVELS = [0.05, 0.1]
 RAND_DIRECTION_LEVELS = [0.0, 0.2, 0.4, 0.8]
@@ -30,6 +31,7 @@ def generate_SE2_modes_interface_op_simulation_trials(args):
         combination_dict['phi_given_a_noise'] = phi_given_a_noise
         combination_dict['phm_given_phi_noise'] = phm_given_phi_noise
         combination_dict['entropy_threshold'] = entropy_threshold
+        combination_dict['assistance_type'] = assistance_type
 
         print('Creating trial combination ', i)
         with open(os.path.join(simulation_trial_dir, str(i) + '.pkl'), 'wb') as fp:
