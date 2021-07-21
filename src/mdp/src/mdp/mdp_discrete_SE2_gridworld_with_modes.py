@@ -274,17 +274,17 @@ class MDPDiscreteSE2GridWorldWithModes(DiscreteMDP):
             s = np.random.rand()
             # print(self.sparsity_factor, self.rand_direction_factor)
             if s < self.sparsity_factor and not return_optimal:
-                print('sparse')
+                # print('sparse')
                 return self.get_zero_action()
             else:
                 d = np.random.rand()
                 if d < self.rand_direction_factor and not return_optimal:
-                    print('rand')
+                    # print('rand')
                     return self.get_random_action()
                 else:
                     state_id = self._convert_grid_coords_to_1D_state(state_coord)
                     action_id = self.rl_algo.policy[state_id]
-                    print('optimal')
+                    # print('optimal')
                     # print('state, optimal action', state_coord, self.action_id_to_task_level_action_map[action_id])
                     return self.action_id_to_task_level_action_map[action_id] # movep, moven, mode_l, mode_r
 
@@ -292,15 +292,24 @@ class MDPDiscreteSE2GridWorldWithModes(DiscreteMDP):
         # zero task level action
         return 'None'
     
-    def get_random_valid_state(self):
+    def get_random_valid_state(self, is_not_goal=False):
         rand_state_id = self.empty_cell_id_list[np.random.randint(len(self.empty_cell_id_list))] #scalar state id
-        return self._convert_1D_state_to_grid_coords(rand_state_id) #tuple (x,y, t mode)
+        state_coord = self._convert_1D_state_to_grid_coords(rand_state_id)
+        if is_not_goal:
+            while self._check_if_state_coord_is_goal_state(state_coord):
+                rand_state_id = self.empty_cell_id_list[np.random.randint(len(self.empty_cell_id_list))] #scalar state id
+                state_coord = self._convert_1D_state_to_grid_coords(rand_state_id)
+
+        return state_coord #tuple (x,y, t mode)
     
     def get_next_state_from_state_action(self, state, task_level_action):
         #state is a 3d tuple (x,y t, mode)
         # action is string which is in [movep, moven, mode_r, mode_l]
-        next_state, _ = self._transition(state, task_level_action) #np array
-        return tuple(next_state) #make list into tuple (x',y',t', mode)
+        if task_level_action != 'None':
+            next_state, _ = self._transition(state, task_level_action) #np array
+            return tuple(next_state) #make list into tuple (x',y',t', mode)
+        else:
+            return tuple(state)
     
     def get_optimal_trajectory_from_state(self, state, horizon=100):
         #state is 3d tuple (x,y, t, mode)
