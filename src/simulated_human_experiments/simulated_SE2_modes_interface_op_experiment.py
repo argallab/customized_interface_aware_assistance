@@ -7,7 +7,7 @@ from mdp.mdp_utils import *
 import collections
 import pickle
 import matplotlib.pyplot as plt
-
+from IPython import embed
 MAX_SIM_STEPS = 200
 
 NUM_GOALS = -1
@@ -65,6 +65,7 @@ def visualize_grid(mdp):
     plt.imshow(grid)
     plt.colorbar()
     plt.show()
+    plt.savefig("grid.png")
 
 
 def visualize_V_and_policy(mdp):
@@ -93,6 +94,7 @@ def visualize_V_and_policy(mdp):
 
     fig.tight_layout()
     plt.show()
+    plt.savefig("v_and_policy.png")
 
 
 def create_mdp_list(mdp_env_params, visualize=False):
@@ -107,6 +109,7 @@ def create_mdp_list(mdp_env_params, visualize=False):
         if visualize:
             visualize_grid(discrete_se2_modes_mdp)
             visualize_V_and_policy(discrete_se2_modes_mdp)
+
         mdp_list.append(discrete_se2_modes_mdp)
 
     return mdp_list
@@ -176,7 +179,7 @@ def init_P_PHI_GIVEN_A():
                 # P_PHI_GIVEN_A[k][u] = np.random.random()*PHI_GIVEN_A_NOISE #IF PHI_GIVEN_A_NOISE is 0, then the p(ui|a) is a deterministic mapping
                 P_PHI_GIVEN_A[k][u] = 0.0
 
-        delta_dist = np.array(P_PHI_GIVEN_A[k].values())
+        delta_dist = np.array(list(P_PHI_GIVEN_A[k].values()))
         uniform_dist = (1.0 / len(INTERFACE_LEVEL_ACTIONS)) * np.ones(len(INTERFACE_LEVEL_ACTIONS))
         blended_dist = (1 - PHI_GIVEN_A_NOISE) * delta_dist + PHI_GIVEN_A_NOISE * uniform_dist  # np.array
         for index, u in enumerate(INTERFACE_LEVEL_ACTIONS):
@@ -203,7 +206,7 @@ def init_P_PHM_GIVEN_PHI():
                 # P_PHM_GIVEN_PHI[i][j] = np.random.random()*UM_GIVEN_UI_NOISE#IF UM_GIVEN_UI_NOISE is 0, then the p(um|ui) is a deterministic mapping
                 P_PHM_GIVEN_PHI[i][j] = 0.0
 
-        delta_dist = np.array(P_PHM_GIVEN_PHI[i].values())
+        delta_dist = np.array(list(P_PHM_GIVEN_PHI[i].values()))
         uniform_dist = (1.0 / len(INTERFACE_LEVEL_ACTIONS)) * np.ones(len(INTERFACE_LEVEL_ACTIONS))
         blended_dist = (1 - PHM_GIVEN_PHI_NOISE) * delta_dist + PHM_GIVEN_PHI_NOISE * uniform_dist  # np.array
         for index, j in enumerate(INTERFACE_LEVEL_ACTIONS):
@@ -376,14 +379,18 @@ def apply_assistance(g_inferred, a_inferred, ph_inferred, p_g_given_um_vector, p
 def sample_phi_given_a(a):  # sample from p(phii|a)
     global P_PHI_GIVEN_A, PHI_SPARSE_LEVEL
     d = np.random.rand()
-
     if d < PHI_SPARSE_LEVEL:
         phi = "None"
     else:
         p_vector = P_PHI_GIVEN_A[a].values()  # list of probabilities for phii
-        phi_index_vector = np.random.multinomial(
-            1, p_vector
-        )  # sample from the multinomial distribution with distribution p_vector
+        try: 
+            phi_index_vector = np.random.multinomial(
+                1, p_vector
+            )  # sample from the multinomial distribution with distribution p_vector
+            print("p_vectory",p_vector)
+            embed()
+        except ValueError: 
+            embed()
         phi_index = np.nonzero(phi_index_vector)[0][0]  # grab the index of the index_vector which had a nonzero entry
         phi = P_PHI_GIVEN_A[a].keys()[phi_index]  # retrieve phii using the phi_index
 
@@ -422,8 +429,8 @@ def simulate_snp_interaction(args):
         global PHI_GIVEN_A_NOISE, PHM_GIVEN_PHI_NOISE, ENTROPY_THRESHOLD, NUM_GOALS, OCCUPANCY_LEVEL, RAND_DIRECTION_FACTOR, PHI_SPARSE_LEVEL, PHM_SPARSE_LEVEL, SPARSITY_FACTOR, ASSISTANCE_TYPE
         with open(os.path.join(simulation_trial_dir, str(index) + ".pkl"), "rb") as fp:
             combination_dict = pickle.load(fp)
-        print "COMBINATION NUM ", index
-        print "      "
+        print ("COMBINATION NUM ", index)
+        print ("      ")
 
         # grab params for particular simulation trial
         NUM_GOALS = combination_dict["num_goals"]
@@ -449,11 +456,12 @@ def simulate_snp_interaction(args):
         mdp_env_params = create_mdp_env_param_dict()
 
         # create the list of MDPs for the configuration
-        mdp_list = create_mdp_list(mdp_env_params, visualize=False)
+        mdp_list = create_mdp_list(mdp_env_params, visualize=True)
 
         # initalize the interface related conditional distributions
-        init_P_PHI_GIVEN_A()
+        init_P_PHI_GIVEN_A()        
         init_P_PHM_GIVEN_PHI()
+          
 
         # init dict for simulation results
         simulation_results = collections.OrderedDict()
