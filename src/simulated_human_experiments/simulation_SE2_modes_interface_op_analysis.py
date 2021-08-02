@@ -164,16 +164,19 @@ class SimulationAnalysis(object):
             with open(phi_a_vs_phm_phi_matrix_filename, "wb") as fp:
                 pickle.dump(phi_a_vs_phm_phi_matrix, fp)
 
+        print("PHI_A vs PHM_PHM for GOAL INFERENCE FULL and overall avg")
         print(
-            "PHI_A vs PHM_PHM for GOAL INFERENCE FULL and overall avg",
             phi_a_vs_phm_phi_matrix[:, :, ModelType.FULL_MODEL.value],
             np.mean(phi_a_vs_phm_phi_matrix[:, :, ModelType.FULL_MODEL.value]),
         )
+        print("PHI_A vs PHM_PHM for GOAL INFERENCE PARTIAL and overall avg")
         print(
-            "PHI_A vs PHM_PHM for GOAL INFERENCE PARTIAL and overall avg",
             phi_a_vs_phm_phi_matrix[:, :, ModelType.PARTIAL_MODEL.value],
             np.mean(phi_a_vs_phm_phi_matrix[:, :, ModelType.PARTIAL_MODEL.value]),
         )
+        import IPython
+
+        IPython.embed(banner1="check")
 
 
 if __name__ == "__main__":
