@@ -258,10 +258,10 @@ class MDPDiscreteSE2GridWorldWithModes(DiscreteMDP):
         theta_coord = coord[Dim.Theta.value]
         mode = coord[Dim.ModeSE2.value]
         state_id = ((x_coord*self.height + y_coord)*self.num_discrete_orientations + theta_coord)*self.num_modes + mode - 1
-        print("CONVERTING STATE")
-        print("******************************")
-        print(state_id, int(state_id))
-        return int(state_id)
+        # print("CONVERTING STATE")
+        # print("******************************")
+        # print(state_id, int(state_id))
+        # return int(state_id)
         return state_id
 
     def _convert_1D_state_to_grid_coords(self, state):
