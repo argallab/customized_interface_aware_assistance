@@ -1,8 +1,10 @@
+from os import stat
+from IPython.terminal.embed import embed
 import numpy as np
 import collections
 import itertools
-from mdp_class import DiscreteMDP
-from mdp_utils import *
+from mdp.mdp_class import DiscreteMDP
+from mdp.mdp_utils import *
 import math
 from scipy import sparse
 
@@ -292,6 +294,10 @@ class MDPDiscreteSE2GridWorldWithModes(DiscreteMDP):
             + mode
             - 1
         )
+        # print("CONVERTING STATE")
+        # print("******************************")
+        # print(state_id, int(state_id))
+        # return int(state_id)
         return state_id
 
     def _convert_1D_state_to_grid_coords(self, state):
