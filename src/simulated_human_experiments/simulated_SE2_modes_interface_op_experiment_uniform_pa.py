@@ -33,15 +33,19 @@ TRUE_INTERFACE_ACTION_TO_TASK_ACTION_MAP = collections.OrderedDict(
 
 # p(phii|a)
 P_PHI_GIVEN_A = collections.OrderedDict()
-# Lower the number, lower the error. Between 0 and 1. If 0, the p(ui|a) is delta and same as the true mapping
-PHI_GIVEN_A_NOISE = -0.1
+PHI_GIVEN_A_NOISE = (
+    -0.1
+)  # Lower the number, lower the error. Between 0 and 1. If 0, the p(ui|a) is delta and same as the true mapping
 
 # p(phm|ui)
 P_PHM_GIVEN_PHI = collections.OrderedDict()
 PHM_GIVEN_PHI_NOISE = -0.1  # Lower the number, lower the error. Between 0 and 1. If 0, no difference between ui and um
 
-P_G_GIVEN_PHM = collections.OrderedDict()  # belief using interface aware model
+P_G_GIVEN_UM = collections.OrderedDict()  # belief using interface aware model
 P_G_GIVEN_UM_NOISE_FREE = collections.OrderedDict()  # belief without interface aware model.
+
+# uniform p(a|s)
+P_A_UNIFORM = np.array([1.0/len(TASK_LEVEL_ACTIONS)]*len(TASK_LEVEL_ACTIONS))
 
 ENTROPY_THRESHOLD = -0.5
 ASSISTANCE_TYPE = "blah"
@@ -171,8 +175,9 @@ def init_P_PHI_GIVEN_A():
         P_PHI_GIVEN_A[k] = collections.OrderedDict()
         for u in INTERFACE_LEVEL_ACTIONS:
             if u == TRUE_TASK_ACTION_TO_INTERFACE_ACTION_MAP[k]:
-                # try to weight the true command more for realistic purposes. Can be offset by using a high PHI_GIVEN_A_NOISE
-                P_PHI_GIVEN_A[k][u] = 1.0
+                P_PHI_GIVEN_A[k][
+                    u
+                ] = 1.0  # try to weight the true command more for realistic purposes. Can be offset by using a high PHI_GIVEN_A_NOISE
             else:
                 # P_PHI_GIVEN_A[k][u] = np.random.random()*PHI_GIVEN_A_NOISE #IF PHI_GIVEN_A_NOISE is 0, then the p(ui|a) is a deterministic mapping
                 P_PHI_GIVEN_A[k][u] = 0.0
@@ -197,8 +202,9 @@ def init_P_PHM_GIVEN_PHI():
         P_PHM_GIVEN_PHI[i] = collections.OrderedDict()
         for j in INTERFACE_LEVEL_ACTIONS:  # um
             if i == j:
-                # try to weight the true command more for realistic purposes. Can be offset by using a high UM_GIVEN_UI_NOISE
-                P_PHM_GIVEN_PHI[i][j] = 1.0
+                P_PHM_GIVEN_PHI[i][
+                    j
+                ] = 1.0  # try to weight the true command more for realistic purposes. Can be offset by using a high UM_GIVEN_UI_NOISE
             else:
                 # P_PHM_GIVEN_PHI[i][j] = np.random.random()*UM_GIVEN_UI_NOISE#IF UM_GIVEN_UI_NOISE is 0, then the p(um|ui) is a deterministic mapping
                 P_PHM_GIVEN_PHI[i][j] = 0.0
@@ -214,13 +220,13 @@ def init_P_G_GIVEN_PHM():
     """
     Initializes the p(g | phm) dict to uniform dictionary
     """
-    global NUM_GOALS, P_G_GIVEN_PHM
+    global NUM_GOALS, P_G_GIVEN_UM
     for g in range(NUM_GOALS):
-        P_G_GIVEN_PHM[g] = 1.0 / NUM_GOALS
+        P_G_GIVEN_UM[g] = 1.0 / NUM_GOALS
 
-    normalization_constant = sum(P_G_GIVEN_PHM.values())
-    for g in P_G_GIVEN_PHM.keys():  # NORMALIZE POSTERIOR
-        P_G_GIVEN_PHM[g] = P_G_GIVEN_PHM[g] / normalization_constant
+    normalization_constant = sum(P_G_GIVEN_UM.values())
+    for g in P_G_GIVEN_UM.keys():  # NORMALIZE POSTERIOR
+        P_G_GIVEN_UM[g] = P_G_GIVEN_UM[g] / normalization_constant
 
 
 def init_P_G_GIVEN_PHM_NOISE_FREE():
@@ -237,53 +243,54 @@ def init_P_G_GIVEN_PHM_NOISE_FREE():
 
 
 def compute_p_g_given_phm(phm, mdp_list, s):  # inference of ui given um
-    global P_G_GIVEN_PHM, P_PHM_GIVEN_PHI, P_PHI_GIVEN_A  # need to use global because we are modifying a global dict
+    global P_G_GIVEN_UM, P_PHM_GIVEN_PHI, P_PHI_GIVEN_A  # need to use global because we are modifying a global dict
     # p(gt | phm0:t) = p(g_{t-1}| phm0:{t-1}) * Sig(a)Sig(phi) p(phmt|phi).p(phi|a)p(a|s, gt)
     if phm != "None":
-        for g in P_G_GIVEN_PHM.keys():
+        for g in P_G_GIVEN_UM.keys():
             mdp_g = mdp_list[g]  # get mdp corresponding to g to retrieve p(a|s, g)
             likelihood = 0  # likelihood
             for a in P_PHI_GIVEN_A.keys():
                 for phi in P_PHM_GIVEN_PHI.keys():
                     likelihood += P_PHM_GIVEN_PHI[phi][phm] * P_PHI_GIVEN_A[a][phi] * mdp_g.get_prob_a_given_s(s, a)
 
-            P_G_GIVEN_PHM[g] = P_G_GIVEN_PHM[g] * likelihood  # multiply with prior
+            P_G_GIVEN_UM[g] = P_G_GIVEN_UM[g] * likelihood  # multiply with prior
 
-        normalization_constant = sum(P_G_GIVEN_PHM.values())
-        for g in P_G_GIVEN_PHM.keys():  # NORMALIZE POSTERIOR
-            P_G_GIVEN_PHM[g] = P_G_GIVEN_PHM[g] / normalization_constant
+        normalization_constant = sum(P_G_GIVEN_UM.values())
+        for g in P_G_GIVEN_UM.keys():  # NORMALIZE POSTERIOR
+            P_G_GIVEN_UM[g] = P_G_GIVEN_UM[g] / normalization_constant
     else:
         print ("PHM NONE, therefore no belief update")
         # potentially add exp decay to unfirom distribution
         pass
 
 
-def compute_p_g_given_phm_noise_free(phm, mdp_list, s):
-    global P_G_GIVEN_UM_NOISE_FREE
+def compute_p_g_given_phm_uniform_a(phm, mdp_list, s):
+    global P_G_GIVEN_UM, P_PHM_GIVEN_PHI, P_PHI_GIVEN_A  # need to use global because we are modifying a global dict
+    # p(gt | phm0:t) = p(g_{t-1}| phm0:{t-1}) * Sig(a)Sig(phi) p(phmt|phi).p(phi|a)p(a|s, gt)
     if phm != "None":
-        # noise free assumptions. Therefore ph intended is same as ph measure
-        phi = phm
-        # task-level action intended is inverse of phi. No noise in retrieval process.
-        a = TRUE_INTERFACE_ACTION_TO_TASK_ACTION_MAP[phi]
-        for g in P_G_GIVEN_UM_NOISE_FREE.keys():
-            mdp_g = mdp_list[g]
-            P_G_GIVEN_UM_NOISE_FREE[g] = P_G_GIVEN_UM_NOISE_FREE[g] * mdp_g.get_prob_a_given_s(s, a)
-        normalization_constant = sum(P_G_GIVEN_UM_NOISE_FREE.values())
-        for g in P_G_GIVEN_UM_NOISE_FREE.keys():
-            P_G_GIVEN_UM_NOISE_FREE[g] = P_G_GIVEN_UM_NOISE_FREE[g] / normalization_constant
+        for g in P_G_GIVEN_UM.keys():
+            mdp_g = mdp_list[g]  # get mdp corresponding to g to retrieve p(a|s, g)
+            likelihood = 0  # likelihood
+            for a in P_PHI_GIVEN_A.keys():
+                for phi in P_PHM_GIVEN_PHI.keys():
+                    likelihood += P_PHM_GIVEN_PHI[phi][phm] * P_PHI_GIVEN_A[a][phi] * P_A_UNIFORM[0]
+            P_G_GIVEN_UM[g] = P_G_GIVEN_UM[g] * likelihood  # multiply with prior
+        normalization_constant = sum(P_G_GIVEN_UM.values())
+        for g in P_G_GIVEN_UM.keys():  # NORMALIZE POSTERIOR
+            P_G_GIVEN_UM[g] = P_G_GIVEN_UM[g] / normalization_constant
     else:
         print ("PHM NONE, therefore no belief update")
-        # potentially add exp decay to uniform distribution
+        # potentially add exp decay to unfirom distribution
         pass
 
 
 def compute_g_a_ph_inferred(mdp_list, s, use_full_model=True):
     if use_full_model:
-        global P_G_GIVEN_PHM
-        p_g_given_um_vector = np.array(P_G_GIVEN_PHM.values())
+        global P_G_GIVEN_UM
+        p_g_given_um_vector = np.array(P_G_GIVEN_UM.values())
         # need to add realmin to avoid nan issues with entropy calculation is p_ui_given_um_vector is delta distribution'
         p_g_given_um_vector = p_g_given_um_vector + np.finfo(p_g_given_um_vector.dtype).tiny
-        g_inferred = P_G_GIVEN_PHM.keys()[np.argmax(p_g_given_um_vector)]  # argmax computation for g_inferred
+        g_inferred = P_G_GIVEN_UM.keys()[np.argmax(p_g_given_um_vector)]  # argmax computation for g_inferred
         # retreive optimal task level action corresponding to inferred goal optimal action will always be not None
         a_inferred = mdp_list[g_inferred].get_optimal_action(s, return_optimal=True)
         # retrieve interface level action corresponding to optimal task level action for inferred goal
@@ -292,23 +299,23 @@ def compute_g_a_ph_inferred(mdp_list, s, use_full_model=True):
         return g_inferred, a_inferred, ph_inferred, p_g_given_um_vector
     else:
         global P_G_GIVEN_UM_NOISE_FREE
-        p_g_given_um_noise_free_vector = np.array(P_G_GIVEN_UM_NOISE_FREE.values())
-        p_g_given_um_noise_free_vector = (
-            p_g_given_um_noise_free_vector + np.finfo(p_g_given_um_noise_free_vector.dtype).tiny
+        p_g_given_um_uniform_a_vector = np.array(P_G_GIVEN_UM_NOISE_FREE.values())
+        p_g_given_um_uniform_a_vector = (
+            p_g_given_um_uniform_a_vector + np.finfo(p_g_given_um_uniform_a_vector.dtype).tiny
         )
-        g_inferred = P_G_GIVEN_UM_NOISE_FREE.keys()[np.argmax(p_g_given_um_noise_free_vector)]
+        g_inferred = P_G_GIVEN_UM_NOISE_FREE.keys()[np.argmax(p_g_given_um_uniform_a_vector)]
         a_inferred = mdp_list[g_inferred].get_optimal_action(s, return_optimal=True)
         ph_inferred = TRUE_TASK_ACTION_TO_INTERFACE_ACTION_MAP[a_inferred]
-        return g_inferred, a_inferred, ph_inferred, p_g_given_um_noise_free_vector
+        return g_inferred, a_inferred, ph_inferred, p_g_given_um_uniform_a_vector
 
 
 # def infer_intended_goal_and_commands(phm, mdp_list, s):
 #     compute_p_g_given_phm(phm, mdp_list, s) #update goal belief
 
-#     global P_G_GIVEN_PHM, ENTROPY_THRESHOLD, ASSISTANCE_TYPE
-#     p_g_given_um_vector = np.array(P_G_GIVEN_PHM.values())
+#     global P_G_GIVEN_UM, ENTROPY_THRESHOLD, ASSISTANCE_TYPE
+#     p_g_given_um_vector = np.array(P_G_GIVEN_UM.values())
 #     p_g_given_um_vector = p_g_given_um_vector + np.finfo(p_g_given_um_vector.dtype).tiny #need to add realmin to avoid nan issues with entropy calculation is p_ui_given_um_vector is delta distribution
-#     g_inferred = P_G_GIVEN_PHM.keys()[np.argmax(p_g_given_um_vector)] #argmax computation for g_inferred
+#     g_inferred = P_G_GIVEN_UM.keys()[np.argmax(p_g_given_um_vector)] #argmax computation for g_inferred
 #     # retreive optimal task level action corresponding to inffered goal
 #     a_inferred = mdp_list[g_inferred].get_optimal_action(s, return_optimal=True)
 #     # retrieve interface level action corresponding to optimal task level action for inferred goal
@@ -380,14 +387,14 @@ def sample_phi_given_a(a):  # sample from p(phii|a)
         phi = "None"
     else:
         p_vector = P_PHI_GIVEN_A[a].values()  # list of probabilities for phii
-        try: 
-            phi_index_vector = np.random.multinomial(
-                1, p_vector
-            )  # sample from the multinomial distribution with distribution p_vector
-            print("p_vectory",p_vector)
-            embed()
-        except ValueError: 
-            embed()
+        # try: 
+        phi_index_vector = np.random.multinomial(
+            1, p_vector
+        )  # sample from the multinomial distribution with distribution p_vector
+        # print("p_vectory",p_vector)
+            # embed()
+        # except ValueError: 
+            # embed()
         phi_index = np.nonzero(phi_index_vector)[0][0]  # grab the index of the index_vector which had a nonzero entry
         phi = P_PHI_GIVEN_A[a].keys()[phi_index]  # retrieve phii using the phi_index
 
@@ -453,7 +460,7 @@ def simulate_snp_interaction(args):
         mdp_env_params = create_mdp_env_param_dict()
 
         # create the list of MDPs for the configuration
-        mdp_list = create_mdp_list(mdp_env_params, visualize=True)
+        mdp_list = create_mdp_list(mdp_env_params, visualize=False)
 
         # initalize the interface related conditional distributions
         init_P_PHI_GIVEN_A()        
@@ -503,7 +510,7 @@ def simulate_snp_interaction(args):
                     phi = sample_phi_given_a(a_sampled)
                     # corrupted interface level action, could be None
                     phm = sample_phm_given_phi(phi)
-                    # print('Before, ', P_G_GIVEN_PHM)
+                    # print('Before, ', P_G_GIVEN_UM)
                     simulation_results["trials"][rep]["phi_sampled"].append(phi)
                     simulation_results["trials"][rep]["phm_sampled"].append(phm)
                     simulation_results["trials"][rep]["phi_match_ph_optimal"].append(
@@ -518,15 +525,15 @@ def simulate_snp_interaction(args):
                     simulation_results["trials"][rep]["phm_match_ph_sampled"].append(
                         (phm == TRUE_TASK_ACTION_TO_INTERFACE_ACTION_MAP[a_sampled])
                     )
-                    simulation_results["trials"][rep]["goal_belief_before"].append(list(P_G_GIVEN_PHM.values()))
-                    simulation_results["trials"][rep]["goal_belief_noise_free_before"].append(
+                    simulation_results["trials"][rep]["goal_belief_before"].append(list(P_G_GIVEN_UM.values()))
+                    simulation_results["trials"][rep]["goal_belief_uniform_a_before"].append(
                         list(P_G_GIVEN_UM_NOISE_FREE.values())
                     )
                     if ASSISTANCE_TYPE != "no":
                         # perform inference of g from phm. Note that phm could be None depending on what was sampled.
                         compute_p_g_given_phm(phm, mdp_list, s)  # update belief using full model
                         # update belief using partial model
-                        compute_p_g_given_phm_noise_free(phm, mdp_list, s)
+                        compute_p_g_given_phm_uniform_a(phm, mdp_list, s)
                         # infer goal using full model
                         g_inferred, a_inferred, ph_inferred, p_g_given_um_vector = compute_g_a_ph_inferred(mdp_list, s)
                         # infer goal using partial model
@@ -545,10 +552,10 @@ def simulate_snp_interaction(args):
                             did_assistance_intervene,
                         ) = apply_assistance(g_inferred, a_inferred, ph_inferred, p_g_given_um_vector, phm)
 
-                        # print('After, ', P_G_GIVEN_PHM)
-                        simulation_results["trials"][rep]["goal_belief_after"].append(list(P_G_GIVEN_PHM.values()))
+                        # print('After, ', P_G_GIVEN_UM)
+                        simulation_results["trials"][rep]["goal_belief_after"].append(list(P_G_GIVEN_UM.values()))
                         # no update happens
-                        simulation_results["trials"][rep]["goal_belief_noise_free_after"].append(
+                        simulation_results["trials"][rep]["goal_belief_uniform_a_after"].append(
                             list(P_G_GIVEN_UM_NOISE_FREE.values())
                         )
                         ph_inferred_match_with_ph_optimal = (
@@ -615,7 +622,7 @@ def simulate_snp_interaction(args):
                         # only update belief using full model. Don't do any assistance
                         compute_p_g_given_phm(phm, mdp_list, s)
                         # update belief using partial model
-                        compute_p_g_given_phm_noise_free(phm, mdp_list, s)
+                        compute_p_g_given_phm_uniform_a(phm, mdp_list, s)
 
                         # infer goal using full model
                         g_inferred, a_inferred, ph_inferred, p_g_given_um_vector = compute_g_a_ph_inferred(mdp_list, s)
@@ -624,9 +631,9 @@ def simulate_snp_interaction(args):
                             mdp_list, s, use_full_model=False
                         )
 
-                        # print('After, ', P_G_GIVEN_PHM)
-                        simulation_results["trials"][rep]["goal_belief_after"].append(list(P_G_GIVEN_PHM.values()))
-                        simulation_results["trials"][rep]["goal_belief_noise_free_after"].append(
+                        # print('After, ', P_G_GIVEN_UM)
+                        simulation_results["trials"][rep]["goal_belief_after"].append(list(P_G_GIVEN_UM.values()))
+                        simulation_results["trials"][rep]["goal_belief_uniform_a_after"].append(
                             list(P_G_GIVEN_UM_NOISE_FREE.values())
                         )
                         simulation_results["trials"][rep]["ph_inferred_match_with_ph_optimal"].append(None)
@@ -680,21 +687,21 @@ def simulate_snp_interaction(args):
                     simulation_results["trials"][rep]["phm_match_ph_optimal"].append("None")
                     simulation_results["trials"][rep]["phm_match_ph_sampled"].append("None")
                     # full model inference
-                    simulation_results["trials"][rep]["goal_belief_before"].append(list(P_G_GIVEN_PHM.values()))
+                    simulation_results["trials"][rep]["goal_belief_before"].append(list(P_G_GIVEN_UM.values()))
                     compute_p_g_given_phm(phm, mdp_list, s)  # only update belief. Don't do any assistance
                     g_inferred, a_inferred, ph_inferred, p_g_given_um_vector = compute_g_a_ph_inferred(mdp_list, s)
-                    simulation_results["trials"][rep]["goal_belief_after"].append(list(P_G_GIVEN_PHM.values()))
+                    simulation_results["trials"][rep]["goal_belief_after"].append(list(P_G_GIVEN_UM.values()))
 
                     # partial model inference
-                    simulation_results["trials"][rep]["goal_belief_noise_free_before"].append(
+                    simulation_results["trials"][rep]["goal_belief_uniform_a_before"].append(
                         list(P_G_GIVEN_UM_NOISE_FREE.values())
                     )
                     # only belief update using partial model. Don't do any assistance
-                    compute_p_g_given_phm_noise_free(phm, mdp_list, s)
+                    compute_p_g_given_phm_uniform_a(phm, mdp_list, s)
                     g_inferred_nf, a_inferred_nf, ph_inferred_nf, p_g_given_um_vector_nf = compute_g_a_ph_inferred(
                         mdp_list, s, use_full_model=False
                     )
-                    simulation_results["trials"][rep]["goal_belief_noise_free_after"].append(
+                    simulation_results["trials"][rep]["goal_belief_uniform_a_after"].append(
                         list(P_G_GIVEN_UM_NOISE_FREE.values())
                     )
 

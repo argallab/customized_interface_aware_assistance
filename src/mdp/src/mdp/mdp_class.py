@@ -1,6 +1,6 @@
 import mdptoolbox
 import numpy as np 
-from mdp_utils import *
+from mdp.mdp_utils import *
 import collections
 
 class DiscreteMDP(object):

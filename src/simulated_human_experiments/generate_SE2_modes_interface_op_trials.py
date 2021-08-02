@@ -4,6 +4,7 @@ import itertools
 import argparse
 import collections
 import sys
+from IPython import embed
 
 MAX_SIM_STEPS = 200
 NUM_GOALS_LEVELS = [3]  # [2,3,4]
@@ -65,6 +66,7 @@ def generate_SE2_modes_interface_op_simulation_trials(args):
         with open(os.path.join(simulation_trial_dir, str(i) + ".pkl"), "wb") as fp:
             pickle.dump(combination_dict, fp)
         i += 1
+    embed()
 
 
 if __name__ == "__main__":
