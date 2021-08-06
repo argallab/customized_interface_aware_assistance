@@ -71,12 +71,23 @@ class ContinuousWorldSE2Env(object):
                 ),
                 linewidth=3.0,
             )
+    
     def _render_goals(self):
         for i in range(self.num_goals):
             shape = "circle"
             goal_color = (1.0, 0.0, 0.0)
             goal_pose = tuple(self.goal_poses[i])
             self._render_goal(shape, goal_color, goal_pose)
+    
+    def _render_obstacles(self):
+        for obs_spec in self.obstacles:
+            #bottom left corner and top-right corner
+            bottom_left = obs_spec['bottom_left'] #2d list
+            top_right = obs_spec['top_right']
+            bottom_right = [top_right[0], bottom_left[1]]
+            top_left = [bottom_left[0], top_right[1]]
+            v = [bottom_left, bottom_right, top_right, top_left]
+            self.viewer.draw_polygon(v)
 
     def _render_robot(self):
         robot = self.robot.robot
@@ -192,7 +203,9 @@ class ContinuousWorldSE2Env(object):
 
     def render(self, mode="human"):
         self._render_bounds()
+        self._render_obstacles()
         self._render_goals()
+        
         self._render_robot()
         self._render_robot_direction_indicators()
         self._render_mode_display()
@@ -258,6 +271,7 @@ class ContinuousWorldSE2Env(object):
         self.robot_orientation = self.env_params["robot_orientation"]
         self.world_bounds = self.env_params['world_bounds']
         self.start_mode = self.env_params["start_mode"]
+        self.obstacles = self.env_params['obstacles']
         # self.assistance_type = ASSISTANCE_CODE_NAME[self.env_params["assistance_type"]]  # label assistance type
 
         self.DIMENSIONS = ["x", "y", "t"]  # set of dimensions or modes
@@ -294,6 +308,27 @@ class ContinuousWorldSE2Env(object):
             return False
         else:
             return True
+    
+    def _check_if_robot_in_obstacle(self):
+        robot_position = self.robot.get_position()
+        in_obstacle = False
+        for obs_spec in self.obstacles:
+            bottom_left = obs_spec['bottom_left'] #2d list
+            top_right = obs_spec['top_right']
+            # corners of the obstacle
+            x_lb = bottom_left[0] - ROBOT_RADIUS/SCALE
+            x_ub = top_right[0] + ROBOT_RADIUS/SCALE
+            y_lb = bottom_left[1] - ROBOT_RADIUS/SCALE
+            y_ub = top_right[1] + ROBOT_RADIUS/SCALE
+
+            if robot_position[0] > x_lb and robot_position[0] < x_ub and robot_position[1] > y_lb and robot_position[1] < y_ub:
+                in_obstacle = True
+                break
+        
+        if in_obstacle:
+            return True
+        else:
+            return False
 
     def step(self, input_action):
         assert "human" in input_action.keys()
@@ -319,8 +354,13 @@ class ContinuousWorldSE2Env(object):
         self.robot.robot.angularVelocity = -user_vel[2]
 
         self.world.Step(1.0 / FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS)  # call box2D step function
+        
+        if self._check_if_robot_in_obstacle():
+            self.robot.set_position(prev_robot_position)
+
         if not self._check_if_robot_in_bounds():
             self.robot.set_position(prev_robot_position)
+        
         
         return (
             self.robot.get_position(),

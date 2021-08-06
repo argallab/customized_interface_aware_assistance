@@ -97,6 +97,10 @@ class Simulator(object):
                 world_bounds['yrange']['ub'] = 0.9 * VIEWPORT_H/SCALE
 
                 self.env_params['world_bounds'] = world_bounds
+                obs1 = collections.OrderedDict()
+                obs1['bottom_left'] = (0.2  * VIEWPORT_W/SCALE, 0.5*VIEWPORT_H/SCALE)
+                obs1['top_right'] = (0.4  * VIEWPORT_W/SCALE, 0.7*VIEWPORT_H/SCALE)
+                self.env_params['obstacles'] = [obs1]
                 
             else:
                 pass
