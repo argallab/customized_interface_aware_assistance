@@ -30,6 +30,7 @@ class ContinuousWorldSE2Env(object):
         self.robot_position = None
         self.robot_orientation = None
         self.goal_poses = None
+        self.world_bounds = None
 
         self.env_params = env_params
 
@@ -40,10 +41,21 @@ class ContinuousWorldSE2Env(object):
 
         assert "goal_poses" in self.env_params
         assert "start_mode" in self.env_params
+        assert "world_bounds" in self.env_params
 
         self.ready_for_new_prompt = True
         self.text_display_delay = 2
         self.start_msg_ind = 0
+
+    def _render_bounds(self):
+        x_lb = self.world_bounds['xrange']['lb']
+        x_ub = self.world_bounds['xrange']['ub']
+        y_lb = self.world_bounds['yrange']['lb']
+        y_ub = self.world_bounds['yrange']['ub']
+        self.viewer.draw_line((x_lb, y_lb), (x_ub, y_lb), linewidth=3.0)
+        self.viewer.draw_line((x_ub, y_lb), (x_ub, y_ub), linewidth=3.0)
+        self.viewer.draw_line((x_ub, y_ub), (x_lb, y_ub), linewidth=3.0)
+        self.viewer.draw_line((x_lb, y_ub), (x_lb, y_lb), linewidth=3.0)
 
     def _render_goal(self, shape, goal_color, goal_pose):  # potentially add default values for these args
         goal_position = (goal_pose[0], goal_pose[1])
@@ -52,14 +64,13 @@ class ContinuousWorldSE2Env(object):
             t = Transform(translation=goal_position)
             self.viewer.draw_circle(GOAL_RADIUS / SCALE, 30, color=goal_color, filled=True).add_attr(t)
             self.viewer.draw_line(
-                goal_position,
+                goal_position, 
                 (
                     goal_position[0] + 2 * (GOAL_RADIUS / SCALE) * math.cos(goal_orientation),
                     goal_position[1] + 2 * (GOAL_RADIUS / SCALE) * math.sin(goal_orientation),
                 ),
                 linewidth=3.0,
             )
-
     def _render_goals(self):
         for i in range(self.num_goals):
             shape = "circle"
@@ -180,6 +191,7 @@ class ContinuousWorldSE2Env(object):
                 rospy.loginfo("took more time")
 
     def render(self, mode="human"):
+        self._render_bounds()
         self._render_goals()
         self._render_robot()
         self._render_robot_direction_indicators()
@@ -224,6 +236,7 @@ class ContinuousWorldSE2Env(object):
         self.robot_position = None
         self.robot_orientation = None
         self.goal_poses = None
+        self.world_bounds = None
         self.DIMENSIONS = []
         self.DIMENSION_INDICES = []
 
@@ -243,6 +256,7 @@ class ContinuousWorldSE2Env(object):
         self.robot_position = self.env_params["robot_position"]
         self.goal_poses = self.env_params["goal_poses"]
         self.robot_orientation = self.env_params["robot_orientation"]
+        self.world_bounds = self.env_params['world_bounds']
         self.start_mode = self.env_params["start_mode"]
         # self.assistance_type = ASSISTANCE_CODE_NAME[self.env_params["assistance_type"]]  # label assistance type
 
@@ -269,6 +283,17 @@ class ContinuousWorldSE2Env(object):
         #         MODE_DISPLAY_CIRCLE_START_POSITION_S[0] + i * MODE_DISPLAY_CIRCLE_X_OFFSET_S,
         #         MODE_DISPLAY_CIRCLE_START_POSITION_S[1],
         #     )
+    def _check_if_robot_in_bounds(self):
+        robot_position = self.robot.get_position()
+        x_lb = self.world_bounds['xrange']['lb'] + ROBOT_RADIUS/SCALE
+        x_ub = self.world_bounds['xrange']['ub'] - ROBOT_RADIUS/SCALE
+
+        y_lb = self.world_bounds['yrange']['lb'] + ROBOT_RADIUS/SCALE
+        y_ub = self.world_bounds['yrange']['ub'] - ROBOT_RADIUS/SCALE
+        if robot_position[0] < x_lb  or robot_position[0] > x_ub or robot_position[1] < y_lb  or robot_position[1] > y_ub:
+            return False
+        else:
+            return True
 
     def step(self, input_action):
         assert "human" in input_action.keys()
@@ -279,6 +304,7 @@ class ContinuousWorldSE2Env(object):
         # current_allowed_mode = self._retrieve_current_allowed_mode()
         # 0,1,2 #get the mode index of the allowed mode of motion
         # current_allowed_mode_index = DIM_TO_MODE_INDEX[current_allowed_mode]
+        prev_robot_position = self.robot.get_position()
         user_vel = np.array(
             [
                 input_action["human"].velocity.data[0],
@@ -293,7 +319,9 @@ class ContinuousWorldSE2Env(object):
         self.robot.robot.angularVelocity = -user_vel[2]
 
         self.world.Step(1.0 / FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS)  # call box2D step function
-
+        if not self._check_if_robot_in_bounds():
+            self.robot.set_position(prev_robot_position)
+        
         return (
             self.robot.get_position(),
             self.robot.get_angle(),

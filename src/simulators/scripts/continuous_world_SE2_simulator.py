@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 # Code developed by Deepak Gopinath*, Mahdieh Nejati Javaremi* in February 2020. Copyright (c) 2020. Deepak Gopinath, Mahdieh Nejati Javaremi, Argallab. (*) Equal contribution
 
+import collections
 import rospy
 import time
 from sensor_msgs.msg import Joy
@@ -86,6 +87,17 @@ class Simulator(object):
                 self.env_params["robot_position"] = robot_pose[0]
                 self.env_params["robot_orientation"] = robot_pose[1]
                 self.env_params["start_mode"] = "t"
+                
+                world_bounds = collections.OrderedDict()
+                world_bounds['xrange'] = collections.OrderedDict()
+                world_bounds['yrange'] = collections.OrderedDict()
+                world_bounds['xrange']['lb'] = 0.1 * VIEWPORT_W/SCALE
+                world_bounds['xrange']['ub'] = 0.9 * VIEWPORT_W/SCALE
+                world_bounds['yrange']['lb'] = 0.1 * VIEWPORT_H/SCALE
+                world_bounds['yrange']['ub'] = 0.9 * VIEWPORT_H/SCALE
+
+                self.env_params['world_bounds'] = world_bounds
+                
             else:
                 pass
 
