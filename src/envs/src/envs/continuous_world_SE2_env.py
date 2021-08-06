@@ -39,8 +39,11 @@ class ContinuousWorldSE2Env(object):
         assert "robot_orientation" in self.env_params
 
         assert "goal_poses" in self.env_params
-        assert "robot_type" in self.env_params
-        assert "start_mode" in self.start_mode
+        assert "start_mode" in self.env_params
+
+        self.ready_for_new_prompt = True
+        self.text_display_delay = 2
+        self.start_msg_ind = 0
 
     def _render_goal(self, shape, goal_color, goal_pose):  # potentially add default values for these args
         goal_position = (goal_pose[0], goal_pose[1])
@@ -126,6 +129,56 @@ class ContinuousWorldSE2Env(object):
             anchor_y=MODE_DISPLAY_TEXT_Y_ANCHOR,
         )
 
+    def _render_timer_text(self):
+        if self.current_time < TIMER_WARNING_THRESHOLD:
+            self.viewer.draw_text(
+                str(self.current_time),
+                x=TIMER_DISPLAY_POSITION[0],
+                y=TIMER_DISPLAY_POSITION[1],
+                font_size=TIMER_DISPLAY_FONTSIZE,
+                color=TIMER_COLOR_NEUTRAL,
+                anchor_y=TIMER_DISPLAY_TEXT_Y_ANCHOR,
+                bold=True,
+            )
+        elif self.current_time < TIMER_DANGER_THRESHOLD:
+            self.viewer.draw_text(
+                str(self.current_time),
+                x=TIMER_DISPLAY_POSITION[0],
+                y=TIMER_DISPLAY_POSITION[1],
+                font_size=TIMER_DISPLAY_FONTSIZE,
+                color=TIMER_COLOR_WARNING,
+                anchor_y=TIMER_DISPLAY_TEXT_Y_ANCHOR,
+                bold=True,
+            )
+        else:
+            self.viewer.draw_text(
+                str(self.current_time),
+                x=TIMER_DISPLAY_POSITION[0],
+                y=TIMER_DISPLAY_POSITION[1],
+                font_size=TIMER_DISPLAY_FONTSIZE,
+                color=TIMER_COLOR_DANGER,
+                anchor_y=TIMER_DISPLAY_TEXT_Y_ANCHOR,
+                bold=True,
+            )
+
+    def _render_text(self, msg, position, font_size=TRIAL_OVER_TEXT_FONTSIZE, color=COMMAND_TEXT_COLOR):
+        self.viewer.draw_text(msg, x=position[0], y=position[1], font_size=font_size, color=color, bold=True)
+
+    def _render_timer(self, period):
+        while not rospy.is_shutdown():
+            start = rospy.get_rostime()
+            self.lock.acquire()
+            if self.viewer is not None:
+                self.current_time += 1
+            else:
+                pass
+            self.lock.release()
+            end = rospy.get_rostime()
+            if end - start < period:
+                rospy.sleep(period - (end - start))
+            else:
+                rospy.loginfo("took more time")
+
     def render(self, mode="human"):
         self._render_goals()
         self._render_robot()
@@ -133,11 +186,35 @@ class ContinuousWorldSE2Env(object):
         self._render_mode_display()
         self._render_mode_display_text()
         # render timer
-        # self._render_timer_text()
+        self._render_timer_text()
         # #render assistance block label
         # self._render_text('Condition: '+self.assistance_type, LABEL_DISPLAY_POSITION, MODE_DISPLAY_TEXT_FONTSIZE+5)
 
         return self.viewer.render(False)
+
+    def initialize_viewer(self):
+        if self.viewer is None:
+            self.viewer = Viewer(VIEWPORT_W, VIEWPORT_H)
+            self.viewer.set_bounds(0, VIEWPORT_W / SCALE, 0, VIEWPORT_H / SCALE)
+            self.viewer.window.set_location(650, 300)
+            self.timer_thread.start()
+
+    def start_countdown(self):
+        if self.ready_for_new_prompt:
+            self.msg_prompt = EXPERIMENT_START_COUNTDOWN[self.start_msg_ind]
+            self.start_msg_ind += 1
+            self.ts = time.time()
+            self.ready_for_new_prompt = False
+        if (time.time() - self.ts) >= self.text_display_delay:
+            self.ready_for_new_prompt = True
+
+        self._render_text(self.msg_prompt, COMMAND_DISPLAY_POSITION)
+        self.viewer.render(False)
+
+        if self.start_msg_ind == len(EXPERIMENT_START_COUNTDOWN):
+            return 1
+        else:
+            return 0
 
     def _destroy(self):
         if self.robot is None:
@@ -150,15 +227,15 @@ class ContinuousWorldSE2Env(object):
         self.DIMENSIONS = []
         self.DIMENSION_INDICES = []
 
-    # def initialize(self):
-    #     self.start_session = self.env_params["start"]
-    #     self.period = rospy.Duration(1.0)
-    #     self.timer_thread = threading.Thread(
-    #         target=self._render_timer, args=(self.period,)
-    #     )  # timer for trial time. Run on separate thread
-    #     self.lock = threading.Lock()
-    #     self.current_time = 0
-    #     self.max_time = 50
+    def initialize(self):
+        self.start_session = self.env_params["start"]
+        self.period = rospy.Duration(1.0)
+        self.timer_thread = threading.Thread(
+            target=self._render_timer, args=(self.period,)
+        )  # timer for trial time. Run on separate thread
+        self.lock = threading.Lock()
+        self.current_time = 0
+        self.max_time = 50
 
     def reset(self):
         self._destroy()
@@ -167,7 +244,7 @@ class ContinuousWorldSE2Env(object):
         self.goal_poses = self.env_params["goal_poses"]
         self.robot_orientation = self.env_params["robot_orientation"]
         self.start_mode = self.env_params["start_mode"]
-        self.assistance_type = ASSISTANCE_CODE_NAME[self.env_params["assistance_type"]]  # label assistance type
+        # self.assistance_type = ASSISTANCE_CODE_NAME[self.env_params["assistance_type"]]  # label assistance type
 
         self.DIMENSIONS = ["x", "y", "t"]  # set of dimensions or modes
         self.DIMENSION_INDICES = np.array([0, 1, 2])  # set of mode indices (needed for look up)
@@ -185,13 +262,13 @@ class ContinuousWorldSE2Env(object):
             radius=ROBOT_RADIUS / SCALE,
         )
 
-        self.LOCS_FOR_CONTROL_DIM_DISPLAY = collections.OrderedDict()
-        for i, cd in enumerate(range(self.robot_dim)):
-            self.LOCS_FOR_CONTROL_DIM_DISPLAY[cd] = collections.OrderedDict()
-            self.LOCS_FOR_CONTROL_DIM_DISPLAY[cd]["position"] = (
-                MODE_DISPLAY_CIRCLE_START_POSITION_S[0] + i * MODE_DISPLAY_CIRCLE_X_OFFSET_S,
-                MODE_DISPLAY_CIRCLE_START_POSITION_S[1],
-            )
+        # self.LOCS_FOR_CONTROL_DIM_DISPLAY = collections.OrderedDict()
+        # for i, cd in enumerate(range(self.robot_dim)):
+        #     self.LOCS_FOR_CONTROL_DIM_DISPLAY[cd] = collections.OrderedDict()
+        #     self.LOCS_FOR_CONTROL_DIM_DISPLAY[cd]["position"] = (
+        #         MODE_DISPLAY_CIRCLE_START_POSITION_S[0] + i * MODE_DISPLAY_CIRCLE_X_OFFSET_S,
+        #         MODE_DISPLAY_CIRCLE_START_POSITION_S[1],
+        #     )
 
     def step(self, input_action):
         assert "human" in input_action.keys()
@@ -199,9 +276,9 @@ class ContinuousWorldSE2Env(object):
         self.current_mode_index = rospy.get_param("mode")  # 0,1,2 #get current mode index
         self.current_mode = MODE_INDEX_TO_DIM[self.current_mode_index]  # x,y,t, #get current mode
         # x,y,t #for the given location, retrieve what is the allowed mode of motion.
-        current_allowed_mode = self._retrieve_current_allowed_mode()
+        # current_allowed_mode = self._retrieve_current_allowed_mode()
         # 0,1,2 #get the mode index of the allowed mode of motion
-        current_allowed_mode_index = DIM_TO_MODE_INDEX[current_allowed_mode]
+        # current_allowed_mode_index = DIM_TO_MODE_INDEX[current_allowed_mode]
         user_vel = np.array(
             [
                 input_action["human"].velocity.data[0],
@@ -210,11 +287,18 @@ class ContinuousWorldSE2Env(object):
             ]
         )  # numpyify the velocity data. note the negative sign on the 3rd component.To account for proper counterclockwise motion
         # zero out all velocities except the ones for the allowed mode
-        user_vel[np.setdiff1d(self.DIMENSION_INDICES, current_allowed_mode_index)] = 0.0
+        # user_vel[np.setdiff1d(self.DIMENSION_INDICES, current_allowed_mode_index)] = 0.0
 
         self.robot.robot.linearVelocity = b2Vec2(user_vel[0], user_vel[1])  # update robot velocity
         self.robot.robot.angularVelocity = -user_vel[2]
 
         self.world.Step(1.0 / FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS)  # call box2D step function
 
-        return True
+        return (
+            self.robot.get_position(),
+            self.robot.get_angle(),
+            [user_vel[0], user_vel[1]],
+            -user_vel[2],
+            self.current_mode,
+            False,
+        )
