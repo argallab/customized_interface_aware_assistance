@@ -30,6 +30,8 @@
     <arg name="KEY" value="$(arg KEY)"/>
     <arg name="SNP" value="$(arg SNP)"/>
     <arg name="JOINT" value="$(arg JOINT)"/>
+    <arg name="robot_dim" value="3"/>
+    <arg name="finger_dim" value="0"/>
   </include>
   
 
