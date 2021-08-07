@@ -48,10 +48,10 @@ class ContinuousWorldSE2Env(object):
         self.start_msg_ind = 0
 
     def _render_bounds(self):
-        x_lb = self.world_bounds['xrange']['lb']
-        x_ub = self.world_bounds['xrange']['ub']
-        y_lb = self.world_bounds['yrange']['lb']
-        y_ub = self.world_bounds['yrange']['ub']
+        x_lb = self.world_bounds["xrange"]["lb"]
+        x_ub = self.world_bounds["xrange"]["ub"]
+        y_lb = self.world_bounds["yrange"]["lb"]
+        y_ub = self.world_bounds["yrange"]["ub"]
         self.viewer.draw_line((x_lb, y_lb), (x_ub, y_lb), linewidth=3.0)
         self.viewer.draw_line((x_ub, y_lb), (x_ub, y_ub), linewidth=3.0)
         self.viewer.draw_line((x_ub, y_ub), (x_lb, y_ub), linewidth=3.0)
@@ -64,26 +64,26 @@ class ContinuousWorldSE2Env(object):
             t = Transform(translation=goal_position)
             self.viewer.draw_circle(GOAL_RADIUS / SCALE, 30, color=goal_color, filled=True).add_attr(t)
             self.viewer.draw_line(
-                goal_position, 
+                goal_position,
                 (
                     goal_position[0] + 2 * (GOAL_RADIUS / SCALE) * math.cos(goal_orientation),
                     goal_position[1] + 2 * (GOAL_RADIUS / SCALE) * math.sin(goal_orientation),
                 ),
                 linewidth=3.0,
             )
-    
+
     def _render_goals(self):
         for i in range(self.num_goals):
             shape = "circle"
             goal_color = (1.0, 0.0, 0.0)
             goal_pose = tuple(self.goal_poses[i])
             self._render_goal(shape, goal_color, goal_pose)
-    
+
     def _render_obstacles(self):
         for obs_spec in self.obstacles:
-            #bottom left corner and top-right corner
-            bottom_left = obs_spec['bottom_left'] #2d list
-            top_right = obs_spec['top_right']
+            # bottom left corner and top-right corner
+            bottom_left = obs_spec["bottom_left"]  # 2d list
+            top_right = obs_spec["top_right"]
             bottom_right = [top_right[0], bottom_left[1]]
             top_left = [bottom_left[0], top_right[1]]
             v = [bottom_left, bottom_right, top_right, top_left]
@@ -205,7 +205,7 @@ class ContinuousWorldSE2Env(object):
         self._render_bounds()
         self._render_obstacles()
         self._render_goals()
-        
+
         self._render_robot()
         self._render_robot_direction_indicators()
         self._render_mode_display()
@@ -269,9 +269,9 @@ class ContinuousWorldSE2Env(object):
         self.robot_position = self.env_params["robot_position"]
         self.goal_poses = self.env_params["goal_poses"]
         self.robot_orientation = self.env_params["robot_orientation"]
-        self.world_bounds = self.env_params['world_bounds']
+        self.world_bounds = self.env_params["world_bounds"]
         self.start_mode = self.env_params["start_mode"]
-        self.obstacles = self.env_params['obstacles']
+        self.obstacles = self.env_params["obstacles"]
         # self.assistance_type = ASSISTANCE_CODE_NAME[self.env_params["assistance_type"]]  # label assistance type
 
         self.DIMENSIONS = ["x", "y", "t"]  # set of dimensions or modes
@@ -297,34 +297,40 @@ class ContinuousWorldSE2Env(object):
         #         MODE_DISPLAY_CIRCLE_START_POSITION_S[0] + i * MODE_DISPLAY_CIRCLE_X_OFFSET_S,
         #         MODE_DISPLAY_CIRCLE_START_POSITION_S[1],
         #     )
+
     def _check_if_robot_in_bounds(self):
         robot_position = self.robot.get_position()
-        x_lb = self.world_bounds['xrange']['lb'] + ROBOT_RADIUS/SCALE
-        x_ub = self.world_bounds['xrange']['ub'] - ROBOT_RADIUS/SCALE
+        x_lb = self.world_bounds["xrange"]["lb"] + ROBOT_RADIUS / SCALE
+        x_ub = self.world_bounds["xrange"]["ub"] - ROBOT_RADIUS / SCALE
 
-        y_lb = self.world_bounds['yrange']['lb'] + ROBOT_RADIUS/SCALE
-        y_ub = self.world_bounds['yrange']['ub'] - ROBOT_RADIUS/SCALE
-        if robot_position[0] < x_lb  or robot_position[0] > x_ub or robot_position[1] < y_lb  or robot_position[1] > y_ub:
+        y_lb = self.world_bounds["yrange"]["lb"] + ROBOT_RADIUS / SCALE
+        y_ub = self.world_bounds["yrange"]["ub"] - ROBOT_RADIUS / SCALE
+        if robot_position[0] < x_lb or robot_position[0] > x_ub or robot_position[1] < y_lb or robot_position[1] > y_ub:
             return False
         else:
             return True
-    
+
     def _check_if_robot_in_obstacle(self):
         robot_position = self.robot.get_position()
         in_obstacle = False
         for obs_spec in self.obstacles:
-            bottom_left = obs_spec['bottom_left'] #2d list
-            top_right = obs_spec['top_right']
+            bottom_left = obs_spec["bottom_left"]  # 2d list
+            top_right = obs_spec["top_right"]
             # corners of the obstacle
-            x_lb = bottom_left[0] - ROBOT_RADIUS/SCALE
-            x_ub = top_right[0] + ROBOT_RADIUS/SCALE
-            y_lb = bottom_left[1] - ROBOT_RADIUS/SCALE
-            y_ub = top_right[1] + ROBOT_RADIUS/SCALE
+            x_lb = bottom_left[0] - ROBOT_RADIUS / SCALE
+            x_ub = top_right[0] + ROBOT_RADIUS / SCALE
+            y_lb = bottom_left[1] - ROBOT_RADIUS / SCALE
+            y_ub = top_right[1] + ROBOT_RADIUS / SCALE
 
-            if robot_position[0] > x_lb and robot_position[0] < x_ub and robot_position[1] > y_lb and robot_position[1] < y_ub:
+            if (
+                robot_position[0] > x_lb
+                and robot_position[0] < x_ub
+                and robot_position[1] > y_lb
+                and robot_position[1] < y_ub
+            ):
                 in_obstacle = True
                 break
-        
+
         if in_obstacle:
             return True
         else:
@@ -354,14 +360,13 @@ class ContinuousWorldSE2Env(object):
         self.robot.robot.angularVelocity = -user_vel[2]
 
         self.world.Step(1.0 / FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS)  # call box2D step function
-        
+
         if self._check_if_robot_in_obstacle():
             self.robot.set_position(prev_robot_position)
 
         if not self._check_if_robot_in_bounds():
             self.robot.set_position(prev_robot_position)
-        
-        
+
         return (
             self.robot.get_position(),
             self.robot.get_angle(),
