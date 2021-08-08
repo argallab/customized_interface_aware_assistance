@@ -19,7 +19,19 @@ from pyglet.window import key
 import random
 import sys
 import os
-from corrective_mode_switch_utils import SCALE, DIM_TO_MODE_INDEX, VIEWPORT_W, VIEWPORT_H, PI
+import itertools
+from mdp.mdp_utils import *
+from corrective_mode_switch_utils import SCALE, DIM_TO_MODE_INDEX, VIEWPORT_W, VIEWPORT_H, PI, ROBOT_RADIUS_S
+
+
+GRID_WIDTH = 10
+GRID_HEIGHT = 10
+NUM_ORIENTATIONS = 8
+NUM_GOALS = 3
+OCCUPANCY_LEVEL = 0.1
+
+SPARSITY_FACTOR = 0.0
+RAND_DIRECTION_FACTOR = 0.1
 
 
 class Simulator(object):
@@ -80,28 +92,51 @@ class Simulator(object):
             pass
         else:
             if not self.training:
+                mdp_env_params = self._create_mdp_env_param_dict()
+                mdp_env_params["cell_size"] = ROBOT_RADIUS_S * 2
                 self.env_params = dict()
-                self.env_params["num_goals"] = 3
-                self.env_params["goal_poses"] = self._generate_random_goal_poses(self.env_params["num_goals"])
+                self.env_params["all_mdp_env_params"] = mdp_env_params
+                self.env_params["num_goals"] = NUM_GOALS
+
+                self.env_params["goal_poses"] = self._generate_continuous_goal_poses(
+                    mdp_env_params["all_goals"], mdp_env_params["cell_size"]
+                )
+                print ("GOALS", mdp_env_params["all_goals"])
                 robot_pose = self._random_robot_pose()
                 self.env_params["robot_position"] = robot_pose[0]
                 self.env_params["robot_orientation"] = robot_pose[1]
                 self.env_params["start_mode"] = "t"
-                
-                world_bounds = collections.OrderedDict()
-                world_bounds['xrange'] = collections.OrderedDict()
-                world_bounds['yrange'] = collections.OrderedDict()
-                world_bounds['xrange']['lb'] = 0.1 * VIEWPORT_W/SCALE
-                world_bounds['xrange']['ub'] = 0.9 * VIEWPORT_W/SCALE
-                world_bounds['yrange']['lb'] = 0.1 * VIEWPORT_H/SCALE
-                world_bounds['yrange']['ub'] = 0.9 * VIEWPORT_H/SCALE
 
-                self.env_params['world_bounds'] = world_bounds
-                obs1 = collections.OrderedDict()
-                obs1['bottom_left'] = (0.2  * VIEWPORT_W/SCALE, 0.5*VIEWPORT_H/SCALE)
-                obs1['top_right'] = (0.4  * VIEWPORT_W/SCALE, 0.7*VIEWPORT_H/SCALE)
-                self.env_params['obstacles'] = [obs1]
-                
+                # generate continuous world bounds from width and height and cell size, and offset info
+                world_bounds = collections.OrderedDict()
+                world_bounds["xrange"] = collections.OrderedDict()
+                world_bounds["yrange"] = collections.OrderedDict()
+                # bottom left corner in continuous space
+                world_bounds["xrange"]["lb"] = 0.1 * VIEWPORT_W / SCALE
+                world_bounds["yrange"]["lb"] = 0.1 * VIEWPORT_H / SCALE
+
+                world_bounds["xrange"]["ub"] = world_bounds["xrange"]["lb"] + (
+                    mdp_env_params["grid_width"] * mdp_env_params["cell_size"]
+                )
+                world_bounds["yrange"]["ub"] = world_bounds["yrange"]["lb"] + (
+                    mdp_env_params["grid_height"] * mdp_env_params["cell_size"]
+                )
+
+                self.env_params["world_bounds"] = world_bounds
+                # generate continuous obstacle bounds based
+                self.env_params["obstacles"] = []
+                for o in mdp_env_params["original_mdp_obstacles"]:
+                    obs = collections.OrderedDict()
+                    obs["bottom_left"] = (
+                        o[0] * mdp_env_params["cell_size"] + world_bounds["xrange"]["lb"],
+                        o[1] * mdp_env_params["cell_size"] + world_bounds["yrange"]["lb"],
+                    )
+                    obs["top_right"] = (
+                        (o[0] + 1) * mdp_env_params["cell_size"] + world_bounds["xrange"]["lb"],
+                        (o[1] + 1) * mdp_env_params["cell_size"] + world_bounds["yrange"]["lb"],
+                    )
+                    self.env_params["obstacles"].append(obs)
+
             else:
                 pass
 
@@ -190,13 +225,13 @@ class Simulator(object):
 
             r.sleep()
 
-    def _generate_random_goal_poses(self, num_goals):
+    def _generate_continuous_goal_poses(self, discrete_goal_list, cell_size):
         goal_poses = []
-        for i in range(num_goals):
+        for dg in discrete_goal_list:
             goal_pose = [0, 0, 0]
-            goal_pose[0] = ((i + 1) / 4.0) * VIEWPORT_W / SCALE
-            goal_pose[1] = ((i + 1) / 4.0) * VIEWPORT_H / SCALE
-            goal_pose[2] = np.random.rand() * PI / 2
+            goal_pose[0] = (dg[0] * cell_size) + cell_size / 2.0
+            goal_pose[1] = (dg[1] * cell_size) + cell_size / 2.0
+            goal_pose[2] = (float(dg[2]) / NUM_ORIENTATIONS) * 2 * PI
             goal_poses.append(goal_pose)
 
         return goal_poses
@@ -224,6 +259,67 @@ class Simulator(object):
             self.terminate = True
         if k == key.R:
             self.restart = True
+
+    def _create_mdp_env_param_dict(self):
+        mdp_env_params = collections.OrderedDict()
+        mdp_env_params["rl_algo_type"] = RlAlgoType.ValueIteration
+        mdp_env_params["gamma"] = 0.96
+        mdp_env_params["grid_width"] = GRID_WIDTH
+        mdp_env_params["grid_height"] = GRID_HEIGHT
+        mdp_env_params["num_discrete_orientations"] = NUM_ORIENTATIONS
+        mdp_env_params["robot_type"] = CartesianRobotType.SE2
+        mdp_env_params["mode_set_type"] = ModeSetType.OneD
+
+        num_patches = 2
+        if OCCUPANCY_LEVEL == 0.0:
+            mdp_env_params["original_mdp_obstacles"] = []
+        else:
+            mdp_env_params["original_mdp_obstacles"] = self._create_rectangular_gw_obstacles(
+                width=mdp_env_params["grid_width"],
+                height=mdp_env_params["grid_height"],
+                num_obstacle_patches=num_patches,
+            )
+
+        print ("OBSTACLES", mdp_env_params["original_mdp_obstacles"])
+        goal_list = create_random_goals(
+            width=mdp_env_params["grid_width"],
+            height=mdp_env_params["grid_height"],
+            num_goals=NUM_GOALS,
+            obstacle_list=mdp_env_params["original_mdp_obstacles"],
+        )  # make the list a tuple
+
+        for i, g in enumerate(goal_list):
+            g = list(g)
+            g.append(np.random.randint(mdp_env_params["num_discrete_orientations"]))
+            goal_list[i] = tuple(g)
+
+        print (goal_list)
+        mdp_env_params["all_goals"] = goal_list
+        mdp_env_params["obstacle_penalty"] = -100
+        mdp_env_params["goal_reward"] = 100
+        mdp_env_params["step_penalty"] = -10
+        mdp_env_params["sparsity_factor"] = SPARSITY_FACTOR
+        mdp_env_params["rand_direction_factor"] = RAND_DIRECTION_FACTOR
+        mdp_env_params["mdp_obstacles"] = []
+
+        return mdp_env_params
+
+    def _create_rectangular_gw_obstacles(self, width, height, num_obstacle_patches):
+
+        obstacle_list = []
+        all_cell_coords = list(itertools.product(range(width), range(height)))
+        # pick three random starting points
+        obstacle_patch_seeds = random.sample(all_cell_coords, num_obstacle_patches)
+        for i, patch_seed in enumerate(obstacle_patch_seeds):
+
+            width_of_obs = np.random.randint(1, 5)
+            height_of_obs = np.random.randint(1, 3)
+
+            h_range = list(range(patch_seed[0], min(height - 1, patch_seed[0] + height_of_obs) + 1))
+            w_range = list(range(patch_seed[1], min(width - 1, patch_seed[1] + width_of_obs) + 1))
+            obstacle_list.extend(list(itertools.product(h_range, w_range)))
+
+        return obstacle_list
 
 
 if __name__ == "__main__":

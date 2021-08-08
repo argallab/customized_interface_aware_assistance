@@ -4,6 +4,7 @@ from backends.rendering import Viewer, Transform
 import sys
 import os
 import rospkg
+import copy
 
 sys.path.append(os.path.join(rospkg.RosPack().get_path("simulators"), "scripts"))
 from corrective_mode_switch_utils import *
@@ -15,6 +16,8 @@ import itertools
 import rospy
 import threading
 from envs.srv import OptimalAction, OptimalActionRequest, OptimalActionResponse
+from mdp.mdp_discrete_SE2_gridworld_with_modes import MDPDiscreteSE2GridWorldWithModes
+
 import time
 
 
@@ -46,6 +49,9 @@ class ContinuousWorldSE2Env(object):
         self.ready_for_new_prompt = True
         self.text_display_delay = 2
         self.start_msg_ind = 0
+
+    def _transform_continuous_robot_pose_to_discrete_state(self):
+        pass
 
     def _render_bounds(self):
         x_lb = self.world_bounds["xrange"]["lb"]
@@ -263,14 +269,60 @@ class ContinuousWorldSE2Env(object):
         self.current_time = 0
         self.max_time = 50
 
+    def create_mdp_list(self, mdp_env_params):
+        self.mdp_list = []
+        for i, g in enumerate(mdp_env_params["all_goals"]):
+            mdp_env_params["mdp_goal_state"] = g
+            # 2d goals.
+            goals_that_are_obs = [(g_obs[0], g_obs[1]) for g_obs in mdp_env_params["all_goals"] if g_obs != g]
+            mdp_env_params["mdp_obstacles"] = copy.deepcopy(mdp_env_params["original_mdp_obstacles"])
+            mdp_env_params["mdp_obstacles"].extend(goals_that_are_obs)
+            discrete_se2_modes_mdp = MDPDiscreteSE2GridWorldWithModes(copy.deepcopy(mdp_env_params))
+
+            self.mdp_list.append(discrete_se2_modes_mdp)
+
+    def _create_kd_tree_locations(self):
+        grid_width = self.all_mdp_env_params["grid_width"]
+        grid_height = self.all_mdp_env_params["grid_height"]
+        cell_size = self.all_mdp_env_params["cell_size"]
+        # offset of bottom left corner.
+        world_x_lb = self.world_bounds["xrange"]["lb"]
+        world_y_lb = self.world_bounds["yrange"]["lb"]
+        cell_center_list = []
+        for i in range(grid_width):
+            for j in range(grid_height):
+                # create center continuous position for i, j
+                # append it to cell_center_list
+                pass
+
+        # create kd tree with the cell_center_list. Use euclidean distance in 2d space for nearest neight
+
     def reset(self):
         self._destroy()
+
+        # For each goal there needs to be an MDP under the hood.
+        self.all_mdp_env_params = self.env_params["all_mdp_env_params"]
+        # create underlying MDPS
+        self.create_mdp_list(self.all_mdp_env_params)
+        # create KDTree with cell center locations
+        # self._create_kd_tree_locations()
+
+        #
         self.num_goals = self.env_params["num_goals"]
+
+        # continuous starting robot pose
         self.robot_position = self.env_params["robot_position"]
-        self.goal_poses = self.env_params["goal_poses"]
         self.robot_orientation = self.env_params["robot_orientation"]
-        self.world_bounds = self.env_params["world_bounds"]
+        # starting discrete mode
         self.start_mode = self.env_params["start_mode"]
+
+        # continuous goal poses.
+        self.goal_poses = self.env_params["goal_poses"]
+
+        # continuous world boundaries
+        self.world_bounds = self.env_params["world_bounds"]
+
+        # continuous obstacle boundaries.
         self.obstacles = self.env_params["obstacles"]
         # self.assistance_type = ASSISTANCE_CODE_NAME[self.env_params["assistance_type"]]  # label assistance type
 
