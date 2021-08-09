@@ -302,4 +302,3 @@ def create_random_start_state(width, height, obstacle_list, goal_list, mode_set)
     random_mode = random.sample(mode_set.keys(), 1)  # [m]
 
     return tuple(list(random_start_state) + random_mode)  # a tuple
-

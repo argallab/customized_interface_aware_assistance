@@ -4,12 +4,9 @@ from backends.rendering import Viewer, Transform
 import sys
 import os
 import rospkg
-import copy
 
 sys.path.append(os.path.join(rospkg.RosPack().get_path("simulators"), "scripts"))
 from corrective_mode_switch_utils import *
-import csv
-import math
 import numpy as np
 import collections
 import itertools
@@ -50,14 +47,32 @@ class ContinuousWorldSE2Env(object):
         self.text_display_delay = 2
         self.start_msg_ind = 0
 
+    def _continuous_orientation_to_discrete_orientation(self):
+        cont_orientation = self.robot.get_angle()
+        # wrap angle back to  0 to 2PI
+        # discretize to current discrete MDP orientation
+        mdp_discrete_orientation = 0
+        # in the mdp class "move_p" results in "positive" change in angle which is counterclockwise motion
+        # however, in the environment, a move_p command results in clockwise motion.
+        # either change the transition model in MDP or change mapping in env.
+        print(mdp_discrete_orientation)
+        return mdp_discrete_orientation
+
     def _transform_continuous_robot_pose_to_discrete_state(self):
         data_index = self.continuous_kd_tree.query(self.robot.get_position())[1]
         nearest_continuous_position = self.continuous_kd_tree.data[data_index, :]
         mdp_discrete_position = self.continuous_position_to_loc_coord[tuple(nearest_continuous_position)]
-        # add discrete orientation
+        mdp_discrete_orientation = self._continuous_orientation_to_discrete_orientation()
+        current_mode_index = rospy.get_param("mode")  # 0,1,2
 
+        mdp_discrete_state = [
+            mdp_discrete_position[0],
+            mdp_discrete_position[1],
+            mdp_discrete_orientation,
+            current_mode_index + 1,  # plus 1 because in MDP the modes are 1-indexed.
+        ]
         # add mode to state info. mode 1,2,3
-        return mdp_discrete_position
+        return mdp_discrete_state
 
     def _render_bounds(self):
         x_lb = self.world_bounds["xrange"]["lb"]
@@ -275,18 +290,6 @@ class ContinuousWorldSE2Env(object):
         self.current_time = 0
         self.max_time = 50
 
-    def create_mdp_list(self, mdp_env_params):
-        self.mdp_list = []
-        for i, g in enumerate(mdp_env_params["all_goals"]):
-            mdp_env_params["mdp_goal_state"] = g
-            # 2d goals.
-            goals_that_are_obs = [(g_obs[0], g_obs[1]) for g_obs in mdp_env_params["all_goals"] if g_obs != g]
-            mdp_env_params["mdp_obstacles"] = copy.deepcopy(mdp_env_params["original_mdp_obstacles"])
-            mdp_env_params["mdp_obstacles"].extend(goals_that_are_obs)
-            discrete_se2_modes_mdp = MDPDiscreteSE2GridWorldWithModes(copy.deepcopy(mdp_env_params))
-
-            self.mdp_list.append(discrete_se2_modes_mdp)
-
     def _create_kd_tree_locations(self):
         grid_width = self.all_mdp_env_params["grid_width"]
         grid_height = self.all_mdp_env_params["grid_height"]
@@ -314,8 +317,8 @@ class ContinuousWorldSE2Env(object):
 
         # For each goal there needs to be an MDP under the hood.
         self.all_mdp_env_params = self.env_params["all_mdp_env_params"]
-        # create underlying MDPS
-        self.create_mdp_list(self.all_mdp_env_params)
+        self.mdp_list = self.env_params["mdp_list"]
+
         # create KDTree with cell center locations
 
         #
@@ -424,7 +427,10 @@ class ContinuousWorldSE2Env(object):
         # user_vel[np.setdiff1d(self.DIMENSION_INDICES, current_allowed_mode_index)] = 0.0
 
         self.robot.robot.linearVelocity = b2Vec2(user_vel[0], user_vel[1])  # update robot velocity
-        self.robot.robot.angularVelocity = -user_vel[2]
+        self.robot.robot.angularVelocity = -user_vel[
+            2
+        ]  # the negative sign is included so that 'move_p' which is "positive direction"
+        # results in clockwise motion! In degrees this is a negative change.
 
         self.world.Step(1.0 / FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS)  # call box2D step function
 
