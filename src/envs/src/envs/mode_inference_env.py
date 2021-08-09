@@ -891,7 +891,7 @@ class ModeInferenceEnv(object):
         self._init_allowed_directions_of_motion()
 
         if not self.service_initialized:
-            rospy.Service("/mode_inference_env/get_optimal_action", OptimalAction, self.get_optimal_action)
+            rospy.Service("/sim_env/get_optimal_action", OptimalAction, self.get_optimal_action)
             self.service_initialized = True
 
         self.period = rospy.Duration(1.0)

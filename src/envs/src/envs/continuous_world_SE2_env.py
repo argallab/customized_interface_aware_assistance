@@ -43,19 +43,33 @@ class ContinuousWorldSE2Env(object):
         assert "start_mode" in self.env_params
         assert "world_bounds" in self.env_params
 
+        self.service_initialized = False
+
         self.ready_for_new_prompt = True
         self.text_display_delay = 2
         self.start_msg_ind = 0
 
+    def get_optimal_action(self, req):
+        response = OptimalActionResponse()
+        current_discrete_state = rospy.get_param("current_discrete_state", [0,0,0,1])
+        current_discrete_state = tuple(current_discrete_state)
+
     def _continuous_orientation_to_discrete_orientation(self):
         cont_orientation = self.robot.get_angle()
         # wrap angle back to  0 to 2PI
+        while not (cont_orientation >= 0.0 and cont_orientation < 2*PI):
+            if cont_orientation >= 2*PI:
+                cont_orientation -= 2*PI
+            if cont_orientation < 0.0:
+                cont_orientation += 2*PI
+            
         # discretize to current discrete MDP orientation
-        mdp_discrete_orientation = 0
+        angle_resolution = (2*PI)/self.mdp_num_discrete_orientations
+        mdp_discrete_orientation = int(round(cont_orientation/angle_resolution))
         # in the mdp class "move_p" results in "positive" change in angle which is counterclockwise motion
         # however, in the environment, a move_p command results in clockwise motion.
         # either change the transition model in MDP or change mapping in env.
-        print(mdp_discrete_orientation)
+        # print(mdp_discrete_orientation)
         return mdp_discrete_orientation
 
     def _transform_continuous_robot_pose_to_discrete_state(self):
@@ -318,6 +332,7 @@ class ContinuousWorldSE2Env(object):
         # For each goal there needs to be an MDP under the hood.
         self.all_mdp_env_params = self.env_params["all_mdp_env_params"]
         self.mdp_list = self.env_params["mdp_list"]
+        self.mdp_num_discrete_orientations = self.all_mdp_env_params['num_discrete_orientations']
 
         # create KDTree with cell center locations
 
@@ -355,6 +370,10 @@ class ContinuousWorldSE2Env(object):
             robot_color=ROBOT_COLOR_WHEN_COMMAND_REQUIRED,
             radius=ROBOT_RADIUS / SCALE,
         )
+
+        if not self.service_initialized:
+            rospy.Service("/sim_env/get_optimal_action", OptimalAction, self.get_optimal_action)
+            self.service_initialized = True
 
         # self.LOCS_FOR_CONTROL_DIM_DISPLAY = collections.OrderedDict()
         # for i, cd in enumerate(range(self.robot_dim)):
@@ -441,6 +460,7 @@ class ContinuousWorldSE2Env(object):
             self.robot.set_position(prev_robot_position)
 
         current_discrete_mdp_state = self._transform_continuous_robot_pose_to_discrete_state()
+        rospy.set_param("current_discrete_state", self.current_discrete_state)
         print("Discrete state", current_discrete_mdp_state)
 
         return (
