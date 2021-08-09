@@ -94,13 +94,13 @@ class Simulator(object):
             if not self.training:
                 mdp_env_params = self._create_mdp_env_param_dict()
                 mdp_env_params["cell_size"] = ROBOT_RADIUS_S * 2
+
+                # create mdp list here. Select start positoin from valid stats.
+                # pass mdp_list so that env doesn't waste time creating it.
                 self.env_params = dict()
                 self.env_params["all_mdp_env_params"] = mdp_env_params
                 self.env_params["num_goals"] = NUM_GOALS
 
-                self.env_params["goal_poses"] = self._generate_continuous_goal_poses(
-                    mdp_env_params["all_goals"], mdp_env_params["cell_size"]
-                )
                 print ("GOALS", mdp_env_params["all_goals"])
                 robot_pose = self._random_robot_pose()
                 self.env_params["robot_position"] = robot_pose[0]
@@ -137,6 +137,9 @@ class Simulator(object):
                     )
                     self.env_params["obstacles"].append(obs)
 
+                self.env_params["goal_poses"] = self._generate_continuous_goal_poses(
+                    mdp_env_params["all_goals"], mdp_env_params["cell_size"], self.env_params["world_bounds"]
+                )
             else:
                 pass
 
@@ -225,12 +228,12 @@ class Simulator(object):
 
             r.sleep()
 
-    def _generate_continuous_goal_poses(self, discrete_goal_list, cell_size):
+    def _generate_continuous_goal_poses(self, discrete_goal_list, cell_size, world_bounds):
         goal_poses = []
         for dg in discrete_goal_list:
             goal_pose = [0, 0, 0]
-            goal_pose[0] = (dg[0] * cell_size) + cell_size / 2.0
-            goal_pose[1] = (dg[1] * cell_size) + cell_size / 2.0
+            goal_pose[0] = (dg[0] * cell_size) + cell_size / 2.0 + world_bounds["xrange"]["lb"]
+            goal_pose[1] = (dg[1] * cell_size) + cell_size / 2.0 + world_bounds["yrange"]["lb"]
             goal_pose[2] = (float(dg[2]) / NUM_ORIENTATIONS) * 2 * PI
             goal_poses.append(goal_pose)
 
@@ -312,7 +315,7 @@ class Simulator(object):
         obstacle_patch_seeds = random.sample(all_cell_coords, num_obstacle_patches)
         for i, patch_seed in enumerate(obstacle_patch_seeds):
 
-            width_of_obs = np.random.randint(1, 5)
+            width_of_obs = np.random.randint(1, 3)
             height_of_obs = np.random.randint(1, 3)
 
             h_range = list(range(patch_seed[0], min(height - 1, patch_seed[0] + height_of_obs) + 1))
