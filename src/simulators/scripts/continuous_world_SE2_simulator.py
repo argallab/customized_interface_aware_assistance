@@ -23,7 +23,7 @@ import os
 import copy
 import itertools
 from mdp.mdp_utils import *
-from corrective_mode_switch_utils import SCALE, DIM_TO_MODE_INDEX, VIEWPORT_W, VIEWPORT_H, PI, ROBOT_RADIUS_S
+from corrective_mode_switch_utils import MODE_INDEX_TO_DIM, SCALE, DIM_TO_MODE_INDEX, VIEWPORT_W, VIEWPORT_H, PI, ROBOT_RADIUS_S
 
 
 GRID_WIDTH = 10
@@ -95,22 +95,12 @@ class Simulator(object):
         else:
             if not self.training:
                 mdp_env_params = self._create_mdp_env_param_dict()
-                mdp_env_params["cell_size"] = ROBOT_RADIUS_S * 2
+                mdp_env_params["cell_size"] = ROBOT_RADIUS_S * 2.1
 
                 # create mdp list here. Select start positoin from valid stats.
                 # pass mdp_list so that env doesn't waste time creating it.
                 self.env_params = dict()
                 self.env_params["all_mdp_env_params"] = mdp_env_params
-                mdp_list = self.create_mdp_list(self.env_params["all_mdp_env_params"])
-                self.env_params["mdp_list"] = mdp_list
-                self.env_params["num_goals"] = NUM_GOALS
-
-                print ("GOALS", mdp_env_params["all_goals"])
-                robot_pose = self._random_robot_pose()
-                self.env_params["robot_position"] = robot_pose[0]
-                self.env_params["robot_orientation"] = robot_pose[1]
-                self.env_params["start_mode"] = "t"
-
                 # generate continuous world bounds from width and height and cell size, and offset info
                 world_bounds = collections.OrderedDict()
                 world_bounds["xrange"] = collections.OrderedDict()
@@ -127,6 +117,18 @@ class Simulator(object):
                 )
 
                 self.env_params["world_bounds"] = world_bounds
+
+                mdp_list = self.create_mdp_list(self.env_params["all_mdp_env_params"])
+                self.env_params["mdp_list"] = mdp_list
+                self.env_params["num_goals"] = NUM_GOALS
+
+                print ("GOALS", mdp_env_params["all_goals"])
+                discrete_robot_state = mdp_list[0].get_random_valid_state()
+                robot_position, robot_orientation, start_mode = self._convert_discrete_state_to_continuous_pose(discrete_robot_state, mdp_env_params["cell_size"], world_bounds)
+                self.env_params["robot_position"] = robot_position
+                self.env_params["robot_orientation"] = robot_orientation
+                self.env_params["start_mode"] = start_mode
+
                 # generate continuous obstacle bounds based
                 self.env_params["obstacles"] = []
                 for o in mdp_env_params["original_mdp_obstacles"]:
@@ -248,6 +250,20 @@ class Simulator(object):
         robot_orientation = 0.0
         # add proximity checks to any goals
         return (robot_position, robot_orientation)
+    
+    def _convert_discrete_state_to_continuous_pose(self, discrete_state, cell_size, world_bounds):
+        x_coord = discrete_state[0]
+        y_coord = discrete_state[1]
+        theta_coord = discrete_state[2]
+        mode = discrete_state[3] - 1 #minus one because the dictionary is 0-indexed
+
+        robot_position = [x_coord*cell_size + cell_size/2.0 + world_bounds['xrange']['lb'], y_coord*cell_size + cell_size/2.0 + world_bounds['yrange']['lb']]
+        robot_orientation = (theta_coord * 2*PI)/NUM_ORIENTATIONS
+        start_mode = MODE_INDEX_TO_DIM[mode]
+
+        return robot_position, robot_orientation, start_mode
+
+
 
     def joy_callback(self, msg):
         self.input_action["human"] = msg

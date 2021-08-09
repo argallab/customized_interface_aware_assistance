@@ -70,9 +70,9 @@ class ModeSwitchInferenceAndCorrection(object):
 
         rospy.Service('/mode_switch_inference_and_correction/handle_unintended_commands', InferCorrect, self.handle_unintended_commands)
         rospy.loginfo("Waiting for mode_inference_env node ")
-        rospy.wait_for_service("/mode_inference_env/get_optimal_action")
-        rospy.loginfo("mode_inference_env node found!")
-        self.get_optimal_action = rospy.ServiceProxy('/mode_inference_env/get_optimal_action', OptimalAction)
+        rospy.wait_for_service("/sim_env/get_optimal_action")
+        rospy.loginfo("sim_env node found!")
+        self.get_optimal_action = rospy.ServiceProxy('/sim_env/get_optimal_action', OptimalAction)
 
     def handle_unintended_commands(self, req):
         um = req.um
