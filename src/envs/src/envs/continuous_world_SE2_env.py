@@ -17,7 +17,7 @@ import rospy
 import threading
 from envs.srv import OptimalAction, OptimalActionRequest, OptimalActionResponse
 from mdp.mdp_discrete_SE2_gridworld_with_modes import MDPDiscreteSE2GridWorldWithModes
-
+from scipy.spatial import KDTree
 import time
 
 
@@ -51,7 +51,13 @@ class ContinuousWorldSE2Env(object):
         self.start_msg_ind = 0
 
     def _transform_continuous_robot_pose_to_discrete_state(self):
-        pass
+        data_index = self.continuous_kd_tree.query(self.robot.get_position())[1]
+        nearest_continuous_position = self.continuous_kd_tree.data[data_index, :]
+        mdp_discrete_position = self.continuous_position_to_loc_coord[tuple(nearest_continuous_position)]
+        # add discrete orientation
+
+        # add mode to state info. mode 1,2,3
+        return mdp_discrete_position
 
     def _render_bounds(self):
         x_lb = self.world_bounds["xrange"]["lb"]
@@ -285,17 +291,23 @@ class ContinuousWorldSE2Env(object):
         grid_width = self.all_mdp_env_params["grid_width"]
         grid_height = self.all_mdp_env_params["grid_height"]
         cell_size = self.all_mdp_env_params["cell_size"]
-        # offset of bottom left corner.
+        # offset for bottom left corner.
         world_x_lb = self.world_bounds["xrange"]["lb"]
         world_y_lb = self.world_bounds["yrange"]["lb"]
         cell_center_list = []
+        data = np.zeros((grid_width * grid_height, 2))
+        self.coord_to_continuous_position_dict = collections.OrderedDict()
         for i in range(grid_width):
             for j in range(grid_height):
                 # create center continuous position for i, j
                 # append it to cell_center_list
-                pass
+                data[i * grid_height + j, 0] = i * cell_size + cell_size / 2.0 + world_x_lb
+                data[i * grid_height + j, 1] = j * cell_size + cell_size / 2.0 + world_y_lb
+                self.coord_to_continuous_position_dict[(i, j)] = tuple(data[i * grid_height + j, :])
 
+        self.continuous_position_to_loc_coord = {v: k for k, v in self.coord_to_continuous_position_dict.items()}
         # create kd tree with the cell_center_list. Use euclidean distance in 2d space for nearest neight
+        self.continuous_kd_tree = KDTree(data)
 
     def reset(self):
         self._destroy()
@@ -305,7 +317,6 @@ class ContinuousWorldSE2Env(object):
         # create underlying MDPS
         self.create_mdp_list(self.all_mdp_env_params)
         # create KDTree with cell center locations
-        # self._create_kd_tree_locations()
 
         #
         self.num_goals = self.env_params["num_goals"]
@@ -321,7 +332,7 @@ class ContinuousWorldSE2Env(object):
 
         # continuous world boundaries
         self.world_bounds = self.env_params["world_bounds"]
-
+        self._create_kd_tree_locations()
         # continuous obstacle boundaries.
         self.obstacles = self.env_params["obstacles"]
         # self.assistance_type = ASSISTANCE_CODE_NAME[self.env_params["assistance_type"]]  # label assistance type
@@ -390,9 +401,13 @@ class ContinuousWorldSE2Env(object):
 
     def step(self, input_action):
         assert "human" in input_action.keys()
+        # transform the continuous robot position to a discrete state representation.
+        # Easier for computing the optimal action etc
+
         # restrict the nonzero components of the velocity only to the allowed modes.
         self.current_mode_index = rospy.get_param("mode")  # 0,1,2 #get current mode index
         self.current_mode = MODE_INDEX_TO_DIM[self.current_mode_index]  # x,y,t, #get current mode
+
         # x,y,t #for the given location, retrieve what is the allowed mode of motion.
         # current_allowed_mode = self._retrieve_current_allowed_mode()
         # 0,1,2 #get the mode index of the allowed mode of motion
@@ -418,6 +433,9 @@ class ContinuousWorldSE2Env(object):
 
         if not self._check_if_robot_in_bounds():
             self.robot.set_position(prev_robot_position)
+
+        current_discrete_mdp_state = self._transform_continuous_robot_pose_to_discrete_state()
+        print("Discrete state", current_discrete_mdp_state)
 
         return (
             self.robot.get_position(),
