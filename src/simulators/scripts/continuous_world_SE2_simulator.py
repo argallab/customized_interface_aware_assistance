@@ -12,6 +12,7 @@ from std_msgs.msg import MultiArrayDimension, String, Int8
 from teleop_nodes.msg import CartVelCmd
 from simulators.msg import State
 from teleop_nodes.srv import SetMode, SetModeRequest, SetModeResponse
+from mdp.mdp_discrete_SE2_gridworld_with_modes import MDPDiscreteSE2GridWorldWithModes
 from pyglet.window import key
 import numpy as np
 import pickle
@@ -19,6 +20,7 @@ from pyglet.window import key
 import random
 import sys
 import os
+import copy
 import itertools
 from mdp.mdp_utils import *
 from corrective_mode_switch_utils import SCALE, DIM_TO_MODE_INDEX, VIEWPORT_W, VIEWPORT_H, PI, ROBOT_RADIUS_S
@@ -99,6 +101,8 @@ class Simulator(object):
                 # pass mdp_list so that env doesn't waste time creating it.
                 self.env_params = dict()
                 self.env_params["all_mdp_env_params"] = mdp_env_params
+                mdp_list = self.create_mdp_list(self.env_params["all_mdp_env_params"])
+                self.env_params["mdp_list"] = mdp_list
                 self.env_params["num_goals"] = NUM_GOALS
 
                 print ("GOALS", mdp_env_params["all_goals"])
@@ -241,7 +245,7 @@ class Simulator(object):
 
     def _random_robot_pose(self):
         robot_position = [0.5 * VIEWPORT_W / SCALE, 0.25 * VIEWPORT_H / SCALE]
-        robot_orientation = np.random.rand() * PI / 2
+        robot_orientation = 0.0
         # add proximity checks to any goals
         return (robot_position, robot_orientation)
 
@@ -323,6 +327,20 @@ class Simulator(object):
             obstacle_list.extend(list(itertools.product(h_range, w_range)))
 
         return obstacle_list
+
+    def create_mdp_list(self, mdp_env_params):
+        mdp_list = []
+        for i, g in enumerate(mdp_env_params["all_goals"]):
+            mdp_env_params["mdp_goal_state"] = g
+            # 2d goals.
+            goals_that_are_obs = [(g_obs[0], g_obs[1]) for g_obs in mdp_env_params["all_goals"] if g_obs != g]
+            mdp_env_params["mdp_obstacles"] = copy.deepcopy(mdp_env_params["original_mdp_obstacles"])
+            mdp_env_params["mdp_obstacles"].extend(goals_that_are_obs)
+            discrete_se2_modes_mdp = MDPDiscreteSE2GridWorldWithModes(copy.deepcopy(mdp_env_params))
+
+            mdp_list.append(discrete_se2_modes_mdp)
+
+        return mdp_list
 
 
 if __name__ == "__main__":
