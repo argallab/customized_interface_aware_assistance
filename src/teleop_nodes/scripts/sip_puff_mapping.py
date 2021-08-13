@@ -8,6 +8,7 @@ import time
 import collections
 from dynamic_reconfigure.server import Server
 from teleop_nodes.srv import InferCorrect, InferCorrectRequest, InferCorrectResponse
+from teleop_nodes.srv import GoalInferModify, GoalInferModifyRequest, GoalInferModifyResponse
 import sys
 import os
 import rospkg
@@ -85,7 +86,7 @@ class SNPMapping(object):
         rospy.loginfo("Found goal_inference_and_correction")
 
         self.infer_and_correct_service = rospy.ServiceProxy(
-            "/goal_inference_and_correction/handle_inference_and_unintended_actions", InferCorrect
+            "/goal_inference_and_correction/handle_inference_and_unintended_actions", GoalInferModify
         )
 
     # #######################################################################################
@@ -142,7 +143,10 @@ class SNPMapping(object):
             request = InferCorrectRequest()
             request.um = self.send_msg.header.frame_id
             response = self.infer_and_correct_service(request)
-            self.send_msg.header.frame_id = response.u_corrected
+            if response.ph_modified == "None":
+                self.send_msg.header.frame_id = "Zero Band"
+            else:
+                self.send_msg.header.frame_id = response.ph_modified
             self.send_msg.buttons = np.zeros(4)
             if self.send_msg.header.frame_id != "Zero Band":
                 self.send_msg.buttons[self.command_to_button_index_map[self.send_msg.header.frame_id]] = 1
@@ -175,8 +179,8 @@ class SNPMapping(object):
 
         self.old_msg = msg
 
+
 if __name__ == "__main__":
 
     SNPMapping()
     rospy.spin()
-
