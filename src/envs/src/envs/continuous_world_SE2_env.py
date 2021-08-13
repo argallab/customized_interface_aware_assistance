@@ -51,21 +51,21 @@ class ContinuousWorldSE2Env(object):
 
     def get_optimal_action(self, req):
         response = OptimalActionResponse()
-        current_discrete_state = rospy.get_param("current_discrete_state", [0,0,0,1])
+        current_discrete_state = rospy.get_param("current_discrete_state", [0, 0, 0, 1])
         current_discrete_state = tuple(current_discrete_state)
 
     def _continuous_orientation_to_discrete_orientation(self):
         cont_orientation = self.robot.get_angle()
         # wrap angle back to  0 to 2PI
-        while not (cont_orientation >= 0.0 and cont_orientation < 2*PI):
-            if cont_orientation >= 2*PI:
-                cont_orientation -= 2*PI
+        while not (cont_orientation >= 0.0 and cont_orientation < 2 * PI):
+            if cont_orientation >= 2 * PI:
+                cont_orientation -= 2 * PI
             if cont_orientation < 0.0:
-                cont_orientation += 2*PI
-            
+                cont_orientation += 2 * PI
+
         # discretize to current discrete MDP orientation
-        angle_resolution = (2*PI)/self.mdp_num_discrete_orientations
-        mdp_discrete_orientation = int(round(cont_orientation/angle_resolution))
+        angle_resolution = (2 * PI) / self.mdp_num_discrete_orientations
+        mdp_discrete_orientation = int(round(cont_orientation / angle_resolution))
         # in the mdp class "move_p" results in "positive" change in angle which is counterclockwise motion
         # however, in the environment, a move_p command results in clockwise motion.
         # either change the transition model in MDP or change mapping in env.
@@ -332,7 +332,7 @@ class ContinuousWorldSE2Env(object):
         # For each goal there needs to be an MDP under the hood.
         self.all_mdp_env_params = self.env_params["all_mdp_env_params"]
         self.mdp_list = self.env_params["mdp_list"]
-        self.mdp_num_discrete_orientations = self.all_mdp_env_params['num_discrete_orientations']
+        self.mdp_num_discrete_orientations = self.all_mdp_env_params["num_discrete_orientations"]
 
         # create KDTree with cell center locations
 
@@ -460,7 +460,7 @@ class ContinuousWorldSE2Env(object):
             self.robot.set_position(prev_robot_position)
 
         current_discrete_mdp_state = self._transform_continuous_robot_pose_to_discrete_state()
-        rospy.set_param("current_discrete_state", self.current_discrete_state)
+        # rospy.set_param("current_discrete_state", self.current_discrete_state)
         print("Discrete state", current_discrete_mdp_state)
 
         return (

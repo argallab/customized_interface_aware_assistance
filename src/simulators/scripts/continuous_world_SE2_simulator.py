@@ -11,6 +11,7 @@ from std_msgs.msg import Float32MultiArray
 from std_msgs.msg import MultiArrayDimension, String, Int8
 from teleop_nodes.msg import CartVelCmd
 from simulators.msg import State
+from simulators.srv import InitBelief, InitBeliefRequest, InitBeliefResponse
 from teleop_nodes.srv import SetMode, SetModeRequest, SetModeResponse
 from mdp.mdp_discrete_SE2_gridworld_with_modes import MDPDiscreteSE2GridWorldWithModes
 from pyglet.window import key
@@ -23,7 +24,15 @@ import os
 import copy
 import itertools
 from mdp.mdp_utils import *
-from corrective_mode_switch_utils import MODE_INDEX_TO_DIM, SCALE, DIM_TO_MODE_INDEX, VIEWPORT_W, VIEWPORT_H, PI, ROBOT_RADIUS_S
+from corrective_mode_switch_utils import (
+    MODE_INDEX_TO_DIM,
+    SCALE,
+    DIM_TO_MODE_INDEX,
+    VIEWPORT_W,
+    VIEWPORT_H,
+    PI,
+    ROBOT_RADIUS_S,
+)
 
 
 GRID_WIDTH = 10
@@ -124,7 +133,9 @@ class Simulator(object):
 
                 print ("GOALS", mdp_env_params["all_goals"])
                 discrete_robot_state = mdp_list[0].get_random_valid_state()
-                robot_position, robot_orientation, start_mode = self._convert_discrete_state_to_continuous_pose(discrete_robot_state, mdp_env_params["cell_size"], world_bounds)
+                robot_position, robot_orientation, start_mode = self._convert_discrete_state_to_continuous_pose(
+                    discrete_robot_state, mdp_env_params["cell_size"], world_bounds
+                )
                 self.env_params["robot_position"] = robot_position
                 self.env_params["robot_orientation"] = robot_orientation
                 self.env_params["start_mode"] = start_mode
@@ -159,6 +170,15 @@ class Simulator(object):
         self.set_mode_request = SetModeRequest()
         self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params["start_mode"]]
         status = self.set_mode_srv(self.set_mode_request)
+
+        rospy.loginfo("Waiting for inference node")
+        rospy.wait_for_service("/goal_inference_and_correction/init_belief")
+        rospy.loginfo("inference node service found! ")
+
+        self.init_belief_srv = rospy.ServiceProxy("/goal_inference_and_correction/init_belief", InitBelief)
+        self.init_belief_request = InitBeliefRequest()
+        self.init_belief_request.num_goals = self.env_params["num_goals"]
+        status = self.init_belief_srv(self.init_belief_request)
 
         # instantiate the environement
         self.env_params["start"] = False
@@ -250,20 +270,21 @@ class Simulator(object):
         robot_orientation = 0.0
         # add proximity checks to any goals
         return (robot_position, robot_orientation)
-    
+
     def _convert_discrete_state_to_continuous_pose(self, discrete_state, cell_size, world_bounds):
         x_coord = discrete_state[0]
         y_coord = discrete_state[1]
         theta_coord = discrete_state[2]
-        mode = discrete_state[3] - 1 #minus one because the dictionary is 0-indexed
+        mode = discrete_state[3] - 1  # minus one because the dictionary is 0-indexed
 
-        robot_position = [x_coord*cell_size + cell_size/2.0 + world_bounds['xrange']['lb'], y_coord*cell_size + cell_size/2.0 + world_bounds['yrange']['lb']]
-        robot_orientation = (theta_coord * 2*PI)/NUM_ORIENTATIONS
+        robot_position = [
+            x_coord * cell_size + cell_size / 2.0 + world_bounds["xrange"]["lb"],
+            y_coord * cell_size + cell_size / 2.0 + world_bounds["yrange"]["lb"],
+        ]
+        robot_orientation = (theta_coord * 2 * PI) / NUM_ORIENTATIONS
         start_mode = MODE_INDEX_TO_DIM[mode]
 
         return robot_position, robot_orientation, start_mode
-
-
 
     def joy_callback(self, msg):
         self.input_action["human"] = msg

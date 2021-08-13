@@ -148,6 +148,22 @@ MODE_SWITCH_TRANSITION_4D = {
 # Depending on the configuration of the initial robot position and goal position, the motion commands will result in either moving towards the
 # next location or the previous location
 # Enum defintions
+
+
+# low level commands issued by the snp interface. hp = hard puff, hs= hard sip, sp = soft puff, ss = soft sip. Also the domain for ui and um
+INTERFACE_LEVEL_ACTIONS = ["hp", "hs", "sp", "ss"]
+# high level actions, move_p = move in positive direction, move_n = move in negative direction, mode_r = switch mode to right, mode_l = switch mode to left. positive and negative is conditioned on mode
+TASK_LEVEL_ACTIONS = ["move_p", "move_n", "to_mode_r", "to_mode_l"]
+# true mapping of a to phi
+TRUE_TASK_ACTION_TO_INTERFACE_ACTION_MAP = collections.OrderedDict(
+    {"move_p": "sp", "move_n": "ss", "to_mode_r": "hp", "to_mode_l": "hs"}
+)
+# true inverse mapping of phi to a
+TRUE_INTERFACE_ACTION_TO_TASK_ACTION_MAP = collections.OrderedDict(
+    {v: k for k, v in TRUE_TASK_ACTION_TO_INTERFACE_ACTION_MAP.items()}
+)
+
+
 class AssistanceType(Enum):
     Filter = 0
     Corrective = 1

@@ -11,156 +11,172 @@ from teleop_nodes.srv import InferCorrect, InferCorrectRequest, InferCorrectResp
 import sys
 import os
 import rospkg
-sys.path.append(os.path.join(rospkg.RosPack().get_path('simulators'), 'scripts'))
+
+sys.path.append(os.path.join(rospkg.RosPack().get_path("simulators"), "scripts"))
 from utils import AssistanceType
 
 npa = np.array
 
-'''Reads raw sip_and_puff joy data, does thresholding and buffering
+"""Reads raw sip_and_puff joy data, does thresholding and buffering
  and returns data as hard puff, soft puff, soft sip, hard sip.
- Input and output are both /sensor_msgs/joy'''
+ Input and output are both /sensor_msgs/joy"""
+
 
 class SNPMapping(object):
 
-  ''' data is a Float32Array message '''
-  def __init__(self):
+    """ data is a Float32Array message """
 
-    # Initialize
-    rospy.init_node('sip_puff_mapping', anonymous=True)
-    # Sip/Puff Control Thresholds
-    # sip values are positive, puff values are negative in the axes
-    # Note that for puff the actual values are negative. The "lower" and "higher" make sense only if absolute values are considered
-    # creating limits prevents unintended soft sips and puffs, and creates deadzone between upper and latch limit
-    self.lower_sip_limit = rospy.get_param("/sip_and_puff_thresholds/lower_sip_limit")
-    self.lower_puff_limit = rospy.get_param("/sip_and_puff_thresholds/lower_puff_limit")
-    self.soft_sip_max_limit = rospy.get_param("/sip_and_puff_thresholds/soft_sip_max_limit")
-    self.soft_puff_max_limit = rospy.get_param("/sip_and_puff_thresholds/soft_puff_max_limit")
-    self.hard_sip_min_limit = rospy.get_param("/sip_and_puff_thresholds/hard_sip_min_limit")
-    self.hard_puff_min_limit = rospy.get_param("/sip_and_puff_thresholds/hard_puff_min_limit")
-    self.hard_puff_max_limit = rospy.get_param("/sip_and_puff_thresholds/hard_puff_max_limit")
-    self.hard_sip_max_limit = rospy.get_param("/sip_and_puff_thresholds/hard_sip_max_limit")
+    def __init__(self):
 
-    # latch limit governs the threshold for direction and main mode switches
-    self._ignore_input_counter = 0
-    self._num_inputs_to_ignore = 10
-    self._button_latch_time = 0.8
-    self._old_time = rospy.get_time()
-    self.old_msg = Joy()
-    self.old_msg.axes = np.zeros(1)
-    self.command_to_button_index_map = collections.OrderedDict({'Hard Puff':0, 'Soft Puff': 1, 'Soft Sip': 2, 'Hard Sip': 3})
+        # Initialize
+        rospy.init_node("sip_puff_mapping", anonymous=True)
+        # Sip/Puff Control Thresholds
+        # sip values are positive, puff values are negative in the axes
+        # Note that for puff the actual values are negative. The "lower" and "higher" make sense only if absolute values are considered
+        # creating limits prevents unintended soft sips and puffs, and creates deadzone between upper and latch limit
+        self.lower_sip_limit = rospy.get_param("/sip_and_puff_thresholds/lower_sip_limit")
+        self.lower_puff_limit = rospy.get_param("/sip_and_puff_thresholds/lower_puff_limit")
+        self.soft_sip_max_limit = rospy.get_param("/sip_and_puff_thresholds/soft_sip_max_limit")
+        self.soft_puff_max_limit = rospy.get_param("/sip_and_puff_thresholds/soft_puff_max_limit")
+        self.hard_sip_min_limit = rospy.get_param("/sip_and_puff_thresholds/hard_sip_min_limit")
+        self.hard_puff_min_limit = rospy.get_param("/sip_and_puff_thresholds/hard_puff_min_limit")
+        self.hard_puff_max_limit = rospy.get_param("/sip_and_puff_thresholds/hard_puff_max_limit")
+        self.hard_sip_max_limit = rospy.get_param("/sip_and_puff_thresholds/hard_sip_max_limit")
 
-    # Initialize publisher and subscribers
-    rospy.Subscriber('/joy', Joy, self.joy_callback)
-    self.before_inference_pub = rospy.Publisher('joy_sip_puff_before', Joy, queue_size=1)
-    self.after_inference_pub = rospy.Publisher('joy_sip_puff', Joy, queue_size = 1)
+        # latch limit governs the threshold for direction and main mode switches
+        self._ignore_input_counter = 0
+        self._num_inputs_to_ignore = 10
+        self._button_latch_time = 0.8
+        self._old_time = rospy.get_time()
+        self.old_msg = Joy()
+        self.old_msg.axes = np.zeros(1)
+        self.command_to_button_index_map = collections.OrderedDict(
+            {"Hard Puff": 0, "Soft Puff": 1, "Soft Sip": 2, "Hard Sip": 3}
+        )
 
-    # Published velocity message
-    self.send_msg = Joy()
-    self.send_msg.header.stamp = rospy.Time.now()
-    self.send_msg.header.frame_id = "Zero Band"
-    self.send_msg.axes = np.zeros(1)  # pressure ([-1, 1])
-    self.send_msg.buttons = np.zeros(4) # hard puff, soft puff, soft sip, hard sip
+        # Initialize publisher and subscribers
+        rospy.Subscriber("/joy", Joy, self.joy_callback)
+        self.before_inference_pub = rospy.Publisher("joy_sip_puff_before", Joy, queue_size=1)
+        self.after_inference_pub = rospy.Publisher("joy_sip_puff", Joy, queue_size=1)
 
-    self.before_send_msg = Joy()
-    self.before_send_msg.header.stamp = rospy.Time.now()
-    self.before_send_msg.header.frame_id = "Zero Band"
-    self.before_send_msg.axes = np.zeros(1)  # pressure ([-1, 1])
-    self.before_send_msg.buttons = np.zeros(4) # hard puff, soft puff, soft sip, hard sip
+        # Published velocity message
+        self.send_msg = Joy()
+        self.send_msg.header.stamp = rospy.Time.now()
+        self.send_msg.header.frame_id = "Zero Band"
+        self.send_msg.axes = np.zeros(1)  # pressure ([-1, 1])
+        self.send_msg.buttons = np.zeros(4)  # hard puff, soft puff, soft sip, hard sip
 
-    self.assistance_type = rospy.get_param('/assistance_type', 2)
-    if self.assistance_type == 0:
-        self.assistance_type = AssistanceType.Filter
-    elif self.assistance_type == 1:
-        self.assistance_type = AssistanceType.Corrective
-    elif self.assistance_type == 2:
-        self.assistance_type = AssistanceType.No_Assistance
+        self.before_send_msg = Joy()
+        self.before_send_msg.header.stamp = rospy.Time.now()
+        self.before_send_msg.header.frame_id = "Zero Band"
+        self.before_send_msg.axes = np.zeros(1)  # pressure ([-1, 1])
+        self.before_send_msg.buttons = np.zeros(4)  # hard puff, soft puff, soft sip, hard sip
 
-    rospy.loginfo("Waiting for mode_inference_and_correction node ")
-    rospy.wait_for_service("/mode_switch_inference_and_correction/handle_unintended_commands")
-    rospy.loginfo("Found mode_inference_and_correction_node")
+        self.assistance_type = rospy.get_param("/assistance_type", 2)
+        if self.assistance_type == 0:
+            self.assistance_type = AssistanceType.Filter
+        elif self.assistance_type == 1:
+            self.assistance_type = AssistanceType.Corrective
+        elif self.assistance_type == 2:
+            self.assistance_type = AssistanceType.No_Assistance
 
-    self.infer_and_correct_service = rospy.ServiceProxy('/mode_switch_inference_and_correction/handle_unintended_commands', InferCorrect)
+        rospy.loginfo("Waiting for goal_inference_and_correction node ")
+        rospy.wait_for_service("/goal_inference_and_correction/handle_inference_and_unintended_actions")
+        rospy.loginfo("Found goal_inference_and_correction")
 
-  # #######################################################################################
-  #                           Check Sip and Puff Limits                                   #
-  #######################################################################################
-  # checks whether within limits, otherwise air velocity in dead zone (essentailly zero)
-  # written this way to make debugging easier if needed
-  # labels hard and soft sips and puffs, buffers out
-  def update_assistance_type(self):
-      #TODO maybe replace with service
-      self.assistance_type =  rospy.get_param('assistance_type', 2)
-      if self.assistance_type == 0:
-          self.assistance_type = AssistanceType.Filter
-      elif self.assistance_type == 1:
-          self.assistance_type = AssistanceType.Corrective
-      elif self.assistance_type == 2:
-          self.assistance_type = AssistanceType.No_Assistance
+        self.infer_and_correct_service = rospy.ServiceProxy(
+            "/goal_inference_and_correction/handle_inference_and_unintended_actions", InferCorrect
+        )
 
-  def checkLimits(self, airVelocity):
-    if (self.lower_puff_limit < airVelocity < self.lower_sip_limit):
-      self.send_msg.header.frame_id = "Zero Band"
-      self.send_msg.buttons = np.zeros(4)
-    elif (self.lower_sip_limit <= airVelocity <= self.soft_sip_max_limit): # register as soft sip
-      self.send_msg.header.frame_id = "Soft Sip"
-      self.send_msg.buttons[2] = 1
-    elif (self.soft_puff_max_limit <= airVelocity <= self.lower_puff_limit): # register as soft puff
-      self.send_msg.header.frame_id = "Soft Puff"
-      self.send_msg.buttons[1] = 1
-    elif (self.hard_puff_max_limit <= airVelocity < self.hard_puff_min_limit): # register as hard puff
-      self.send_msg.header.frame_id = "Hard Puff"
-      self.send_msg.buttons[0] = 1
-    elif (self.hard_sip_min_limit < airVelocity <= self.hard_sip_max_limit): # register as hard sip
-      self.send_msg.header.frame_id = "Hard Sip"
-      self.send_msg.buttons[3] = 1
-    else:
-      if airVelocity < 0:
-        self.send_msg.header.frame_id = "Soft-Hard Puff Deadband"
-      else:
-        self.send_msg.header.frame_id = "Soft-Hard Sip Deadband"
-      self.send_msg.buttons = np.zeros(4)
+    # #######################################################################################
+    #                           Check Sip and Puff Limits                                   #
+    #######################################################################################
+    # checks whether within limits, otherwise air velocity in dead zone (essentailly zero)
+    # written this way to make debugging easier if needed
+    # labels hard and soft sips and puffs, buffers out
+    def update_assistance_type(self):
+        # TODO maybe replace with service
+        self.assistance_type = rospy.get_param("assistance_type", 2)
+        if self.assistance_type == 0:
+            self.assistance_type = AssistanceType.Filter
+        elif self.assistance_type == 1:
+            self.assistance_type = AssistanceType.Corrective
+        elif self.assistance_type == 2:
+            self.assistance_type = AssistanceType.No_Assistance
 
-    self.before_send_msg.header.frame_id = self.send_msg.header.frame_id
-    self.before_send_msg.buttons = self.send_msg.buttons
-    self.before_inference_pub.publish(self.before_send_msg)
+    def checkLimits(self, airVelocity):
+        if self.lower_puff_limit < airVelocity < self.lower_sip_limit:
+            self.send_msg.header.frame_id = "Zero Band"
+            self.send_msg.buttons = np.zeros(4)
+        elif self.lower_sip_limit <= airVelocity <= self.soft_sip_max_limit:  # register as soft sip
+            self.send_msg.header.frame_id = "Soft Sip"
+            self.send_msg.buttons[2] = 1
+        elif self.soft_puff_max_limit <= airVelocity <= self.lower_puff_limit:  # register as soft puff
+            self.send_msg.header.frame_id = "Soft Puff"
+            self.send_msg.buttons[1] = 1
+        elif self.hard_puff_max_limit <= airVelocity < self.hard_puff_min_limit:  # register as hard puff
+            self.send_msg.header.frame_id = "Hard Puff"
+            self.send_msg.buttons[0] = 1
+        elif self.hard_sip_min_limit < airVelocity <= self.hard_sip_max_limit:  # register as hard sip
+            self.send_msg.header.frame_id = "Hard Sip"
+            self.send_msg.buttons[3] = 1
+        else:
+            if airVelocity < 0:
+                self.send_msg.header.frame_id = "Soft-Hard Puff Deadband"
+            else:
+                self.send_msg.header.frame_id = "Soft-Hard Sip Deadband"
+            self.send_msg.buttons = np.zeros(4)
 
-    self.update_assistance_type()
-    if self.assistance_type != AssistanceType.No_Assistance and self.send_msg.header.frame_id != "Zero Band" and self.send_msg.header.frame_id != "Soft-Hard Puff Deadband" and self.send_msg.header.frame_id != "Soft-Hard Sip Deadband" and self.send_msg.header.frame_id != "Input Stopped":
-      request = InferCorrectRequest()
-      request.um = self.send_msg.header.frame_id
-      response = self.infer_and_correct_service(request)
-      self.send_msg.header.frame_id = response.u_corrected
-      self.send_msg.buttons = np.zeros(4)
-      if self.send_msg.header.frame_id != "Zero Band":
-        self.send_msg.buttons[self.command_to_button_index_map[self.send_msg.header.frame_id]] = 1
+        self.before_send_msg.header.frame_id = self.send_msg.header.frame_id
+        self.before_send_msg.buttons = self.send_msg.buttons
+        self.before_inference_pub.publish(self.before_send_msg)
 
-    return 0
+        self.update_assistance_type()
+        if (
+            self.assistance_type != AssistanceType.No_Assistance
+            and self.send_msg.header.frame_id != "Zero Band"
+            and self.send_msg.header.frame_id != "Soft-Hard Puff Deadband"
+            and self.send_msg.header.frame_id != "Soft-Hard Sip Deadband"
+            and self.send_msg.header.frame_id != "Input Stopped"
+        ):
+            request = InferCorrectRequest()
+            request.um = self.send_msg.header.frame_id
+            response = self.infer_and_correct_service(request)
+            self.send_msg.header.frame_id = response.u_corrected
+            self.send_msg.buttons = np.zeros(4)
+            if self.send_msg.header.frame_id != "Zero Band":
+                self.send_msg.buttons[self.command_to_button_index_map[self.send_msg.header.frame_id]] = 1
 
-  #######################################################################################
-  #                                Raw Joy Callback                                     #
-  #######################################################################################
-  # recieves raw input, checks for buildup and
+        return 0
 
-  def joy_callback(self, msg):
-    # Ignore the leadup to powerful blow that leads to mode switch (ONLY FOR SIP-PUFF SYSTEM, otherwise delete)
-    if self._ignore_input_counter < self._num_inputs_to_ignore: # seems like thread issue if the number to ignore is too high
-        self._ignore_input_counter +=1
+    #######################################################################################
+    #                                Raw Joy Callback                                     #
+    #######################################################################################
+    # recieves raw input, checks for buildup and
 
-    self.send_msg.header.stamp = rospy.Time.now()
-    self.send_msg.axes[0] = msg.axes[1]
-    self.checkLimits(msg.axes[1])
-    self.after_inference_pub.publish(self.send_msg)
+    def joy_callback(self, msg):
+        # Ignore the leadup to powerful blow that leads to mode switch (ONLY FOR SIP-PUFF SYSTEM, otherwise delete)
+        if (
+            self._ignore_input_counter < self._num_inputs_to_ignore
+        ):  # seems like thread issue if the number to ignore is too high
+            self._ignore_input_counter += 1
 
-    # prevent robot arm moving after done blowing, zero out velocities
-    if msg.buttons[0] is 0 and msg.buttons[1] is 0: # the last input in each blow is 0 for buttons
-      self._ignore_input_counter = 0 # the constraints get
-      self.send_msg.header.frame_id = "input stopped"
-      self.send_msg.buttons = np.zeros(4)
-      self.after_inference_pub.publish(self.send_msg)
+        self.send_msg.header.stamp = rospy.Time.now()
+        self.send_msg.axes[0] = msg.axes[1]
+        self.checkLimits(msg.axes[1])
+        self.after_inference_pub.publish(self.send_msg)
 
-    self.old_msg = msg
+        # prevent robot arm moving after done blowing, zero out velocities
+        if msg.buttons[0] is 0 and msg.buttons[1] is 0:  # the last input in each blow is 0 for buttons
+            self._ignore_input_counter = 0  # the constraints get
+            self.send_msg.header.frame_id = "input stopped"
+            self.send_msg.buttons = np.zeros(4)
+            self.after_inference_pub.publish(self.send_msg)
 
-if __name__ == '__main__':
+        self.old_msg = msg
 
-  SNPMapping()
-  rospy.spin()
+if __name__ == "__main__":
+
+    SNPMapping()
+    rospy.spin()
+
