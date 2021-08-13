@@ -6,9 +6,10 @@ import rospkg
 import pickle
 import os
 import numpy as np
-from envs.srv import OptimalAction, OptimalActionRequest, OptimalActionResponse
+from envs.srv import PASAllG, PASAllGRequest, PASAllGResponse
 from inference_and_correction.msg import InferCorrectInfo
 from teleop_nodes.srv import InferCorrect, InferCorrectRequest, InferCorrectResponse
+from teleop_nodes.srv import GoalInferModify, GoalInferModifyRequest, GoalInferModifyResponse
 import collections
 import math
 import sys
@@ -20,6 +21,7 @@ from corrective_mode_switch_utils import (
     AssistanceType,
     TRUE_TASK_ACTION_TO_INTERFACE_ACTION_MAP,
     INTERFACE_LEVEL_ACTIONS,
+    TASK_LEVEL_ACTIONS,
 )
 
 
@@ -30,8 +32,8 @@ class GoalInferenceAndCorrection(object):
         self.distribution_directory_path = os.path.join(
             os.path.dirname(os.path.dirname(__file__)), "se2_personalized_distributions"
         )
-        self.infer_correct_info_pub = rospy.Publisher("/infer_correct_info", InferCorrectInfo, queue_size=1)
-        self.infer_correct_info_msg = InferCorrectInfo()
+        self.goal_infer_modify_info_pub = rospy.Publisher("/goal_infer_modify_info", GoalInferModifyInfo, queue_size=1)
+        self.goal_infer_modify_info_msg = GoalInferModifyInfo()
 
         self.P_PHI_GIVEN_A = None
         self.P_PHM_GIVEN_PHI = None
@@ -40,6 +42,9 @@ class GoalInferenceAndCorrection(object):
 
         self.P_G_GIVEN_PHM = None
         self.ASSISTANCE_TYPE = rospy.get_param("assistance_type", 2)
+
+        self.P_A_S_ALL_G_DICT = collections.OrderedDict()
+        self.OPTIMAL_ACTION_FOR_S_G = []
 
         if self.ASSISTANCE_TYPE == 0:
             self.ASSISTANCE_TYPE = AssistanceType.Filter
@@ -75,41 +80,129 @@ class GoalInferenceAndCorrection(object):
 
         rospy.Service(
             "/goal_inference_and_correction/handle_inference_and_unintended_actions",
-            InferCorrect,
+            GoalInferModify,
             self.handle_inference_and_unintended_actions,
         )
         rospy.Service("/goal_inference_and_correction/init_belief", InitBelief, self.init_P_G_GIVEN_PHM)
 
-        # register for service
+        # register for service to grab 
         rospy.loginfo("Waiting for sim_env node ")
         rospy.wait_for_service("/sim_env/get_prob_a_s_all_g")
         rospy.loginfo("sim_env node found!")
-        self.get_prob_a_s_all_g = rospy.ServiceProxy("/sim_env/get_prob_a_s_all_g", OptimalAction)
+        self.get_prob_a_s_all_g = rospy.ServiceProxy("/sim_env/get_prob_a_s_all_g", PASAllG)
 
     def handle_inference_and_unintended_actions(self, req):
         phm = req.phm
         response = InferCorrectResponse()
         p_a_s_all_g_response = self.get_prob_a_s_all_g()
-
+        # since TASK_LEVEL_ACTIONS is OrderedDict this is list will always be in the same order
         if p_a_s_all_g_response.status:
-            pass
-            # update dictionary of p_a_s_g
-            # get current state, mode from p_a_s_all_g_response
+            p_a_s_all_g = p_a_s_all_g_response.p_a_s_all_g
+
+            # update p_a_s_all_g dict
+            for g in range(len(p_a_s_all_g)):  # number of goals
+                self.P_A_S_ALL_G_DICT[g] = collections.OrderedDict()
+                for i, task_level_action in enumerate(TASK_LEVEL_ACTIONS.keys()):
+                    self.P_A_S_ALL_G_DICT[g][task_level_action] = P_A_S_ALL_G_DICT[g][i]
+
+            # get optimal action for all goals for current state as a list ordered by goal index
+            self.OPTIMAL_ACTION_FOR_S_G = p_a_s_all_g_response.optimal_action_s_g
+            assert len(self.OPTIMAL_ACTION_FOR_S_G) = self.NUM_GOALS
+
             # do Bayesian inference and update belief over goals.
-            # get goal corresponding to max.
-            # get optimal task level action for that goal. (need mdp access again)
-            # get interface level action for that goal. (simple lookup)
+            self._compute_p_g_given_phm(phm)
+            # get inferred goal and optimal task level and interface level action corresponding to max.
+            g_inferred, a_inferred, ph_inferred, p_g_given_um_vector = self._compute_g_a_ph_inferred()
+
+            normalized_h_of_p_g_given_phm = self._compute_entropy_of_p_g_given_phm()
             # apply assistance by checking entropy (get phm_modified)
+            ph_modified, is_corrected_or_filtered, is_ph_inferred_equals_phm = self._modify_or_pass_phm(phm, ph_inferred, normalized_h_of_p_g_given_phm)
+            
+            response.ph_modified = ph_modified
+            response.is_corrected_or_filtered = is_corrected_or_filtered
+            response.status = True
+
             # populate response
+            self.goal_infer_modify_info_msg.a_inferred = a_inferred #string
+            self.goal_infer_modify_info_msg.ph_inferred = ph_inferred #string
+            self.goal_infer_modify_info.g_inferred = g_inferred
+            self.goal_infer_modify_info_msg.normalized_h = normalized_h_of_p_g_given_phm #float
+
+            self.goal_infer_modify_info_msg.ph_modified = ph_modified
+            self.goal_infer_modify_info_msg.is_corrected_or_filtered = is_corrected_or_filtered
+            self.goal_infer_modify_info_msg.is_ph_inferred_equals_phm = is_ph_inferred_equals_phm
+            self.goal_infer_modify_info_pub.publish(self.infer_correct_info_msg)
         else:
-            response.phm_modified = "Zero Band"
+            response.ph_modified = "None"
+            response.is_corrected_or_filtered = False
             response.status = True
 
         return response
 
+    def update_assistance_type(self):
+        self.ASSISTANCE_TYPE =  rospy.get_param('assistance_type')
+        if self.ASSISTANCE_TYPE == 0:
+            self.ASSISTANCE_TYPE = AssistanceType.Filter
+        elif self.ASSISTANCE_TYPE == 1:
+            self.ASSISTANCE_TYPE = AssistanceType.Corrective
+        elif self.ASSISTANCE_TYPE == 2:
+            self.ASSISTANCE_TYPE = AssistanceType.No_Assistance
+            
+    def _modify_or_pass_phm(self, phm, ph_inferred, normalized_h_of_p_g_given_phm):
+        self.update_assistance_type()
+        if ph_inferred != phm:
+            if normalized_h_of_p_g_given_phm <= self.ENTROPY_THRESHOLD:
+                if self.ASSISTANCE_TYPE == AssistanceType.Filter:
+                    ph_modified = "None" #need to be interprted properly in the teleop node. None --> Zero Band for SNP
+                elif self.ASSISTANCE_TYPE == AssistanceType.Corrective:
+                    ph_modified = ph_inferred
+            else:
+                return phm, False, False
+        else:
+            return phm, False, True
+
+    def _compute_entropy_of_p_g_given_phm(self):
+        p_g_given_phm_vector = np.array(self.P_G_GIVEN_PHM.values())
+        p_g_given_phm_vector = p_g_given_phm_vector + np.finfo(p_g_given_phm_vector.dtype).tiny
+        uniform_distribution = np.array([1.0/p_g_given_phm_vector.size]*p_g_given_phm_vector.size)
+        max_entropy = -np.dot(uniform_distribution, np.log2(uniform_distribution))
+        normalized_h_of_p_g_given_phm = -np.dot(p_g_given_phm_vector, np.log2(p_g_given_phm_vector))/max_entropy
+        return normalized_h_of_p_g_given_phm
+
+    def _compute_g_a_ph_inferred(self):
+        p_g_given_um_vector = np.array(self.P_G_GIVEN_PHM.values())
+        # need to add realmin to avoid nan issues with entropy calculation is p_ui_given_um_vector is delta distribution'
+        p_g_given_um_vector = p_g_given_um_vector + np.finfo(p_g_given_um_vector.dtype).tiny
+        g_inferred = self.P_G_GIVEN_PHM.keys()[np.argmax(p_g_given_um_vector)]  # argmax computation for g_inferred
+        # retreive optimal task level action corresponding to inferred goal optimal action will always be not None
+        a_inferred = self.OPTIMAL_ACTION_FOR_S_G[g_inferred]  # string (always not None)
+        ph_inferred = TRUE_TASK_ACTION_TO_INTERFACE_ACTION_MAP[a_inferred] # interface level action corresponding to a inferred
+        return g_inferred, a_inferred, ph_inferred, p_g_given_um_vector
+
+
+    def _compute_p_g_given_phm(self, phm):
+        if phm != "None":
+            for g in self.P_G_GIVEN_PHM.keys():  # already initialized
+                likelihood = 0.0  # likelihood
+                for a in self.P_PHI_GIVEN_A.keys():
+                    for phi in self.P_PHM_GIVEN_PHI.keys():
+                        likelihood += (
+                            self.P_PHM_GIVEN_PHI[phi][phm] * self.P_PHI_GIVEN_A[a][phi] * self.P_A_S_ALL_G_DICT[g][a]
+                        )
+
+                self.P_G_GIVEN_PHM[g] = self.P_G_GIVEN_PHM[g] * likelihood  # multiply with prior
+            normalization_constant = sum(self.P_G_GIVEN_PHM.values())
+            for g in self.P_G_GIVEN_PHM.keys():  # NORMALIZE POSTERIOR
+                self.P_G_GIVEN_PHM[g] = self.P_G_GIVEN_PHM[g] / normalization_constant
+
+        else:
+            print("PHM NONE, therefore no belief update")
+            # potentially add exp decay to unfirom distribution
+            pass
+
     def init_P_G_GIVEN_PHM(self, req):
         """
-        Initializes the p(g | phm) dict to uniform dictionary
+        Initializes the p(g | phm) dict to uniform dictionary at the beginning of each trial
         """
         # service to be called at the beginning of each trial to reinit the distribution.
         # number of goals could be different for different goals.
@@ -123,7 +216,6 @@ class GoalInferenceAndCorrection(object):
         for g in self.P_G_GIVEN_PHM.keys():  # NORMALIZE POSTERIOR
             self.P_G_GIVEN_PHM[g] = self.P_G_GIVEN_PHM[g] / normalization_constant
 
-        print("Initial belief ", self.P_G_GIVEN_PHM)
         response = InitBeliefResponse()
         response.status = True
         return response

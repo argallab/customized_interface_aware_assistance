@@ -12,7 +12,7 @@ import collections
 import itertools
 import rospy
 import threading
-from envs.srv import OptimalAction, OptimalActionRequest, OptimalActionResponse
+from envs.srv import PASAllG, PASAllGRequest, PASAllGResponse
 from mdp.mdp_discrete_SE2_gridworld_with_modes import MDPDiscreteSE2GridWorldWithModes
 from scipy.spatial import KDTree
 import time
@@ -49,10 +49,25 @@ class ContinuousWorldSE2Env(object):
         self.text_display_delay = 2
         self.start_msg_ind = 0
 
-    def get_optimal_action(self, req):
-        response = OptimalActionResponse()
-        current_discrete_state = rospy.get_param("current_discrete_state", [0, 0, 0, 1])
-        current_discrete_state = tuple(current_discrete_state)
+    def get_prob_a_s_all_g(self, req):
+        response = PASAllGResponse()
+        current_discrete_mdp_state = rospy.get_param("current_discrete_mdp_state", [0, 0, 0, 1])
+        current_discrete_mdp_state = tuple(current_discrete_mdp_state)  # [x,y,t,m]
+        p_a_s_all_g = []
+        optimal_action_s_g = []
+        for g in range(self.num_goals):
+            mdp_g = self.mdp_list[g]
+            p_a_s_g = []
+            for task_level_action in TASK_LEVEL_ACTIONS.keys():
+                p_a_s_g.append(mdp_g.get_prob_a_given_s(current_discrete_mdp_state, task_level_action))
+            p_a_s_all_g.append(p_a_s_g)
+            # optimal action to take in current state for goal g. Used to modify phm in inference node
+            optimal_action_s_g.append(mdp_g.get_optimal_action(current_discrete_mdp_state, return_optimal=True))
+
+        response.p_a_s_all_g = p_a_s_all_g
+        response.optimal_action_s_g = optimal_action_s_g
+        response.status = True
+        return response
 
     def _continuous_orientation_to_discrete_orientation(self):
         cont_orientation = self.robot.get_angle()
@@ -372,7 +387,7 @@ class ContinuousWorldSE2Env(object):
         )
 
         if not self.service_initialized:
-            rospy.Service("/sim_env/get_optimal_action", OptimalAction, self.get_optimal_action)
+            rospy.Service("/sim_env/get_prob_a_s_all_g", PASAllG, self.get_optimal_action)
             self.service_initialized = True
 
         # self.LOCS_FOR_CONTROL_DIM_DISPLAY = collections.OrderedDict()
@@ -459,9 +474,9 @@ class ContinuousWorldSE2Env(object):
         if not self._check_if_robot_in_bounds():
             self.robot.set_position(prev_robot_position)
 
-        current_discrete_mdp_state = self._transform_continuous_robot_pose_to_discrete_state()
-        # rospy.set_param("current_discrete_state", self.current_discrete_state)
-        print("Discrete state", current_discrete_mdp_state)
+        self.current_discrete_mdp_state = self._transform_continuous_robot_pose_to_discrete_state()
+        rospy.set_param("current_discrete_mdp_state", self.current_discrete_mdp_state)
+        print("Discrete state", self.current_discrete_mdp_state)
 
         return (
             self.robot.get_position(),
