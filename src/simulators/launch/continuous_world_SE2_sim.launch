@@ -8,8 +8,6 @@
   <arg name="assistance_block" default="no" doc="Assistance type for the testing block. For loading up the appropriate trial block file"/>
   <arg name="block_id" default="0" doc="block_id for the assistance type for the testing block"/>
   <arg name="training" default="0" doc="bool string indicating whether the simulator is run in training mode or not"/>
-  <arg name="optim" default="0" doc="bool string indicating whether the optimization based p ui given a should be loaded or not"/>
-
   <!-- record bags -->
   <!-- bag file name parameters -->
   <group if="$(arg save)">
@@ -27,7 +25,6 @@
   <node pkg="inference_and_correction" output="screen" type="goal_inference_and_correction.py" name="goal_inference_and_correction"  args="$(arg subject_id)"/>
 
   <include file="$(find teleop_nodes)/launch/teleop_nodes.launch">
-    <arg name="KEY" value="$(arg KEY)"/>
     <arg name="SNP" value="$(arg SNP)"/>
     <arg name="JOINT" value="$(arg JOINT)"/>
     <arg name="robot_dim" value="3"/>

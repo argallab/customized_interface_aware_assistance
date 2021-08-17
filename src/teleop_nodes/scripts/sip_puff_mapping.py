@@ -14,7 +14,7 @@ import os
 import rospkg
 
 sys.path.append(os.path.join(rospkg.RosPack().get_path("simulators"), "scripts"))
-from utils import AssistanceType
+from corrective_mode_switch_utils import AssistanceType
 
 npa = np.array
 
@@ -140,8 +140,8 @@ class SNPMapping(object):
             and self.send_msg.header.frame_id != "Soft-Hard Sip Deadband"
             and self.send_msg.header.frame_id != "Input Stopped"
         ):
-            request = InferCorrectRequest()
-            request.um = self.send_msg.header.frame_id
+            request = GoalInferModifyRequest()
+            request.phm = self.send_msg.header.frame_id
             response = self.infer_and_correct_service(request)
             if response.ph_modified == "None":
                 self.send_msg.header.frame_id = "Zero Band"
@@ -160,9 +160,8 @@ class SNPMapping(object):
 
     def joy_callback(self, msg):
         # Ignore the leadup to powerful blow that leads to mode switch (ONLY FOR SIP-PUFF SYSTEM, otherwise delete)
-        if (
-            self._ignore_input_counter < self._num_inputs_to_ignore
-        ):  # seems like thread issue if the number to ignore is too high
+        # seems like thread issue if the number to ignore is too high
+        if (self._ignore_input_counter < self._num_inputs_to_ignore):  
             self._ignore_input_counter += 1
 
         self.send_msg.header.stamp = rospy.Time.now()

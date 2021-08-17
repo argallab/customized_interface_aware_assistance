@@ -10,6 +10,7 @@ from envs.srv import PASAllG, PASAllGRequest, PASAllGResponse
 from inference_and_correction.msg import InferCorrectInfo
 from teleop_nodes.srv import InferCorrect, InferCorrectRequest, InferCorrectResponse
 from teleop_nodes.srv import GoalInferModify, GoalInferModifyRequest, GoalInferModifyResponse
+from inference_and_correction.msg import GoalInferModifyInfo
 import collections
 import math
 import sys
@@ -92,8 +93,9 @@ class GoalInferenceAndCorrection(object):
         self.get_prob_a_s_all_g = rospy.ServiceProxy("/sim_env/get_prob_a_s_all_g", PASAllG)
 
     def handle_inference_and_unintended_actions(self, req):
+        print('In infer and correct')
         phm = req.phm
-        response = InferCorrectResponse()
+        response = GoalInferModifyResponse()
         p_a_s_all_g_response = self.get_prob_a_s_all_g()
         # since TASK_LEVEL_ACTIONS is OrderedDict this is list will always be in the same order
         if p_a_s_all_g_response.status:
@@ -102,12 +104,12 @@ class GoalInferenceAndCorrection(object):
             # update p_a_s_all_g dict
             for g in range(len(p_a_s_all_g)):  # number of goals
                 self.P_A_S_ALL_G_DICT[g] = collections.OrderedDict()
-                for i, task_level_action in enumerate(TASK_LEVEL_ACTIONS.keys()):
-                    self.P_A_S_ALL_G_DICT[g][task_level_action] = P_A_S_ALL_G_DICT[g][i]
+                for i, task_level_action in enumerate(TASK_LEVEL_ACTIONS):
+                    self.P_A_S_ALL_G_DICT[g][task_level_action] = p_a_s_all_g[g].p_a_s_g[i]
 
             # get optimal action for all goals for current state as a list ordered by goal index
             self.OPTIMAL_ACTION_FOR_S_G = p_a_s_all_g_response.optimal_action_s_g
-            assert len(self.OPTIMAL_ACTION_FOR_S_G) = self.NUM_GOALS
+            assert len(self.OPTIMAL_ACTION_FOR_S_G) == self.NUM_GOALS
 
             # do Bayesian inference and update belief over goals.
             self._compute_p_g_given_phm(phm)
@@ -126,13 +128,13 @@ class GoalInferenceAndCorrection(object):
             # populate response
             self.goal_infer_modify_info_msg.a_inferred = a_inferred #string
             self.goal_infer_modify_info_msg.ph_inferred = ph_inferred #string
-            self.goal_infer_modify_info.g_inferred = g_inferred
+            self.goal_infer_modify_info_msg.g_inferred = g_inferred
             self.goal_infer_modify_info_msg.normalized_h = normalized_h_of_p_g_given_phm #float
 
             self.goal_infer_modify_info_msg.ph_modified = ph_modified
             self.goal_infer_modify_info_msg.is_corrected_or_filtered = is_corrected_or_filtered
             self.goal_infer_modify_info_msg.is_ph_inferred_equals_phm = is_ph_inferred_equals_phm
-            self.goal_infer_modify_info_pub.publish(self.infer_correct_info_msg)
+            self.goal_infer_modify_info_pub.publish(self.goal_infer_modify_info_msg)
         else:
             response.ph_modified = "None"
             response.is_corrected_or_filtered = False
@@ -161,6 +163,8 @@ class GoalInferenceAndCorrection(object):
                 return phm, False, False
         else:
             return phm, False, True
+        
+        return ph_modified, True, False
 
     def _compute_entropy_of_p_g_given_phm(self):
         p_g_given_phm_vector = np.array(self.P_G_GIVEN_PHM.values())
@@ -195,6 +199,8 @@ class GoalInferenceAndCorrection(object):
             normalization_constant = sum(self.P_G_GIVEN_PHM.values())
             for g in self.P_G_GIVEN_PHM.keys():  # NORMALIZE POSTERIOR
                 self.P_G_GIVEN_PHM[g] = self.P_G_GIVEN_PHM[g] / normalization_constant
+            
+            print('Current Belief ', self.P_G_GIVEN_PHM)
 
         else:
             print("PHM NONE, therefore no belief update")
@@ -207,6 +213,7 @@ class GoalInferenceAndCorrection(object):
         """
         # service to be called at the beginning of each trial to reinit the distribution.
         # number of goals could be different for different goals.
+        print('In Init Belief Service')
         self.NUM_GOALS = req.num_goals
         self.P_G_GIVEN_PHM = collections.OrderedDict()
 
@@ -217,6 +224,7 @@ class GoalInferenceAndCorrection(object):
         for g in self.P_G_GIVEN_PHM.keys():  # NORMALIZE POSTERIOR
             self.P_G_GIVEN_PHM[g] = self.P_G_GIVEN_PHM[g] / normalization_constant
 
+        print('Initial Belief ', self.P_G_GIVEN_PHM)
         response = InitBeliefResponse()
         response.status = True
         return response

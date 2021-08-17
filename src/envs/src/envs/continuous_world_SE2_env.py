@@ -13,6 +13,7 @@ import itertools
 import rospy
 import threading
 from envs.srv import PASAllG, PASAllGRequest, PASAllGResponse
+from envs.msg import PASSingleG
 from mdp.mdp_discrete_SE2_gridworld_with_modes import MDPDiscreteSE2GridWorldWithModes
 from scipy.spatial import KDTree
 import time
@@ -57,13 +58,15 @@ class ContinuousWorldSE2Env(object):
         optimal_action_s_g = []
         for g in range(self.num_goals):
             mdp_g = self.mdp_list[g]
-            p_a_s_g = []
-            for task_level_action in TASK_LEVEL_ACTIONS.keys():
-                p_a_s_g.append(mdp_g.get_prob_a_given_s(current_discrete_mdp_state, task_level_action))
-            p_a_s_all_g.append(p_a_s_g)
+            p_a_s_g_msg = PASSingleG()
+            p_a_s_g_msg.goal_id = g
+            for task_level_action in TASK_LEVEL_ACTIONS:
+                p_a_s_g_msg.p_a_s_g.append(mdp_g.get_prob_a_given_s(current_discrete_mdp_state, task_level_action))
+            p_a_s_all_g.append(p_a_s_g_msg)
             # optimal action to take in current state for goal g. Used to modify phm in inference node
             optimal_action_s_g.append(mdp_g.get_optimal_action(current_discrete_mdp_state, return_optimal=True))
 
+        
         response.p_a_s_all_g = p_a_s_all_g
         response.optimal_action_s_g = optimal_action_s_g
         response.status = True
@@ -387,7 +390,7 @@ class ContinuousWorldSE2Env(object):
         )
 
         if not self.service_initialized:
-            rospy.Service("/sim_env/get_prob_a_s_all_g", PASAllG, self.get_optimal_action)
+            rospy.Service("/sim_env/get_prob_a_s_all_g", PASAllG, self.get_prob_a_s_all_g)
             self.service_initialized = True
 
         # self.LOCS_FOR_CONTROL_DIM_DISPLAY = collections.OrderedDict()
@@ -476,7 +479,7 @@ class ContinuousWorldSE2Env(object):
 
         self.current_discrete_mdp_state = self._transform_continuous_robot_pose_to_discrete_state()
         rospy.set_param("current_discrete_mdp_state", self.current_discrete_mdp_state)
-        print("Discrete state", self.current_discrete_mdp_state)
+        # print("Discrete state", self.current_discrete_mdp_state)
 
         return (
             self.robot.get_position(),
