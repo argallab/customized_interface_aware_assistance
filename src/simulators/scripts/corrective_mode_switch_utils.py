@@ -151,12 +151,12 @@ MODE_SWITCH_TRANSITION_4D = {
 
 
 # low level commands issued by the snp interface. hp = hard puff, hs= hard sip, sp = soft puff, ss = soft sip. Also the domain for ui and um
-INTERFACE_LEVEL_ACTIONS = ["hp", "hs", "sp", "ss"]
+INTERFACE_LEVEL_ACTIONS = ["Hard Puff", "Hard Sip", "Soft Puff", "Soft Sip"]
 # high level actions, move_p = move in positive direction, move_n = move in negative direction, mode_r = switch mode to right, mode_l = switch mode to left. positive and negative is conditioned on mode
 TASK_LEVEL_ACTIONS = ["move_p", "move_n", "to_mode_r", "to_mode_l"]
 # true mapping of a to phi
 TRUE_TASK_ACTION_TO_INTERFACE_ACTION_MAP = collections.OrderedDict(
-    {"move_p": "sp", "move_n": "ss", "to_mode_r": "hp", "to_mode_l": "hs"}
+    {"move_p": "Soft Puff", "move_n": "Soft Sip", "to_mode_r": "Hard Puff", "to_mode_l": "Hard Sip"}
 )
 # true inverse mapping of phi to a
 TRUE_INTERFACE_ACTION_TO_TASK_ACTION_MAP = collections.OrderedDict(

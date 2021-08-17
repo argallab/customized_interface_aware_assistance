@@ -157,10 +157,11 @@ class Simulator(object):
                 self.env_params["goal_poses"] = self._generate_continuous_goal_poses(
                     mdp_env_params["all_goals"], mdp_env_params["cell_size"], self.env_params["world_bounds"]
                 )
+                self.env_params['assistance_type'] = 1
             else:
                 pass
 
-        # rospy.set_param("assistance_type", self.env_params["assistance_type"])
+        rospy.set_param("assistance_type", self.env_params["assistance_type"])
         rospy.loginfo("Waiting for teleop_node ")
         rospy.wait_for_service("/teleop_node/set_mode")
         rospy.loginfo("teleop_node node service found! ")
