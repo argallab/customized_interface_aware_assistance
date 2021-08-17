@@ -114,6 +114,7 @@ class GoalInferenceAndCorrection(object):
             # get inferred goal and optimal task level and interface level action corresponding to max.
             g_inferred, a_inferred, ph_inferred, p_g_given_um_vector = self._compute_g_a_ph_inferred()
 
+            #compute netropy
             normalized_h_of_p_g_given_phm = self._compute_entropy_of_p_g_given_phm()
             # apply assistance by checking entropy (get phm_modified)
             ph_modified, is_corrected_or_filtered, is_ph_inferred_equals_phm = self._modify_or_pass_phm(phm, ph_inferred, normalized_h_of_p_g_given_phm)
