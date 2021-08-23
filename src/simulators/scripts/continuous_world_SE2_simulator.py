@@ -157,9 +157,26 @@ class Simulator(object):
                 self.env_params["goal_poses"] = self._generate_continuous_goal_poses(
                     mdp_env_params["all_goals"], mdp_env_params["cell_size"], self.env_params["world_bounds"]
                 )
-                self.env_params['assistance_type'] = 1
+                self.env_params['assistance_type'] = 2
             else:
                 pass
+        
+        # instantiate the environement
+        self.env_params["start"] = False
+        self.env = ContinuousWorldSE2Env(self.env_params)
+        self.env.initialize()
+        self.env.initialize_viewer()
+        self.env.reset()
+        self.env.viewer.window.on_key_press = self.key_press
+
+        rospy.loginfo("Waiting for inference node")
+        rospy.wait_for_service("/goal_inference_and_correction/init_belief")
+        rospy.loginfo("inference node service found! ")
+
+        self.init_belief_srv = rospy.ServiceProxy("/goal_inference_and_correction/init_belief", InitBelief)
+        self.init_belief_request = InitBeliefRequest()
+        self.init_belief_request.num_goals = self.env_params["num_goals"]
+        status = self.init_belief_srv(self.init_belief_request)
 
         rospy.set_param("assistance_type", self.env_params["assistance_type"])
         rospy.loginfo("Waiting for teleop_node ")
@@ -171,22 +188,6 @@ class Simulator(object):
         self.set_mode_request = SetModeRequest()
         self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params["start_mode"]]
         status = self.set_mode_srv(self.set_mode_request)
-
-        rospy.loginfo("Waiting for inference node")
-        rospy.wait_for_service("/goal_inference_and_correction/init_belief")
-        rospy.loginfo("inference node service found! ")
-
-        self.init_belief_srv = rospy.ServiceProxy("/goal_inference_and_correction/init_belief", InitBelief)
-        self.init_belief_request = InitBeliefRequest()
-        self.init_belief_request.num_goals = self.env_params["num_goals"]
-        status = self.init_belief_srv(self.init_belief_request)
-
-        # instantiate the environement
-        self.env_params["start"] = False
-        self.env = ContinuousWorldSE2Env(self.env_params)
-        self.env.initialize()
-        self.env.initialize_viewer()
-        self.env.viewer.window.on_key_press = self.key_press
 
         r = rospy.Rate(100)
         self.trial_start_time = time.time()

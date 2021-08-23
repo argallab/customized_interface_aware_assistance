@@ -123,6 +123,8 @@ class SNPInput(ControlInput):
 
   # checks whether to switch mode, and changes cyclically
   def switchMode(self, msg):
+    # msg button[0] - corresponds to HP
+    # msg button[3] - corresponds to HS 
     switch = False
     # Paradigm 1: One-way mode switching
     ####################################
