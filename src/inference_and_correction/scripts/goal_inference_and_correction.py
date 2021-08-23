@@ -58,6 +58,9 @@ class GoalInferenceAndCorrection(object):
 
         self.P_A_S_ALL_G_DICT = collections.OrderedDict()
         self.OPTIMAL_ACTION_FOR_S_G = []
+        self.decay_counter = 0
+        self.decay_counter_max_value = 1000
+        self.decay_scale_factor = 0.01  # lower this value to slow down the decay
 
         if self.ASSISTANCE_TYPE == 0:
             self.ASSISTANCE_TYPE = AssistanceType.Filter
@@ -192,6 +195,7 @@ class GoalInferenceAndCorrection(object):
     def _compute_p_g_given_phm(self, phm):
         # print("PHM", phm)
         if phm != "None":
+            self.decay_counter = 0
             for g in self.P_G_GIVEN_PHM.keys():  # already initialized
                 likelihood = 0.0  # likelihood
                 for a in self.P_PHI_GIVEN_A.keys():
@@ -208,7 +212,17 @@ class GoalInferenceAndCorrection(object):
             # print("Current Belief ", self.P_G_GIVEN_PHM)
 
         else:
-            print("PHM NONE, therefore no belief update")
+            prob_blend_factor = 1 - np.exp(
+                -self.decay_scale_factor * min(self.decay_counter, self.decay_counter_max_value)
+            )
+            uniform_dist = (1.0 / self.NUM_GOALS) * np.ones(self.NUM_GOALS)
+            blended_dist = (1 - prob_blend_factor) * np.array(
+                list(self.P_G_GIVEN_PHM.values())
+            ) + prob_blend_factor * uniform_dist
+            for idx, g in enumerate(self.P_G_GIVEN_PHM.keys()):
+                self.P_G_GIVEN_PHM[g] = blended_dist[idx]
+            print("PHM NONE, therefore no belief update", prob_blend_factor)
+            self.decay_counter += 1
         print("Current Belief ", self.P_G_GIVEN_PHM)
 
     def init_P_G_GIVEN_PHM(self, req):
