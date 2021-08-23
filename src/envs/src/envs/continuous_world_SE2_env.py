@@ -66,7 +66,6 @@ class ContinuousWorldSE2Env(object):
             # optimal action to take in current state for goal g. Used to modify phm in inference node
             optimal_action_s_g.append(mdp_g.get_optimal_action(current_discrete_mdp_state, return_optimal=True))
 
-        
         response.p_a_s_all_g = p_a_s_all_g
         response.optimal_action_s_g = optimal_action_s_g
         response.status = True
@@ -315,9 +314,8 @@ class ContinuousWorldSE2Env(object):
     def initialize(self):
         self.start_session = self.env_params["start"]
         self.period = rospy.Duration(1.0)
-        self.timer_thread = threading.Thread(
-            target=self._render_timer, args=(self.period,)
-        )  # timer for trial time. Run on separate thread
+        # timer for trial time. Run on separate thread
+        self.timer_thread = threading.Thread(target=self._render_timer, args=(self.period,))
         self.lock = threading.Lock()
         self.current_time = 0
         self.max_time = 50
@@ -408,7 +406,12 @@ class ContinuousWorldSE2Env(object):
 
         y_lb = self.world_bounds["yrange"]["lb"] + ROBOT_RADIUS / SCALE
         y_ub = self.world_bounds["yrange"]["ub"] - ROBOT_RADIUS / SCALE
-        if robot_position[0] < x_lb or robot_position[0] > x_ub or robot_position[1] < y_lb or robot_position[1] > y_ub:
+        if (
+            robot_position[0] < x_lb
+            or robot_position[0] > x_ub
+            or robot_position[1] < y_lb
+            or robot_position[1] > y_ub
+        ):
             return False
         else:
             return True
@@ -447,6 +450,7 @@ class ContinuousWorldSE2Env(object):
         # restrict the nonzero components of the velocity only to the allowed modes.
         self.current_mode_index = rospy.get_param("mode")  # 0,1,2 #get current mode index
         self.current_mode = MODE_INDEX_TO_DIM[self.current_mode_index]  # x,y,t, #get current mode
+        # print(self.current_mode, self.current_mode_index)
 
         # x,y,t #for the given location, retrieve what is the allowed mode of motion.
         # current_allowed_mode = self._retrieve_current_allowed_mode()
@@ -464,9 +468,8 @@ class ContinuousWorldSE2Env(object):
         # user_vel[np.setdiff1d(self.DIMENSION_INDICES, current_allowed_mode_index)] = 0.0
 
         self.robot.robot.linearVelocity = b2Vec2(user_vel[0], user_vel[1])  # update robot velocity
-        self.robot.robot.angularVelocity = -user_vel[
-            2
-        ]  # the negative sign is included so that 'move_p' which is "positive direction"
+        # the negative sign is included so that 'move_p' which is "positive direction"
+        self.robot.robot.angularVelocity = -user_vel[2]
         # results in clockwise motion! In degrees this is a negative change.
 
         self.world.Step(1.0 / FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS)  # call box2D step function
