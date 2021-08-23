@@ -157,7 +157,7 @@ class Simulator(object):
                 self.env_params["goal_poses"] = self._generate_continuous_goal_poses(
                     mdp_env_params["all_goals"], mdp_env_params["cell_size"], self.env_params["world_bounds"]
                 )
-                self.env_params['assistance_type'] = 2
+                self.env_params['assistance_type'] = 1
             else:
                 pass
         
