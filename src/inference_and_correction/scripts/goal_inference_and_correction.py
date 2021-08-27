@@ -138,6 +138,7 @@ class GoalInferenceAndCorrection(object):
             self.goal_infer_modify_info_msg.ph_modified = ph_modified
             self.goal_infer_modify_info_msg.is_corrected_or_filtered = is_corrected_or_filtered
             self.goal_infer_modify_info_msg.is_ph_inferred_equals_phm = is_ph_inferred_equals_phm
+            self.goal_infer_modify_info_msg.p_g_given_phm = list(self.P_G_GIVEN_PHM.values())
             self.goal_infer_modify_info_pub.publish(self.goal_infer_modify_info_msg)
         else:
             response.ph_modified = "None"
@@ -221,9 +222,9 @@ class GoalInferenceAndCorrection(object):
             ) + prob_blend_factor * uniform_dist
             for idx, g in enumerate(self.P_G_GIVEN_PHM.keys()):
                 self.P_G_GIVEN_PHM[g] = blended_dist[idx]
-            print("PHM NONE, therefore no belief update", prob_blend_factor)
+            # print("PHM NONE, therefore no belief update", prob_blend_factor)
             self.decay_counter += 1
-        print("Current Belief ", self.P_G_GIVEN_PHM)
+        # print("Current Belief ", self.P_G_GIVEN_PHM)
 
     def init_P_G_GIVEN_PHM(self, req):
         """

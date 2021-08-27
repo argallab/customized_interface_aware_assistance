@@ -5,3 +5,4 @@ float64 normalized_h
 string ph_modified
 bool is_corrected_or_filtered
 bool is_ph_inferred_equals_phm
+float32[] p_g_given_phm
