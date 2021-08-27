@@ -11,9 +11,9 @@ VELOCITY_ITERATIONS = 180
 POSITION_ITERATIONS = 60
 SCALE = 20.0
 
-VIEWPORT_W = 600
+VIEWPORT_W = 800
 PI = math.pi
-VIEWPORT_H = 400
+VIEWPORT_H = 600
 
 # COLORS
 HUMAN_ROBOT_COLOR = (0.0, 0.0, 0.0)
@@ -213,8 +213,8 @@ class StartDirection(Enum):
 
 class RGOrient(Enum):
     """
-	Relative position of the goal with respect to the robot. This information is used for constructing properly shared paths in ModeInferenceEnv
-	"""
+    Relative position of the goal with respect to the robot. This information is used for constructing properly shared paths in ModeInferenceEnv
+    """
 
     TOP_RIGHT = 0
     TOP_LEFT = 1
@@ -262,8 +262,8 @@ TRANSITION_FOR_ACTION_4D = {
 # utility functions
 def get_sign_of_number(x):
     """
-	Utility function for getting the sign of a scalar. +1 for positive, -1 for negative
-	"""
+    Utility function for getting the sign of a scalar. +1 for positive, -1 for negative
+    """
     if int(x >= 0):
         return 1.0
     else:

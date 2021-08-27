@@ -110,10 +110,36 @@ class ContinuousWorldSE2Env(object):
         x_ub = self.world_bounds["xrange"]["ub"]
         y_lb = self.world_bounds["yrange"]["lb"]
         y_ub = self.world_bounds["yrange"]["ub"]
-        self.viewer.draw_line((x_lb, y_lb), (x_ub, y_lb), linewidth=3.0)
-        self.viewer.draw_line((x_ub, y_lb), (x_ub, y_ub), linewidth=3.0)
-        self.viewer.draw_line((x_ub, y_ub), (x_lb, y_ub), linewidth=3.0)
-        self.viewer.draw_line((x_lb, y_ub), (x_lb, y_lb), linewidth=3.0)
+        self.viewer.draw_line((x_lb, y_lb), (x_ub, y_lb), linewidth=5.0)  # bottom
+        self.viewer.draw_line((x_ub, y_lb), (x_ub, y_ub), linewidth=5.0)  # right
+        self.viewer.draw_line((x_ub, y_ub), (x_lb, y_ub), linewidth=5.0)  # top
+        self.viewer.draw_line((x_lb, y_ub), (x_lb, y_lb), linewidth=5.0)  # left
+
+    def _render_grid_lines(self):
+        if self.is_visualize_grid:
+            # continuous bounds
+            x_lb = self.world_bounds["xrange"]["lb"]
+            x_ub = self.world_bounds["xrange"]["ub"]
+            y_lb = self.world_bounds["yrange"]["lb"]
+            y_ub = self.world_bounds["yrange"]["ub"]
+            cell_size_x = self.all_mdp_env_params["cell_size"]["x"]
+            cell_size_y = self.all_mdp_env_params["cell_size"]["y"]
+            grid_width = self.all_mdp_env_params["grid_width"]
+            grid_height = self.all_mdp_env_params["grid_height"]
+
+            # starting from one because bounds are already created
+            iw_list = list(range(1, grid_width))
+            ih_list = list(range(1, grid_height))
+            # f draw vertical lines
+            for i in iw_list:
+                start_point = (x_lb + i * cell_size_x, y_lb)
+                end_point = (x_lb + i * cell_size_x, y_ub)
+                self.viewer.draw_line(start_point, end_point, linewidth=2.0)
+
+            for i in ih_list:
+                start_point = (x_lb, y_lb + i * cell_size_y)
+                end_point = (x_ub, y_lb + i * cell_size_y)
+                self.viewer.draw_line(start_point, end_point, linewidth=2.0)
 
     def _render_goal(self, shape, goal_color, goal_pose):  # potentially add default values for these args
         goal_position = (goal_pose[0], goal_pose[1])
@@ -133,7 +159,7 @@ class ContinuousWorldSE2Env(object):
     def _render_goals(self):
         for i in range(self.num_goals):
             shape = "circle"
-            goal_color = (1.0, 0.0, 0.0)
+            goal_color = self.GOAL_COLORS[i]
             goal_pose = tuple(self.goal_poses[i])
             self._render_goal(shape, goal_color, goal_pose)
 
@@ -261,6 +287,7 @@ class ContinuousWorldSE2Env(object):
 
     def render(self, mode="human"):
         self._render_bounds()
+        self._render_grid_lines()
         self._render_obstacles()
         self._render_goals()
 
@@ -323,7 +350,8 @@ class ContinuousWorldSE2Env(object):
     def _create_kd_tree_locations(self):
         grid_width = self.all_mdp_env_params["grid_width"]
         grid_height = self.all_mdp_env_params["grid_height"]
-        cell_size = self.all_mdp_env_params["cell_size"]
+        cell_size_x = self.all_mdp_env_params["cell_size"]["x"]
+        cell_size_y = self.all_mdp_env_params["cell_size"]["y"]
         # offset for bottom left corner.
         world_x_lb = self.world_bounds["xrange"]["lb"]
         world_y_lb = self.world_bounds["yrange"]["lb"]
@@ -334,8 +362,8 @@ class ContinuousWorldSE2Env(object):
             for j in range(grid_height):
                 # create center continuous position for i, j
                 # append it to cell_center_list
-                data[i * grid_height + j, 0] = i * cell_size + cell_size / 2.0 + world_x_lb
-                data[i * grid_height + j, 1] = j * cell_size + cell_size / 2.0 + world_y_lb
+                data[i * grid_height + j, 0] = i * cell_size_x + cell_size_x / 2.0 + world_x_lb
+                data[i * grid_height + j, 1] = j * cell_size_y + cell_size_y / 2.0 + world_y_lb
                 self.coord_to_continuous_position_dict[(i, j)] = tuple(data[i * grid_height + j, :])
 
         self.continuous_position_to_loc_coord = {v: k for k, v in self.coord_to_continuous_position_dict.items()}
@@ -345,7 +373,10 @@ class ContinuousWorldSE2Env(object):
     def reset(self):
         self._destroy()
 
+        # red, green, blue, tello, cyan
+        self.GOAL_COLORS = {0: (1, 0, 0), 1: (0, 1, 0), 2: (0, 0, 1), 3: (1, 1, 0), 4: (0, 1, 1)}
         # For each goal there needs to be an MDP under the hood.
+
         self.all_mdp_env_params = self.env_params["all_mdp_env_params"]
         self.mdp_list = self.env_params["mdp_list"]
         self.mdp_num_discrete_orientations = self.all_mdp_env_params["num_discrete_orientations"]
@@ -353,6 +384,7 @@ class ContinuousWorldSE2Env(object):
         # create KDTree with cell center locations
 
         #
+        self.is_visualize_grid = self.env_params["is_visualize_grid"]
         self.num_goals = self.env_params["num_goals"]
 
         # continuous starting robot pose
@@ -482,7 +514,7 @@ class ContinuousWorldSE2Env(object):
 
         self.current_discrete_mdp_state = self._transform_continuous_robot_pose_to_discrete_state()
         rospy.set_param("current_discrete_mdp_state", self.current_discrete_mdp_state)
-        # print("Discrete state", self.current_discrete_mdp_state)
+        print("Discrete state", self.current_discrete_mdp_state)
 
         return (
             self.robot.get_position(),
