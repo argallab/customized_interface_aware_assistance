@@ -51,8 +51,8 @@ class GoalInferenceAndCorrection(object):
 
         self.P_PHI_GIVEN_A = None
         self.P_PHM_GIVEN_PHI = None
-        self.DEFAULT_PHI_GIVEN_A_NOISE = 0.01
-        self.DEFAULT_PHM_GIVEN_PHI_NOISE = 0.3
+        self.DEFAULT_PHI_GIVEN_A_NOISE = 0.1
+        self.DEFAULT_PHM_GIVEN_PHI_NOISE = 0.1
 
         self.ASSISTANCE_TYPE = rospy.get_param("assistance_type", 2)
 
@@ -69,7 +69,7 @@ class GoalInferenceAndCorrection(object):
         elif self.ASSISTANCE_TYPE == 2:
             self.ASSISTANCE_TYPE = AssistanceType.No_Assistance
 
-        self.ENTROPY_THRESHOLD = rospy.get_param("entropy_threshold", 0.9)
+        self.ENTROPY_THRESHOLD = rospy.get_param("entropy_threshold", 0.5)
 
         # init all distributions from file
         if os.path.exists(os.path.join(self.distribution_directory_path, str(self.subject_id) + "_p_phi_given_a.pkl")):
@@ -158,6 +158,7 @@ class GoalInferenceAndCorrection(object):
 
     def _modify_or_pass_phm(self, phm, ph_inferred, normalized_h_of_p_g_given_phm):
         self.update_assistance_type()
+        print("Normalized Entropy ", normalized_h_of_p_g_given_phm)
         if ph_inferred != phm:
             if normalized_h_of_p_g_given_phm <= self.ENTROPY_THRESHOLD:
                 if self.ASSISTANCE_TYPE == AssistanceType.Filter:

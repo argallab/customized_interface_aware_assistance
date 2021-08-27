@@ -32,8 +32,8 @@ from corrective_mode_switch_utils import (
 )
 
 
-GRID_WIDTH = 10
-GRID_HEIGHT = 10
+GRID_WIDTH = 8
+GRID_HEIGHT = 8
 NUM_ORIENTATIONS = 8
 NUM_GOALS = 3
 OCCUPANCY_LEVEL = 0.1
@@ -112,8 +112,8 @@ class Simulator(object):
                 # bottom left corner in continuous space
                 world_bounds["xrange"]["lb"] = 0.05 * VIEWPORT_W / SCALE
                 world_bounds["yrange"]["lb"] = 0.05 * VIEWPORT_H / SCALE
-                world_bounds["xrange"]["ub"] = 0.65 * VIEWPORT_W / SCALE
-                world_bounds["yrange"]["ub"] = 0.65 * VIEWPORT_H / SCALE
+                world_bounds["xrange"]["ub"] = 0.75 * VIEWPORT_W / SCALE
+                world_bounds["yrange"]["ub"] = 0.9 * VIEWPORT_H / SCALE
                 mdp_env_params['cell_size']['x'] = (world_bounds["xrange"]["ub"] - world_bounds["xrange"]["lb"]) / mdp_env_params['grid_width']
                 mdp_env_params['cell_size']['y'] = (world_bounds["yrange"]["ub"] - world_bounds["yrange"]["lb"]) / mdp_env_params['grid_height']
                 
@@ -155,7 +155,7 @@ class Simulator(object):
                 self.env_params["goal_poses"] = self._generate_continuous_goal_poses(
                     mdp_env_params["all_goals"], mdp_env_params["cell_size"], self.env_params["world_bounds"]
                 )
-                self.env_params['assistance_type'] = 2
+                self.env_params['assistance_type'] = 1
             else:
                 pass
         
