@@ -514,7 +514,7 @@ class ContinuousWorldSE2Env(object):
 
         self.current_discrete_mdp_state = self._transform_continuous_robot_pose_to_discrete_state()
         rospy.set_param("current_discrete_mdp_state", self.current_discrete_mdp_state)
-        print("Discrete state", self.current_discrete_mdp_state)
+        # print("Discrete state", self.current_discrete_mdp_state)
 
         return (
             self.robot.get_position(),
