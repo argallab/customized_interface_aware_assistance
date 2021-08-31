@@ -63,7 +63,7 @@ class ContinuousWorldSE2Env(object):
             for task_level_action in TASK_LEVEL_ACTIONS:
                 p_a_s_g_msg.p_a_s_g.append(mdp_g.get_prob_a_given_s(current_discrete_mdp_state, task_level_action))
             p_a_s_all_g.append(p_a_s_g_msg)
-            # optimal action to take in current state for goal g. Used to modify phm in inference node
+            # optimal task_level action to take in current state for goal g. Used to modify phm in inference node
             optimal_action_s_g.append(mdp_g.get_optimal_action(current_discrete_mdp_state, return_optimal=True))
 
         response.p_a_s_all_g = p_a_s_all_g
