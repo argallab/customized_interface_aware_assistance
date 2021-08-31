@@ -51,8 +51,8 @@ class GoalInferenceAndCorrection(object):
 
         self.P_PHI_GIVEN_A = None
         self.P_PHM_GIVEN_PHI = None
-        self.DEFAULT_PHI_GIVEN_A_NOISE = 0.1
-        self.DEFAULT_PHM_GIVEN_PHI_NOISE = 0.1
+        self.DEFAULT_PHI_GIVEN_A_NOISE = 0.3
+        self.DEFAULT_PHM_GIVEN_PHI_NOISE = 0.3
 
         self.ASSISTANCE_TYPE = rospy.get_param("assistance_type", 2)
 
@@ -69,7 +69,8 @@ class GoalInferenceAndCorrection(object):
         elif self.ASSISTANCE_TYPE == 2:
             self.ASSISTANCE_TYPE = AssistanceType.No_Assistance
 
-        self.ENTROPY_THRESHOLD = rospy.get_param("entropy_threshold", 0.5)
+        self.ENTROPY_THRESHOLD = rospy.get_param("entropy_threshold", 0.6)
+        self.LIKELIHOOD_THRESHOLD = rospy.get_param("likelihood_threshold", 0.3)
 
         # init all distributions from file
         if os.path.exists(os.path.join(self.distribution_directory_path, str(self.subject_id) + "_p_phi_given_a.pkl")):
@@ -121,7 +122,11 @@ class GoalInferenceAndCorrection(object):
             # compute netropy
             normalized_h_of_p_g_given_phm = self._compute_entropy_of_p_g_given_phm()
             # apply assistance by checking entropy (get phm_modified)
-            ph_modified, is_corrected_or_filtered, is_ph_inferred_equals_phm = self._modify_or_pass_phm(
+            # ph_modified, is_corrected_or_filtered, is_ph_inferred_equals_phm = self._modify_or_pass_phm(
+            #     phm, ph_inferred, normalized_h_of_p_g_given_phm
+            # )
+
+            ph_modified, is_corrected_or_filtered, is_ph_inferred_equals_phm = self._modify_filter_or_pass_phm(
                 phm, ph_inferred, normalized_h_of_p_g_given_phm
             )
 
@@ -158,7 +163,7 @@ class GoalInferenceAndCorrection(object):
 
     def _modify_or_pass_phm(self, phm, ph_inferred, normalized_h_of_p_g_given_phm):
         self.update_assistance_type()
-        print("Normalized Entropy ", normalized_h_of_p_g_given_phm)
+        # print("Normalized Entropy ", normalized_h_of_p_g_given_phm)
         if ph_inferred != phm:
             if normalized_h_of_p_g_given_phm <= self.ENTROPY_THRESHOLD:
                 if self.ASSISTANCE_TYPE == AssistanceType.Filter:
@@ -174,6 +179,82 @@ class GoalInferenceAndCorrection(object):
             return phm, False, True
 
         return ph_modified, True, False  # only triggered when Filter or Corrective mode
+
+    def _modify_filter_or_pass_phm(self, phm, ph_inferred, normalized_h_of_p_g_given_phm):
+        # PHASE 1. check if anything needs to be filtered.
+        # Filtering happens when the action generated has low likelihood FOR all goals.
+
+        # Filter phase is triggered only when phm is non None
+        if phm != "None":
+            # likelihood dict for phm for each goal
+            likelihood_g = collections.OrderedDict()
+            for g in self.P_G_GIVEN_PHM.keys():
+                likelihood = 0.0
+                for a in self.P_PHI_GIVEN_A.keys():
+                    for phi in self.P_PHM_GIVEN_PHI.keys():
+                        likelihood += (
+                            self.P_PHM_GIVEN_PHI[phi][phm]
+                            * self.P_PHI_GIVEN_A[a][phi]
+                            * ((self.P_A_S_ALL_G_DICT[g][a]) ** (1.0))
+                        )
+                likelihood_g[g] = likelihood
+
+            # algo for determining if the action is of low likelihood for all goals, if yes block
+            filter_assist = True
+            for g in likelihood_g.keys():
+                if likelihood_g[g] > self.LIKELIHOOD_THRESHOLD:
+                    # if likelihood for ANY g is higher than likelihood dont filter.
+                    filter_assist = False
+                    break
+
+            if filter_assist:
+                print("In FILTER LIKELIHOOD DICT", likelihood_g)
+                ph_modified = "None"
+                return ph_modified, True, False
+
+        # intermediate
+        if ph_inferred != phm:
+            if normalized_h_of_p_g_given_phm <= self.ENTROPY_THRESHOLD:
+                # standard corrective mechanism
+                print("In Corrective ")
+                ph_modified = ph_inferred
+                return ph_modified, True, False
+            else:
+                # majority vote stuff
+                if phm != "None":
+
+                    # for each goal, combine the weights of each optimal action
+                    voting_info_dict = collections.defaultdict(list)
+                    for g in self.P_G_GIVEN_PHM.keys():
+                        weight_g = self.P_G_GIVEN_PHM[g]  # weight associated with each goal
+                        # optimal action for g in current state
+                        optimal_a_for_g_in_current_state = self.OPTIMAL_ACTION_FOR_S_G[g]
+                        # populate dictionary according to action.
+                        voting_info_dict[optimal_a_for_g_in_current_state].append(weight_g)
+
+                    # weighted majority voting
+                    cumulative_action_weight_dict = collections.OrderedDict()
+                    for a in TASK_LEVEL_ACTIONS:
+                        cumulative_action_weight_dict[a] = 0.0
+                        if a in voting_info_dict.keys():
+                            # task level action is present in the dictionary sum up the weights.
+                            cumulative_action_weight_dict[a] = sum(voting_info_dict[a])
+
+                    # get task_level_action corresponding to max weight
+                    print("In VOTING", cumulative_action_weight_dict)
+                    cumulative_action_weight_vector = np.array(cumulative_action_weight_dict.values())
+                    a_inferred = cumulative_action_weight_dict.keys()[np.argmax(cumulative_action_weight_vector)]
+                    # get interface level action corresponding to a_inferred
+                    ph_modified = TRUE_TASK_ACTION_TO_INTERFACE_ACTION_MAP[a_inferred]
+
+                    return ph_modified, True, False
+                else:
+                    print("PH_INFERRED NOT EQUALS PHM and PHM == None")
+                    return phm, False, True
+
+        else:
+            print("PHM equals PH_INFERRED")
+            return phm, False, True
 
     def _compute_entropy_of_p_g_given_phm(self):
         p_g_given_phm_vector = np.array(self.P_G_GIVEN_PHM.values())
@@ -203,7 +284,9 @@ class GoalInferenceAndCorrection(object):
                 for a in self.P_PHI_GIVEN_A.keys():
                     for phi in self.P_PHM_GIVEN_PHI.keys():
                         likelihood += (
-                            self.P_PHM_GIVEN_PHI[phi][phm] * self.P_PHI_GIVEN_A[a][phi] * self.P_A_S_ALL_G_DICT[g][a]
+                            self.P_PHM_GIVEN_PHI[phi][phm]
+                            * self.P_PHI_GIVEN_A[a][phi]
+                            * ((self.P_A_S_ALL_G_DICT[g][a]) ** (0.3))
                         )
 
                 self.P_G_GIVEN_PHM[g] = self.P_G_GIVEN_PHM[g] * likelihood  # multiply with prior

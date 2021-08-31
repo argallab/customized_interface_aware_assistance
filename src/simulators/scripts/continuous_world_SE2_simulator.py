@@ -36,7 +36,7 @@ GRID_WIDTH = 8
 GRID_HEIGHT = 8
 NUM_ORIENTATIONS = 8
 NUM_GOALS = 3
-OCCUPANCY_LEVEL = 0.1
+OCCUPANCY_LEVEL = 0.0
 
 SPARSITY_FACTOR = 0.0
 RAND_DIRECTION_FACTOR = 0.1
@@ -130,7 +130,8 @@ class Simulator(object):
                 self.env_params["is_visualize_grid"] = True
 
                 print ("GOALS", mdp_env_params["all_goals"])
-                discrete_robot_state = mdp_list[0].get_random_valid_state()
+                # discrete_robot_state = mdp_list[0].get_random_valid_state()
+                discrete_robot_state = (4,4,0,2)
                 robot_position, robot_orientation, start_mode = self._convert_discrete_state_to_continuous_pose(
                     discrete_robot_state, mdp_env_params["cell_size"], world_bounds
                 )
@@ -325,16 +326,18 @@ class Simulator(object):
             )
 
         print ("OBSTACLES", mdp_env_params["original_mdp_obstacles"])
-        goal_list = create_random_goals(
-            width=mdp_env_params["grid_width"],
-            height=mdp_env_params["grid_height"],
-            num_goals=NUM_GOALS,
-            obstacle_list=mdp_env_params["original_mdp_obstacles"],
-        )  # make the list a tuple
-
+        # goal_list = create_random_goals(
+        #     width=mdp_env_params["grid_width"],
+        #     height=mdp_env_params["grid_height"],
+        #     num_goals=NUM_GOALS,
+        #     obstacle_list=mdp_env_params["original_mdp_obstacles"],
+        # )  # make the list a tuple
+        goal_list = [(0,1), (7,1), (4,7)]
+        # goal_list = [(7,1), (7,4), (7,7)]
         for i, g in enumerate(goal_list):
             g = list(g)
-            g.append(np.random.randint(mdp_env_params["num_discrete_orientations"]))
+            # g.append(np.random.randint(mdp_env_params["num_discrete_orientations"]))
+            g.append(0)
             goal_list[i] = tuple(g)
 
         print (goal_list)
