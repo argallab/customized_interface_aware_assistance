@@ -12,7 +12,8 @@ import collections
 import itertools
 import rospy
 import threading
-from envs.srv import OptimalAction, OptimalActionRequest, OptimalActionResponse
+from envs.srv import PASAllG, PASAllGRequest, PASAllGResponse
+from envs.msg import PASSingleG
 from mdp.mdp_discrete_SE2_gridworld_with_modes import MDPDiscreteSE2GridWorldWithModes
 from scipy.spatial import KDTree
 import time
@@ -49,23 +50,39 @@ class ContinuousWorldSE2Env(object):
         self.text_display_delay = 2
         self.start_msg_ind = 0
 
-    def get_optimal_action(self, req):
-        response = OptimalActionResponse()
-        current_discrete_state = rospy.get_param("current_discrete_state", [0,0,0,1])
-        current_discrete_state = tuple(current_discrete_state)
+    def get_prob_a_s_all_g(self, req):
+        response = PASAllGResponse()
+        current_discrete_mdp_state = rospy.get_param("current_discrete_mdp_state", [0, 0, 0, 1])
+        current_discrete_mdp_state = tuple(current_discrete_mdp_state)  # [x,y,t,m]
+        p_a_s_all_g = []
+        optimal_action_s_g = []
+        for g in range(self.num_goals):
+            mdp_g = self.mdp_list[g]
+            p_a_s_g_msg = PASSingleG()
+            p_a_s_g_msg.goal_id = g
+            for task_level_action in TASK_LEVEL_ACTIONS:
+                p_a_s_g_msg.p_a_s_g.append(mdp_g.get_prob_a_given_s(current_discrete_mdp_state, task_level_action))
+            p_a_s_all_g.append(p_a_s_g_msg)
+            # optimal task_level action to take in current state for goal g. Used to modify phm in inference node
+            optimal_action_s_g.append(mdp_g.get_optimal_action(current_discrete_mdp_state, return_optimal=True))
+
+        response.p_a_s_all_g = p_a_s_all_g
+        response.optimal_action_s_g = optimal_action_s_g
+        response.status = True
+        return response
 
     def _continuous_orientation_to_discrete_orientation(self):
         cont_orientation = self.robot.get_angle()
         # wrap angle back to  0 to 2PI
-        while not (cont_orientation >= 0.0 and cont_orientation < 2*PI):
-            if cont_orientation >= 2*PI:
-                cont_orientation -= 2*PI
+        while not (cont_orientation >= 0.0 and cont_orientation < 2 * PI):
+            if cont_orientation >= 2 * PI:
+                cont_orientation -= 2 * PI
             if cont_orientation < 0.0:
-                cont_orientation += 2*PI
-            
+                cont_orientation += 2 * PI
+
         # discretize to current discrete MDP orientation
-        angle_resolution = (2*PI)/self.mdp_num_discrete_orientations
-        mdp_discrete_orientation = int(round(cont_orientation/angle_resolution))
+        angle_resolution = (2 * PI) / self.mdp_num_discrete_orientations
+        mdp_discrete_orientation = int(round(cont_orientation / angle_resolution))
         # in the mdp class "move_p" results in "positive" change in angle which is counterclockwise motion
         # however, in the environment, a move_p command results in clockwise motion.
         # either change the transition model in MDP or change mapping in env.
@@ -93,10 +110,36 @@ class ContinuousWorldSE2Env(object):
         x_ub = self.world_bounds["xrange"]["ub"]
         y_lb = self.world_bounds["yrange"]["lb"]
         y_ub = self.world_bounds["yrange"]["ub"]
-        self.viewer.draw_line((x_lb, y_lb), (x_ub, y_lb), linewidth=3.0)
-        self.viewer.draw_line((x_ub, y_lb), (x_ub, y_ub), linewidth=3.0)
-        self.viewer.draw_line((x_ub, y_ub), (x_lb, y_ub), linewidth=3.0)
-        self.viewer.draw_line((x_lb, y_ub), (x_lb, y_lb), linewidth=3.0)
+        self.viewer.draw_line((x_lb, y_lb), (x_ub, y_lb), linewidth=5.0)  # bottom
+        self.viewer.draw_line((x_ub, y_lb), (x_ub, y_ub), linewidth=5.0)  # right
+        self.viewer.draw_line((x_ub, y_ub), (x_lb, y_ub), linewidth=5.0)  # top
+        self.viewer.draw_line((x_lb, y_ub), (x_lb, y_lb), linewidth=5.0)  # left
+
+    def _render_grid_lines(self):
+        if self.is_visualize_grid:
+            # continuous bounds
+            x_lb = self.world_bounds["xrange"]["lb"]
+            x_ub = self.world_bounds["xrange"]["ub"]
+            y_lb = self.world_bounds["yrange"]["lb"]
+            y_ub = self.world_bounds["yrange"]["ub"]
+            cell_size_x = self.all_mdp_env_params["cell_size"]["x"]
+            cell_size_y = self.all_mdp_env_params["cell_size"]["y"]
+            grid_width = self.all_mdp_env_params["grid_width"]
+            grid_height = self.all_mdp_env_params["grid_height"]
+
+            # starting from one because bounds are already created
+            iw_list = list(range(1, grid_width))
+            ih_list = list(range(1, grid_height))
+            # f draw vertical lines
+            for i in iw_list:
+                start_point = (x_lb + i * cell_size_x, y_lb)
+                end_point = (x_lb + i * cell_size_x, y_ub)
+                self.viewer.draw_line(start_point, end_point, linewidth=2.0)
+
+            for i in ih_list:
+                start_point = (x_lb, y_lb + i * cell_size_y)
+                end_point = (x_ub, y_lb + i * cell_size_y)
+                self.viewer.draw_line(start_point, end_point, linewidth=2.0)
 
     def _render_goal(self, shape, goal_color, goal_pose):  # potentially add default values for these args
         goal_position = (goal_pose[0], goal_pose[1])
@@ -116,7 +159,7 @@ class ContinuousWorldSE2Env(object):
     def _render_goals(self):
         for i in range(self.num_goals):
             shape = "circle"
-            goal_color = (1.0, 0.0, 0.0)
+            goal_color = self.GOAL_COLORS[i]
             goal_pose = tuple(self.goal_poses[i])
             self._render_goal(shape, goal_color, goal_pose)
 
@@ -244,6 +287,7 @@ class ContinuousWorldSE2Env(object):
 
     def render(self, mode="human"):
         self._render_bounds()
+        self._render_grid_lines()
         self._render_obstacles()
         self._render_goals()
 
@@ -297,9 +341,8 @@ class ContinuousWorldSE2Env(object):
     def initialize(self):
         self.start_session = self.env_params["start"]
         self.period = rospy.Duration(1.0)
-        self.timer_thread = threading.Thread(
-            target=self._render_timer, args=(self.period,)
-        )  # timer for trial time. Run on separate thread
+        # timer for trial time. Run on separate thread
+        self.timer_thread = threading.Thread(target=self._render_timer, args=(self.period,))
         self.lock = threading.Lock()
         self.current_time = 0
         self.max_time = 50
@@ -307,7 +350,8 @@ class ContinuousWorldSE2Env(object):
     def _create_kd_tree_locations(self):
         grid_width = self.all_mdp_env_params["grid_width"]
         grid_height = self.all_mdp_env_params["grid_height"]
-        cell_size = self.all_mdp_env_params["cell_size"]
+        cell_size_x = self.all_mdp_env_params["cell_size"]["x"]
+        cell_size_y = self.all_mdp_env_params["cell_size"]["y"]
         # offset for bottom left corner.
         world_x_lb = self.world_bounds["xrange"]["lb"]
         world_y_lb = self.world_bounds["yrange"]["lb"]
@@ -318,8 +362,8 @@ class ContinuousWorldSE2Env(object):
             for j in range(grid_height):
                 # create center continuous position for i, j
                 # append it to cell_center_list
-                data[i * grid_height + j, 0] = i * cell_size + cell_size / 2.0 + world_x_lb
-                data[i * grid_height + j, 1] = j * cell_size + cell_size / 2.0 + world_y_lb
+                data[i * grid_height + j, 0] = i * cell_size_x + cell_size_x / 2.0 + world_x_lb
+                data[i * grid_height + j, 1] = j * cell_size_y + cell_size_y / 2.0 + world_y_lb
                 self.coord_to_continuous_position_dict[(i, j)] = tuple(data[i * grid_height + j, :])
 
         self.continuous_position_to_loc_coord = {v: k for k, v in self.coord_to_continuous_position_dict.items()}
@@ -329,14 +373,18 @@ class ContinuousWorldSE2Env(object):
     def reset(self):
         self._destroy()
 
+        # red, green, blue, tello, cyan
+        self.GOAL_COLORS = {0: (1, 0, 0), 1: (0, 1, 0), 2: (0, 0, 1), 3: (1, 1, 0), 4: (0, 1, 1)}
         # For each goal there needs to be an MDP under the hood.
+
         self.all_mdp_env_params = self.env_params["all_mdp_env_params"]
         self.mdp_list = self.env_params["mdp_list"]
-        self.mdp_num_discrete_orientations = self.all_mdp_env_params['num_discrete_orientations']
+        self.mdp_num_discrete_orientations = self.all_mdp_env_params["num_discrete_orientations"]
 
         # create KDTree with cell center locations
 
         #
+        self.is_visualize_grid = self.env_params["is_visualize_grid"]
         self.num_goals = self.env_params["num_goals"]
 
         # continuous starting robot pose
@@ -372,7 +420,7 @@ class ContinuousWorldSE2Env(object):
         )
 
         if not self.service_initialized:
-            rospy.Service("/sim_env/get_optimal_action", OptimalAction, self.get_optimal_action)
+            rospy.Service("/sim_env/get_prob_a_s_all_g", PASAllG, self.get_prob_a_s_all_g)
             self.service_initialized = True
 
         # self.LOCS_FOR_CONTROL_DIM_DISPLAY = collections.OrderedDict()
@@ -390,7 +438,12 @@ class ContinuousWorldSE2Env(object):
 
         y_lb = self.world_bounds["yrange"]["lb"] + ROBOT_RADIUS / SCALE
         y_ub = self.world_bounds["yrange"]["ub"] - ROBOT_RADIUS / SCALE
-        if robot_position[0] < x_lb or robot_position[0] > x_ub or robot_position[1] < y_lb or robot_position[1] > y_ub:
+        if (
+            robot_position[0] < x_lb
+            or robot_position[0] > x_ub
+            or robot_position[1] < y_lb
+            or robot_position[1] > y_ub
+        ):
             return False
         else:
             return True
@@ -429,6 +482,7 @@ class ContinuousWorldSE2Env(object):
         # restrict the nonzero components of the velocity only to the allowed modes.
         self.current_mode_index = rospy.get_param("mode")  # 0,1,2 #get current mode index
         self.current_mode = MODE_INDEX_TO_DIM[self.current_mode_index]  # x,y,t, #get current mode
+        # print(self.current_mode, self.current_mode_index)
 
         # x,y,t #for the given location, retrieve what is the allowed mode of motion.
         # current_allowed_mode = self._retrieve_current_allowed_mode()
@@ -446,9 +500,8 @@ class ContinuousWorldSE2Env(object):
         # user_vel[np.setdiff1d(self.DIMENSION_INDICES, current_allowed_mode_index)] = 0.0
 
         self.robot.robot.linearVelocity = b2Vec2(user_vel[0], user_vel[1])  # update robot velocity
-        self.robot.robot.angularVelocity = -user_vel[
-            2
-        ]  # the negative sign is included so that 'move_p' which is "positive direction"
+        # the negative sign is included so that 'move_p' which is "positive direction"
+        self.robot.robot.angularVelocity = -user_vel[2]
         # results in clockwise motion! In degrees this is a negative change.
 
         self.world.Step(1.0 / FPS, VELOCITY_ITERATIONS, POSITION_ITERATIONS)  # call box2D step function
@@ -459,9 +512,9 @@ class ContinuousWorldSE2Env(object):
         if not self._check_if_robot_in_bounds():
             self.robot.set_position(prev_robot_position)
 
-        current_discrete_mdp_state = self._transform_continuous_robot_pose_to_discrete_state()
-        rospy.set_param("current_discrete_state", self.current_discrete_state)
-        print("Discrete state", current_discrete_mdp_state)
+        self.current_discrete_mdp_state = self._transform_continuous_robot_pose_to_discrete_state()
+        rospy.set_param("current_discrete_mdp_state", self.current_discrete_mdp_state)
+        # print("Discrete state", self.current_discrete_mdp_state)
 
         return (
             self.robot.get_position(),

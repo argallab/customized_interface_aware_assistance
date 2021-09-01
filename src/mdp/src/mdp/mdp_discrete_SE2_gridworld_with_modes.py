@@ -45,7 +45,9 @@ class MDPDiscreteSE2GridWorldWithModes(DiscreteMDP):
         self.goal_reward = self.env_params["goal_reward"]
         self.num_discrete_orientations = self.env_params["num_discrete_orientations"]
 
-        self.orientations = [i * 2 * PI / self.num_discrete_orientations for i in range(self.num_discrete_orientations)]
+        self.orientations = [
+            i * 2 * PI / self.num_discrete_orientations for i in range(self.num_discrete_orientations)
+        ]
         self.orientations_index_dict = collections.OrderedDict()
         for i, orientation in enumerate(self.orientations):
             self.orientations_index_dict[i] = orientation
@@ -397,6 +399,7 @@ class MDPDiscreteSE2GridWorldWithModes(DiscreteMDP):
     def get_prob_a_given_s(self, state_coord, task_level_action):
         assert task_level_action in self.action_id_to_task_level_action_map.values()
         state_id = self._convert_grid_coords_to_1D_state(state_coord)
+        # print(state_id)
         action_id = self.task_level_action_to_action_id_map[task_level_action]
         if self.rl_algo_type == RlAlgoType.QLearning:
             p_vec = np.exp(self.boltzmann_factor * self.rl_algo.Q[state_id, :]) / np.sum(
