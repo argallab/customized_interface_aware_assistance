@@ -11,9 +11,9 @@ VELOCITY_ITERATIONS = 180
 POSITION_ITERATIONS = 60
 SCALE = 20.0
 
-VIEWPORT_W = 600
+VIEWPORT_W = 800
 PI = math.pi
-VIEWPORT_H = 400
+VIEWPORT_H = 600
 
 # COLORS
 HUMAN_ROBOT_COLOR = (0.0, 0.0, 0.0)
@@ -148,6 +148,22 @@ MODE_SWITCH_TRANSITION_4D = {
 # Depending on the configuration of the initial robot position and goal position, the motion commands will result in either moving towards the
 # next location or the previous location
 # Enum defintions
+
+
+# low level commands issued by the snp interface. hp = hard puff, hs= hard sip, sp = soft puff, ss = soft sip. Also the domain for ui and um
+INTERFACE_LEVEL_ACTIONS = ["Hard Puff", "Hard Sip", "Soft Puff", "Soft Sip"]
+# high level actions, move_p = move in positive direction, move_n = move in negative direction, mode_r = switch mode to right, mode_l = switch mode to left. positive and negative is conditioned on mode
+TASK_LEVEL_ACTIONS = ["move_p", "move_n", "to_mode_r", "to_mode_l"]
+# true mapping of a to phi
+TRUE_TASK_ACTION_TO_INTERFACE_ACTION_MAP = collections.OrderedDict(
+    {"move_p": "Soft Puff", "move_n": "Soft Sip", "to_mode_r": "Hard Puff", "to_mode_l": "Hard Sip", "None": "None"}
+)
+# true inverse mapping of phi to a
+TRUE_INTERFACE_ACTION_TO_TASK_ACTION_MAP = collections.OrderedDict(
+    {v: k for k, v in TRUE_TASK_ACTION_TO_INTERFACE_ACTION_MAP.items()}
+)
+
+
 class AssistanceType(Enum):
     Filter = 0
     Corrective = 1
@@ -197,8 +213,8 @@ class StartDirection(Enum):
 
 class RGOrient(Enum):
     """
-	Relative position of the goal with respect to the robot. This information is used for constructing properly shared paths in ModeInferenceEnv
-	"""
+    Relative position of the goal with respect to the robot. This information is used for constructing properly shared paths in ModeInferenceEnv
+    """
 
     TOP_RIGHT = 0
     TOP_LEFT = 1
@@ -246,8 +262,8 @@ TRANSITION_FOR_ACTION_4D = {
 # utility functions
 def get_sign_of_number(x):
     """
-	Utility function for getting the sign of a scalar. +1 for positive, -1 for negative
-	"""
+    Utility function for getting the sign of a scalar. +1 for positive, -1 for negative
+    """
     if int(x >= 0):
         return 1.0
     else:

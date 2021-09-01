@@ -1,16 +1,15 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
+
 # Code developed by Deepak Gopinath*, Mahdieh Nejati Javaremi* in February 2020. Copyright (c) 2020. Deepak Gopinath, Mahdieh Nejati Javaremi, Argallab. (*) Equal contribution
 
 import collections
 import rospy
 import time
-from sensor_msgs.msg import Joy
 from envs.continuous_world_SE2_env import ContinuousWorldSE2Env
-from std_msgs.msg import Float32MultiArray
 from std_msgs.msg import MultiArrayDimension, String, Int8
 from teleop_nodes.msg import CartVelCmd
 from simulators.msg import State
+from simulators.srv import InitBelief, InitBeliefRequest, InitBeliefResponse
 from teleop_nodes.srv import SetMode, SetModeRequest, SetModeResponse
 from mdp.mdp_discrete_SE2_gridworld_with_modes import MDPDiscreteSE2GridWorldWithModes
 from pyglet.window import key
@@ -23,18 +22,31 @@ import os
 import copy
 import itertools
 from mdp.mdp_utils import *
-from corrective_mode_switch_utils import MODE_INDEX_TO_DIM, SCALE, DIM_TO_MODE_INDEX, VIEWPORT_W, VIEWPORT_H, PI, ROBOT_RADIUS_S
+from corrective_mode_switch_utils import (
+    MODE_INDEX_TO_DIM,
+    SCALE,
+    DIM_TO_MODE_INDEX,
+    VIEWPORT_W,
+    VIEWPORT_H, 
+    PI,
+)
 
 
-GRID_WIDTH = 10
-GRID_HEIGHT = 10
+GRID_WIDTH = 8
+GRID_HEIGHT = 8
 NUM_ORIENTATIONS = 8
 NUM_GOALS = 3
-OCCUPANCY_LEVEL = 0.1
+OCCUPANCY_LEVEL = 0.0
 
 SPARSITY_FACTOR = 0.0
 RAND_DIRECTION_FACTOR = 0.1
 
+'''
+Testing command with SNP
+
+roslaunch simulators continuous_world_SE2_sim.launch SNP:=true 
+JOINT:=true subject_id:=test assistance_block:=filter block_id:=0 training:=0 save:=false
+'''
 
 class Simulator(object):
     def __init__(self, subject_id, assistance_block, block_id, training):
@@ -95,26 +107,25 @@ class Simulator(object):
         else:
             if not self.training:
                 mdp_env_params = self._create_mdp_env_param_dict()
-                mdp_env_params["cell_size"] = ROBOT_RADIUS_S * 2.1
+                mdp_env_params["cell_size"] = collections.OrderedDict()
 
                 # create mdp list here. Select start positoin from valid stats.
-                # pass mdp_list so that env doesn't waste time creating it.
-                self.env_params = dict()
-                self.env_params["all_mdp_env_params"] = mdp_env_params
+                
                 # generate continuous world bounds from width and height and cell size, and offset info
                 world_bounds = collections.OrderedDict()
                 world_bounds["xrange"] = collections.OrderedDict()
                 world_bounds["yrange"] = collections.OrderedDict()
                 # bottom left corner in continuous space
-                world_bounds["xrange"]["lb"] = 0.1 * VIEWPORT_W / SCALE
-                world_bounds["yrange"]["lb"] = 0.1 * VIEWPORT_H / SCALE
-
-                world_bounds["xrange"]["ub"] = world_bounds["xrange"]["lb"] + (
-                    mdp_env_params["grid_width"] * mdp_env_params["cell_size"]
-                )
-                world_bounds["yrange"]["ub"] = world_bounds["yrange"]["lb"] + (
-                    mdp_env_params["grid_height"] * mdp_env_params["cell_size"]
-                )
+                world_bounds["xrange"]["lb"] = 0.05 * VIEWPORT_W / SCALE
+                world_bounds["yrange"]["lb"] = 0.05 * VIEWPORT_H / SCALE
+                world_bounds["xrange"]["ub"] = 0.75 * VIEWPORT_W / SCALE
+                world_bounds["yrange"]["ub"] = 0.9 * VIEWPORT_H / SCALE
+                mdp_env_params['cell_size']['x'] = (world_bounds["xrange"]["ub"] - world_bounds["xrange"]["lb"]) / mdp_env_params['grid_width']
+                mdp_env_params['cell_size']['y'] = (world_bounds["yrange"]["ub"] - world_bounds["yrange"]["lb"]) / mdp_env_params['grid_height']
+                
+                self.env_params = dict()
+                self.env_params["all_mdp_env_params"] = mdp_env_params
+                
 
                 self.env_params["world_bounds"] = world_bounds
 
@@ -122,9 +133,14 @@ class Simulator(object):
                 self.env_params["mdp_list"] = mdp_list
                 self.env_params["num_goals"] = NUM_GOALS
 
+                self.env_params["is_visualize_grid"] = True
+
                 print ("GOALS", mdp_env_params["all_goals"])
-                discrete_robot_state = mdp_list[0].get_random_valid_state()
-                robot_position, robot_orientation, start_mode = self._convert_discrete_state_to_continuous_pose(discrete_robot_state, mdp_env_params["cell_size"], world_bounds)
+                # discrete_robot_state = mdp_list[0].get_random_valid_state()
+                discrete_robot_state = (4,4,0,2)
+                robot_position, robot_orientation, start_mode = self._convert_discrete_state_to_continuous_pose(
+                    discrete_robot_state, mdp_env_params["cell_size"], world_bounds
+                )
                 self.env_params["robot_position"] = robot_position
                 self.env_params["robot_orientation"] = robot_orientation
                 self.env_params["start_mode"] = start_mode
@@ -134,22 +150,40 @@ class Simulator(object):
                 for o in mdp_env_params["original_mdp_obstacles"]:
                     obs = collections.OrderedDict()
                     obs["bottom_left"] = (
-                        o[0] * mdp_env_params["cell_size"] + world_bounds["xrange"]["lb"],
-                        o[1] * mdp_env_params["cell_size"] + world_bounds["yrange"]["lb"],
+                        o[0] * mdp_env_params["cell_size"]['x'] + world_bounds["xrange"]["lb"],
+                        o[1] * mdp_env_params["cell_size"]['y'] + world_bounds["yrange"]["lb"],
                     )
                     obs["top_right"] = (
-                        (o[0] + 1) * mdp_env_params["cell_size"] + world_bounds["xrange"]["lb"],
-                        (o[1] + 1) * mdp_env_params["cell_size"] + world_bounds["yrange"]["lb"],
+                        (o[0] + 1) * mdp_env_params["cell_size"]['x'] + world_bounds["xrange"]["lb"],
+                        (o[1] + 1) * mdp_env_params["cell_size"]['y'] + world_bounds["yrange"]["lb"],
                     )
                     self.env_params["obstacles"].append(obs)
 
                 self.env_params["goal_poses"] = self._generate_continuous_goal_poses(
                     mdp_env_params["all_goals"], mdp_env_params["cell_size"], self.env_params["world_bounds"]
                 )
+                self.env_params['assistance_type'] = 1
             else:
                 pass
+        
+        # instantiate the environement
+        self.env_params["start"] = False
+        self.env = ContinuousWorldSE2Env(self.env_params)
+        self.env.initialize()
+        self.env.initialize_viewer()
+        self.env.reset()
+        self.env.viewer.window.on_key_press = self.key_press
 
-        # rospy.set_param("assistance_type", self.env_params["assistance_type"])
+        rospy.loginfo("Waiting for inference node")
+        rospy.wait_for_service("/goal_inference_and_correction/init_belief")
+        rospy.loginfo("inference node service found! ")
+
+        self.init_belief_srv = rospy.ServiceProxy("/goal_inference_and_correction/init_belief", InitBelief)
+        self.init_belief_request = InitBeliefRequest()
+        self.init_belief_request.num_goals = self.env_params["num_goals"]
+        status = self.init_belief_srv(self.init_belief_request)
+
+        rospy.set_param("assistance_type", self.env_params["assistance_type"])
         rospy.loginfo("Waiting for teleop_node ")
         rospy.wait_for_service("/teleop_node/set_mode")
         rospy.loginfo("teleop_node node service found! ")
@@ -159,13 +193,6 @@ class Simulator(object):
         self.set_mode_request = SetModeRequest()
         self.set_mode_request.mode_index = DIM_TO_MODE_INDEX[self.env_params["start_mode"]]
         status = self.set_mode_srv(self.set_mode_request)
-
-        # instantiate the environement
-        self.env_params["start"] = False
-        self.env = ContinuousWorldSE2Env(self.env_params)
-        self.env.initialize()
-        self.env.initialize_viewer()
-        self.env.viewer.window.on_key_press = self.key_press
 
         r = rospy.Rate(100)
         self.trial_start_time = time.time()
@@ -238,8 +265,8 @@ class Simulator(object):
         goal_poses = []
         for dg in discrete_goal_list:
             goal_pose = [0, 0, 0]
-            goal_pose[0] = (dg[0] * cell_size) + cell_size / 2.0 + world_bounds["xrange"]["lb"]
-            goal_pose[1] = (dg[1] * cell_size) + cell_size / 2.0 + world_bounds["yrange"]["lb"]
+            goal_pose[0] = (dg[0] * cell_size['x']) + cell_size['x'] / 2.0 + world_bounds["xrange"]["lb"]
+            goal_pose[1] = (dg[1] * cell_size['y']) + cell_size['y'] / 2.0 + world_bounds["yrange"]["lb"]
             goal_pose[2] = (float(dg[2]) / NUM_ORIENTATIONS) * 2 * PI
             goal_poses.append(goal_pose)
 
@@ -250,20 +277,21 @@ class Simulator(object):
         robot_orientation = 0.0
         # add proximity checks to any goals
         return (robot_position, robot_orientation)
-    
+
     def _convert_discrete_state_to_continuous_pose(self, discrete_state, cell_size, world_bounds):
         x_coord = discrete_state[0]
         y_coord = discrete_state[1]
         theta_coord = discrete_state[2]
-        mode = discrete_state[3] - 1 #minus one because the dictionary is 0-indexed
+        mode = discrete_state[3] - 1  # minus one because the dictionary is 0-indexed
 
-        robot_position = [x_coord*cell_size + cell_size/2.0 + world_bounds['xrange']['lb'], y_coord*cell_size + cell_size/2.0 + world_bounds['yrange']['lb']]
-        robot_orientation = (theta_coord * 2*PI)/NUM_ORIENTATIONS
+        robot_position = [
+            x_coord * cell_size['x'] + cell_size['x'] / 2.0 + world_bounds["xrange"]["lb"],
+            y_coord * cell_size['y'] + cell_size['y'] / 2.0 + world_bounds["yrange"]["lb"],
+        ]
+        robot_orientation = (theta_coord * 2 * PI) / NUM_ORIENTATIONS
         start_mode = MODE_INDEX_TO_DIM[mode]
 
         return robot_position, robot_orientation, start_mode
-
-
 
     def joy_callback(self, msg):
         self.input_action["human"] = msg
@@ -304,16 +332,18 @@ class Simulator(object):
             )
 
         print ("OBSTACLES", mdp_env_params["original_mdp_obstacles"])
-        goal_list = create_random_goals(
-            width=mdp_env_params["grid_width"],
-            height=mdp_env_params["grid_height"],
-            num_goals=NUM_GOALS,
-            obstacle_list=mdp_env_params["original_mdp_obstacles"],
-        )  # make the list a tuple
-
+        # goal_list = create_random_goals(
+        #     width=mdp_env_params["grid_width"],
+        #     height=mdp_env_params["grid_height"],
+        #     num_goals=NUM_GOALS,
+        #     obstacle_list=mdp_env_params["original_mdp_obstacles"],
+        # )  # make the list a tuple
+        goal_list = [(0,1), (7,1), (4,7)]
+        # goal_list = [(7,1), (7,4), (7,7)]
         for i, g in enumerate(goal_list):
             g = list(g)
-            g.append(np.random.randint(mdp_env_params["num_discrete_orientations"]))
+            # g.append(np.random.randint(mdp_env_params["num_discrete_orientations"]))
+            g.append(0)
             goal_list[i] = tuple(g)
 
         print (goal_list)
