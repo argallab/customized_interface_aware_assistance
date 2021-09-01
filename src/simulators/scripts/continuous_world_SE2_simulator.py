@@ -41,6 +41,12 @@ OCCUPANCY_LEVEL = 0.0
 SPARSITY_FACTOR = 0.0
 RAND_DIRECTION_FACTOR = 0.1
 
+'''
+Testing command with SNP
+
+roslaunch simulators continuous_world_SE2_sim.launch SNP:=true 
+JOINT:=true subject_id:=test assistance_block:=filter block_id:=0 training:=0 save:=false
+'''
 
 class Simulator(object):
     def __init__(self, subject_id, assistance_block, block_id, training):
