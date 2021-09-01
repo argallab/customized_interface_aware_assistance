@@ -156,7 +156,7 @@ INTERFACE_LEVEL_ACTIONS = ["Hard Puff", "Hard Sip", "Soft Puff", "Soft Sip"]
 TASK_LEVEL_ACTIONS = ["move_p", "move_n", "to_mode_r", "to_mode_l"]
 # true mapping of a to phi
 TRUE_TASK_ACTION_TO_INTERFACE_ACTION_MAP = collections.OrderedDict(
-    {"move_p": "Soft Puff", "move_n": "Soft Sip", "to_mode_r": "Hard Puff", "to_mode_l": "Hard Sip"}
+    {"move_p": "Soft Puff", "move_n": "Soft Sip", "to_mode_r": "Hard Puff", "to_mode_l": "Hard Sip", "None": "None"}
 )
 # true inverse mapping of phi to a
 TRUE_INTERFACE_ACTION_TO_TASK_ACTION_MAP = collections.OrderedDict(
