@@ -12,7 +12,7 @@ import sys
 import os
 import rospkg
 sys.path.append(os.path.join(rospkg.RosPack().get_path('simulators'), 'scripts'))
-from utils import AssistanceType
+from corrective_mode_switch_utils import AssistanceType
 
 npa = np.array
 
