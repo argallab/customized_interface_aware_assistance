@@ -163,6 +163,12 @@ class ContinuousWorldSE2Env(object):
             goal_pose = tuple(self.goal_poses[i])
             self._render_goal(shape, goal_color, goal_pose)
 
+    def _render_goal_constraints(self): 
+        # for goal_const_spec in self.goal_constraints: 
+        #     v = 
+        #     self.viewer.draw_polygon(v)
+        pass
+
     def _render_obstacles(self):
         for obs_spec in self.obstacles:
             # bottom left corner and top-right corner
@@ -290,6 +296,7 @@ class ContinuousWorldSE2Env(object):
         self._render_grid_lines()
         self._render_obstacles()
         self._render_goals()
+        self._render_goal_constraints()
 
         self._render_robot()
         self._render_robot_direction_indicators()
@@ -395,6 +402,7 @@ class ContinuousWorldSE2Env(object):
 
         # continuous goal poses.
         self.goal_poses = self.env_params["goal_poses"]
+        self.goal_constraints = self.env_params["goal_constraints"]
 
         # continuous world boundaries
         self.world_bounds = self.env_params["world_bounds"]
