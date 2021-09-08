@@ -32,9 +32,9 @@ from corrective_mode_switch_utils import (
 )
 
 
-GRID_WIDTH = 8
-GRID_HEIGHT = 8
-NUM_ORIENTATIONS = 8
+GRID_WIDTH = 10
+GRID_HEIGHT = 10
+NUM_ORIENTATIONS = 10
 NUM_GOALS = 3
 OCCUPANCY_LEVEL = 0.0
 
@@ -158,6 +158,8 @@ class Simulator(object):
                         (o[1] + 1) * mdp_env_params["cell_size"]['y'] + world_bounds["yrange"]["lb"],
                     )
                     self.env_params["obstacles"].append(obs)
+                rospy.loginfo("!!!!!!!!!!!!!!!!!!!!!!!!!1")
+                rospy.loginfo(self.env_params["obstacles"])
 
                 self.env_params["goal_poses"] = self._generate_continuous_goal_poses(
                     mdp_env_params["all_goals"], mdp_env_params["cell_size"], self.env_params["world_bounds"]
@@ -338,7 +340,7 @@ class Simulator(object):
         #     num_goals=NUM_GOALS,
         #     obstacle_list=mdp_env_params["original_mdp_obstacles"],
         # )  # make the list a tuple
-        goal_list = [(0,1), (7,1), (4,7)]
+        goal_list = [(0,1), (7,1), (4,6)]
         # goal_list = [(7,1), (7,4), (7,7)]
         for i, g in enumerate(goal_list):
             g = list(g)
@@ -347,7 +349,9 @@ class Simulator(object):
             goal_list[i] = tuple(g)
 
         print (goal_list)
+
         mdp_env_params["all_goals"] = goal_list
+        # mdp_env_params["goal"]
         mdp_env_params["obstacle_penalty"] = -100
         mdp_env_params["goal_reward"] = 100
         mdp_env_params["step_penalty"] = -10
@@ -357,8 +361,11 @@ class Simulator(object):
 
         return mdp_env_params
 
-    def _create_rectangular_gw_obstacles(self, width, height, num_obstacle_patches):
+    # TO DO Mahdieh: make randomizable and not hard-coded
+    def _create_goal_constraints(self): 
+        goal_type_list = []
 
+    def _create_rectangular_gw_obstacles(self, width, height, num_obstacle_patches):
         obstacle_list = []
         all_cell_coords = list(itertools.product(range(width), range(height)))
         # pick three random starting points
@@ -376,6 +383,8 @@ class Simulator(object):
 
     def create_mdp_list(self, mdp_env_params):
         mdp_list = []
+        from IPython import embed
+        embed()
         for i, g in enumerate(mdp_env_params["all_goals"]):
             mdp_env_params["mdp_goal_state"] = g
             # 2d goals.
@@ -385,6 +394,13 @@ class Simulator(object):
             discrete_se2_modes_mdp = MDPDiscreteSE2GridWorldWithModes(copy.deepcopy(mdp_env_params))
 
             mdp_list.append(discrete_se2_modes_mdp)
+
+        # if the goal is not just point goal and has task constraints, append constraints as obstacles for the mdp
+        for i, g in enumerate(mdp_env_params["goal_type_constraints"]):
+            # 2d goals
+            mdp_env_params["mdp_obstacles"].extend(goal_task_constraints)
+            
+
 
         return mdp_list
 
