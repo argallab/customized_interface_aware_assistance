@@ -296,7 +296,7 @@ class ContinuousWorldSE2Env(object):
         self._render_grid_lines()
         self._render_obstacles()
         self._render_goals()
-        self._render_goal_constraints()
+        # self._render_goal_constraints()
 
         self._render_robot()
         self._render_robot_direction_indicators()
@@ -402,7 +402,7 @@ class ContinuousWorldSE2Env(object):
 
         # continuous goal poses.
         self.goal_poses = self.env_params["goal_poses"]
-        self.goal_constraints = self.env_params["goal_constraints"]
+        # self.goal_constraints = self.env_params["goal_constraints"]
 
         # continuous world boundaries
         self.world_bounds = self.env_params["world_bounds"]

@@ -302,3 +302,28 @@ def create_random_start_state(width, height, obstacle_list, goal_list, mode_set)
     random_mode = random.sample(mode_set.keys(), 1)  # [m]
 
     return tuple(list(random_start_state) + random_mode)  # a tuple
+
+
+def create_doorway_constraint(width, height, door_width, goal_point): 
+
+    # left_wall_width = list(range(goal_point[1], min(width-1, goal_point[1] + door_width/)+1))
+    # left_wall_height = 
+
+    # right_wall_width = list(range(goal_point[1], min(width-1, goal_point[1] + door_width/2)+1))
+    # right_wall_height = 
+    task_constraint = []
+    left_wall_width = [2, 3]
+    left_wall_height = [7]
+
+    right_wall_width = [5, 6]
+    right_wall_height = [7]
+
+    wall_width = left_wall_width + right_wall_width
+    wall_height = left_wall_height + right_wall_height
+
+    task_constraint.extend(list(itertools.product(wall_height, wall_width)))
+
+    return task_constraint
+
+# def create_hallway_constraint(width, height, goal_point): 
+# def create_docking_constraint(width, height, goal_point): 

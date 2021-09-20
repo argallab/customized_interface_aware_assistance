@@ -13,6 +13,7 @@ class MDPDiscreteSE2GridWorldWithModes(DiscreteMDP):
     def __init__(self, env_params, vs_and_policy_dict=None):
         super(MDPDiscreteSE2GridWorldWithModes, self).__init__(env_params, vs_and_policy_dict)
 
+        # sparstiy is akin to dropping factor through the interface 
         self.sparsity_factor = env_params.get("sparsity_factor", 0.0)
         self.rand_direction_factor = env_params.get("rand_direction_factor", 0.0)
         self.boltzmann_factor = env_params.get("boltzmann_factor", 100.0)
