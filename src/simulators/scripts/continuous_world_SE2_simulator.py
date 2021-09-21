@@ -402,7 +402,7 @@ class Simulator(object):
         task_constraint = []
         for i, g in enumerate(goal_list): 
             task_constraint.extend(TASK_TYPES[task_type_list[i]](width,height,2, g[0:2])) # To do dictionairy for widht
-            print("goals", i, g)
+            print("goals and task constraint", i, g, task_constraint)
         
         return task_constraint
 
