@@ -312,11 +312,11 @@ def create_doorway_constraint(width, height, door_width, goal_point):
     # right_wall_width = list(range(goal_point[1], min(width-1, goal_point[1] + door_width/2)+1))
     # right_wall_height = 
     task_constraint = []
-    left_wall_width = [2, 3]
-    left_wall_height = [7]
+    left_wall_width = [7] #[8,9] 
+    left_wall_height = [5,6] #[7]
 
-    right_wall_width = [5, 6]
-    right_wall_height = [7]
+    right_wall_width = [7] #[5, 6]
+    right_wall_height = [8,9]#[7]
 
     wall_width = left_wall_width + right_wall_width
     wall_height = left_wall_height + right_wall_height
@@ -328,31 +328,27 @@ def create_doorway_constraint(width, height, door_width, goal_point):
 def create_hallway_constraint(width, height, hall_length, goal_point):
 
     task_constraint = []    
-    left_wall_height = [7]
-    left_wall_width = [0]
 
-    right_wall_height = [7]
-    right_wall_width = [4]
+    # wall_width = [5,6,7,8,5,6,7,8]
+    # wall_height = [1,1,1,1,3,3,3,3]
 
-    wall_width = left_wall_width + right_wall_width
-    wall_height = left_wall_height + right_wall_height
+    wall_width = [6,6,6,6,8,8,8,8]
+    wall_height = [1,2,3,4,1,2,3,4]
 
-    task_constraint.extend(list(itertools.product(wall_height, wall_width)))
+    task_constraint.extend(list(map(lambda x: x, list(zip(wall_width, wall_height)))))
 
     return task_constraint
 
 
 def create_docking_constraint(width, height, docking_length, goal_point): 
     task_constraint = []    
-    left_wall_height = [7]
-    left_wall_width = [0]
 
-    right_wall_height = [7]
-    right_wall_width = [4]
+    # wall_width = [1,1,1,2,2]
+    # wall_height = [3,4,5,3,5]
 
-    wall_width = left_wall_width + right_wall_width
-    wall_height = left_wall_height + right_wall_height
+    wall_width = [1,1,2,3,3]
+    wall_height = [4,3,3,3,4]
 
-    task_constraint.extend(list(itertools.product(wall_height, wall_width)))
+    task_constraint.extend(list(map(lambda x: x, list(zip(wall_width, wall_height)))))
 
     return task_constraint
