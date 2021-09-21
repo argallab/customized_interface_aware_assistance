@@ -325,5 +325,34 @@ def create_doorway_constraint(width, height, door_width, goal_point):
 
     return task_constraint
 
-# def create_hallway_constraint(width, height, goal_point): 
-# def create_docking_constraint(width, height, goal_point): 
+def create_hallway_constraint(width, height, hall_length, goal_point):
+
+    task_constraint = []    
+    left_wall_height = [7]
+    left_wall_width = [0]
+
+    right_wall_height = [7]
+    right_wall_width = [4]
+
+    wall_width = left_wall_width + right_wall_width
+    wall_height = left_wall_height + right_wall_height
+
+    task_constraint.extend(list(itertools.product(wall_height, wall_width)))
+
+    return task_constraint
+
+
+def create_docking_constraint(width, height, docking_length, goal_point): 
+    task_constraint = []    
+    left_wall_height = [7]
+    left_wall_width = [0]
+
+    right_wall_height = [7]
+    right_wall_width = [4]
+
+    wall_width = left_wall_width + right_wall_width
+    wall_height = left_wall_height + right_wall_height
+
+    task_constraint.extend(list(itertools.product(wall_height, wall_width)))
+
+    return task_constraint
