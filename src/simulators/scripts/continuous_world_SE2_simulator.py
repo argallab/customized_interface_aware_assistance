@@ -167,6 +167,19 @@ class Simulator(object):
                     )
                     self.env_params["obstacles"].append(obs)
 
+                # if goal has task constraints, add obstacle bounds
+                for o in mdp_env_params["original_task_constraints"]:
+                    obs = collections.OrderedDict()
+                    obs["bottom_left"] = (
+                        o[0] * mdp_env_params["cell_size"]['x'] + world_bounds["xrange"]["lb"],
+                        o[1] * mdp_env_params["cell_size"]['y'] + world_bounds["yrange"]["lb"],
+                    )
+                    obs["top_right"] = (
+                        (o[0] + 1) * mdp_env_params["cell_size"]['x'] + world_bounds["xrange"]["lb"],
+                        (o[1] + 1) * mdp_env_params["cell_size"]['y'] + world_bounds["yrange"]["lb"],
+                    )
+                    self.env_params["obstacles"].append(obs)
+
                 self.env_params["goal_poses"] = self._generate_continuous_goal_poses(
                     mdp_env_params["all_goals"], mdp_env_params["cell_size"], self.env_params["world_bounds"]
                 )
@@ -348,7 +361,7 @@ class Simulator(object):
         #     obstacle_list=mdp_env_params["original_mdp_obstacles"],
         # )  # make the list a tuple
 
-        goal_list = [(7,1), (7,4), (7,7)]
+        goal_list = [(7,2), (2,4), (7,7)]
         for i, g in enumerate(goal_list):
             g = list(g)
             g.append(np.random.randint(mdp_env_params["num_discrete_orientations"]))
@@ -360,11 +373,16 @@ class Simulator(object):
         # TO DO: make task types a variable
         # for task in TASK_TYPES 
         task_type_list = [0, 1, 2] # To do: make this a dict for utils
-        mdp_env_params["original_task_constraints"] = self._create_task_constraints(
-            width=mdp_env_params["grid_width"],
-            height=mdp_env_params["grid_height"],
-            goal_list, 
-            task_type_list)
+        if task_type_list == []:  # i.e. point goal 
+            mdp_env_params["original_task_constraints"] = []
+        else:             
+            mdp_env_params["original_task_constraints"] = self._create_task_constraints(
+                mdp_env_params["grid_width"],
+                mdp_env_params["grid_height"],
+                goal_list, 
+                task_type_list)
+
+        print ("TASK CONSTRAINTS", mdp_env_params["original_task_constraints"])
 
         mdp_env_params["all_goals"] = goal_list
         # mdp_env_params["goal"]
@@ -378,12 +396,13 @@ class Simulator(object):
         return mdp_env_params
 
     # TO DO Mahdieh: make randomizable and not hard-coded
-    def _create_task_constraints(self, width, height, goals, task_type): 
+    def _create_task_constraints(self, width, height, goal_list, task_type_list): 
 
         # create task constraints (essentially obstacles that are task-specific)
         task_constraint = []
-        for i, g in enumerate(goals): 
-            task_constraint.extend(TASK_TYPES[i](width,height,g)) # To do dictionairy for widht
+        for i, g in enumerate(goal_list): 
+            task_constraint.extend(TASK_TYPES[task_type_list[i]](width,height,2, g[0:2])) # To do dictionairy for widht
+            print("goals", i, g)
         
         return task_constraint
 
@@ -406,8 +425,10 @@ class Simulator(object):
 
     def create_mdp_list(self, mdp_env_params):
         mdp_list = []
-        # from IPython import embed
-        # embed()
+
+        ## if the goal is not just point goal and has task constraints, append constraints as obstacles for the mdp
+        mdp_env_params["mdp_obstacles"].extend(mdp_env_params["original_task_constraints"])
+                  
         for i, g in enumerate(mdp_env_params["all_goals"]):
             mdp_env_params["mdp_goal_state"] = g
             # 2d goals.
@@ -417,13 +438,6 @@ class Simulator(object):
             discrete_se2_modes_mdp = MDPDiscreteSE2GridWorldWithModes(copy.deepcopy(mdp_env_params))
 
             mdp_list.append(discrete_se2_modes_mdp)
-
-        # # if the goal is not just point goal and has task constraints, append constraints as obstacles for the mdp
-        # for i, g in enumerate(mdp_env_params["goal_type_constraints"]):
-        #     # 2d goals
-        #     mdp_env_params["mdp_obstacles"].extend(goal_task_constraints)
-            
-
 
         return mdp_list
 
