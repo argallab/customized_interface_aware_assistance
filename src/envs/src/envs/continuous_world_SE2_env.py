@@ -54,6 +54,8 @@ class ContinuousWorldSE2Env(object):
         response = PASAllGResponse()
         current_discrete_mdp_state = rospy.get_param("current_discrete_mdp_state", [0, 0, 0, 1])
         current_discrete_mdp_state = tuple(current_discrete_mdp_state)  # [x,y,t,m]
+        current_cont_pose = self.get_continuous_robot_pose()
+        current_cont_pose = tuple(current_cont_pose)  # [x,y,t,m]
         p_a_s_all_g = []
         optimal_action_s_g = []
         for g in range(self.num_goals):
@@ -65,11 +67,18 @@ class ContinuousWorldSE2Env(object):
             p_a_s_all_g.append(p_a_s_g_msg)
             # optimal task_level action to take in current state for goal g. Used to modify phm in inference node
             optimal_action_s_g.append(mdp_g.get_optimal_action(current_discrete_mdp_state, return_optimal=True))
-
         response.p_a_s_all_g = p_a_s_all_g
         response.optimal_action_s_g = optimal_action_s_g
+        # rospy.loginfo("CURRENT STATE:", current_cont_pose)
+        # response.current_s = current_cont_pose
+        # print(response.current_s)
         response.status = True
         return response
+
+    def get_continuous_robot_pose(self): 
+        data_index = self.continuous_kd_tree.query(self.robot.get_position())[1]
+        nearest_continuous_position = self.continuous_kd_tree.data[data_index, :]
+        return nearest_continuous_position
 
     def _continuous_orientation_to_discrete_orientation(self):
         cont_orientation = self.robot.get_angle()
@@ -90,8 +99,7 @@ class ContinuousWorldSE2Env(object):
         return mdp_discrete_orientation
 
     def _transform_continuous_robot_pose_to_discrete_state(self):
-        data_index = self.continuous_kd_tree.query(self.robot.get_position())[1]
-        nearest_continuous_position = self.continuous_kd_tree.data[data_index, :]
+        nearest_continuous_position = self.get_continuous_robot_pose()
         mdp_discrete_position = self.continuous_position_to_loc_coord[tuple(nearest_continuous_position)]
         mdp_discrete_orientation = self._continuous_orientation_to_discrete_orientation()
         current_mode_index = rospy.get_param("mode")  # 0,1,2
@@ -293,7 +301,7 @@ class ContinuousWorldSE2Env(object):
 
     def render(self, mode="human"):
         self._render_bounds()
-        self._render_grid_lines()
+        # self._render_grid_lines()
         self._render_obstacles()
         self._render_goals()
         # self._render_goal_constraints()
@@ -372,7 +380,7 @@ class ContinuousWorldSE2Env(object):
                 data[i * grid_height + j, 0] = i * cell_size_x + cell_size_x / 2.0 + world_x_lb
                 data[i * grid_height + j, 1] = j * cell_size_y + cell_size_y / 2.0 + world_y_lb
                 self.coord_to_continuous_position_dict[(i, j)] = tuple(data[i * grid_height + j, :])
-
+                
         self.continuous_position_to_loc_coord = {v: k for k, v in self.coord_to_continuous_position_dict.items()}
         # create kd tree with the cell_center_list. Use euclidean distance in 2d space for nearest neight
         self.continuous_kd_tree = KDTree(data)

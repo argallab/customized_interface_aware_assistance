@@ -1,4 +1,5 @@
 ---
 PASSingleG[] p_a_s_all_g
 string[] optimal_action_s_g
+float64[] current_s
 bool status

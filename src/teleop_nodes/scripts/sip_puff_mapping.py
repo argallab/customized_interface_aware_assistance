@@ -29,10 +29,12 @@ class SNPMapping(object):
 
     """data is a Float32Array message"""
 
-    def __init__(self):
+    def __init__(self, infer_phi_intended=True):
 
         # Initialize
         rospy.init_node("sip_puff_mapping", anonymous=True)
+
+        self.infer_phi_indended = infer_phi_intended
 
         # Sip/Puff Control Thresholds
         # sip values are positive, puff values are negative in the axes
@@ -63,8 +65,8 @@ class SNPMapping(object):
 
         # Initialize publisher and subscribers
         rospy.Subscriber("/joy", Joy, self.joy_callback)
-        self.before_inference_pub = rospy.Publisher("joy_sip_puff_before", Joy, queue_size=1)
-        self.after_inference_pub = rospy.Publisher("joy_sip_puff", Joy, queue_size=1)
+        self.before_inference_pub = rospy.Publisher("joy_sip_puff_measured", Joy, queue_size=1)
+        self.after_inference_pub = rospy.Publisher("joy_sip_puff_with_inference", Joy, queue_size=1)
 
         # Published velocity message
         self.send_msg = Joy()
@@ -87,13 +89,13 @@ class SNPMapping(object):
         elif self.assistance_type == 2:
             self.assistance_type = AssistanceType.No_Assistance
 
-        rospy.loginfo("Waiting for goal_inference_and_correction node ")
-        rospy.wait_for_service("/goal_inference_and_correction/handle_inference_and_unintended_actions")
-        rospy.loginfo("Found goal_inference_and_correction")
-
-        self.infer_and_correct_service = rospy.ServiceProxy(
-            "/goal_inference_and_correction/handle_inference_and_unintended_actions", GoalInferModify
-        )
+        if infer_phi_intended: 
+            rospy.loginfo("Waiting for goal_inference_and_correction node ")
+            rospy.wait_for_service("/goal_inference_and_correction/handle_inference_and_unintended_actions")
+            rospy.loginfo("Found goal_inference_and_correction")    
+            self.infer_and_correct_service = rospy.ServiceProxy(
+                "/goal_inference_and_correction/handle_inference_and_unintended_actions", GoalInferModify
+            )
         self.running = False
         self.runningCV = threading.Condition()
         self.rate = rospy.Rate(10)
@@ -123,9 +125,10 @@ class SNPMapping(object):
             self.assistance_type = AssistanceType.No_Assistance
 
     def checkLimits(self, airVelocity):
+        self.send_msg.buttons = np.zeros(4)
         if self.lower_puff_limit < airVelocity < self.lower_sip_limit:
             self.send_msg.header.frame_id = "None"
-            self.send_msg.buttons = np.zeros(4)
+            # self.send_msg.buttons = np.zeros(4)
         elif self.lower_sip_limit <= airVelocity <= self.soft_sip_max_limit:  # register as soft sip
             self.send_msg.header.frame_id = "Soft Sip"
             self.send_msg.buttons[2] = 1
@@ -143,7 +146,7 @@ class SNPMapping(object):
                 self.send_msg.header.frame_id = "None"
             else:
                 self.send_msg.header.frame_id = "None"
-            self.send_msg.buttons = np.zeros(4)
+            # self.send_msg.buttons = np.zeros(4)
 
         self.before_send_msg.header.frame_id = self.send_msg.header.frame_id
         self.before_send_msg.buttons = self.send_msg.buttons
@@ -159,6 +162,7 @@ class SNPMapping(object):
         # ):
         # For No_Assistance, the goal probs are updated and not modifications happen
         # to the measure inerface level action.
+        if self.infer_phi_indended: 
         request = GoalInferModifyRequest()
         request.phm = self.send_msg.header.frame_id
         response = self.infer_and_correct_service(request)
@@ -169,7 +173,7 @@ class SNPMapping(object):
         self.send_msg.buttons = np.zeros(4)
         if self.send_msg.header.frame_id != "None":
             self.send_msg.buttons[self.command_to_button_index_map[self.send_msg.header.frame_id]] = 1
-
+    
         return 0
 
     #######################################################################################
@@ -220,6 +224,6 @@ class SNPMapping(object):
 
 
 if __name__ == "__main__":
-
-    s = SNPMapping()
+    infer_phi_intended = int(sys.argv[1])
+    s = SNPMapping(infer_phi_intended=infer_phi_intended) #boolean whether to call inference engine or not and just pass through phi measured directly
     s.spin()

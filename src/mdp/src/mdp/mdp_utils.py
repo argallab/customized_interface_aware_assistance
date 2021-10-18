@@ -305,7 +305,6 @@ def create_random_start_state(width, height, obstacle_list, goal_list, mode_set)
 
 
 def create_doorway_constraint(width, height, door_width, goal_point): 
-
     # left_wall_width = list(range(goal_point[1], min(width-1, goal_point[1] + door_width/)+1))
     # left_wall_height = 
 
@@ -326,7 +325,6 @@ def create_doorway_constraint(width, height, door_width, goal_point):
     return task_constraint
 
 def create_hallway_constraint(width, height, hall_length, goal_point):
-
     task_constraint = []    
 
     # wall_width = [5,6,7,8,5,6,7,8]

@@ -382,6 +382,8 @@ class Simulator(object):
                 goal_list, 
                 task_type_list)
 
+        mdp_env_params["original_mdp_obstacles"].extend(mdp_env_params["original_task_constraints"])
+
         print ("TASK CONSTRAINTS", mdp_env_params["original_task_constraints"])
 
         mdp_env_params["all_goals"] = goal_list
@@ -402,7 +404,7 @@ class Simulator(object):
         task_constraint = []
         for i, g in enumerate(goal_list): 
             task_constraint.extend(TASK_TYPES[task_type_list[i]](width,height,2, g[0:2])) # To do dictionairy for widht
-            print("goals and task constraint", i, g, task_constraint)
+            # print("goals and task constraint", i, g, task_constraint)
         
         return task_constraint
 
@@ -427,7 +429,7 @@ class Simulator(object):
         mdp_list = []
 
         ## if the goal is not just point goal and has task constraints, append constraints as obstacles for the mdp
-        mdp_env_params["mdp_obstacles"].extend(mdp_env_params["original_task_constraints"])
+        # mdp_env_params["mdp_obstacles"].extend(mdp_env_params["original_task_constraints"])
                   
         for i, g in enumerate(mdp_env_params["all_goals"]):
             mdp_env_params["mdp_goal_state"] = g

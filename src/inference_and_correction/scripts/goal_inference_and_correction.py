@@ -51,8 +51,8 @@ class GoalInferenceAndCorrection(object):
 
         self.P_PHI_GIVEN_A = None
         self.P_PHM_GIVEN_PHI = None
-        self.DEFAULT_PHI_GIVEN_A_NOISE = 0.3
-        self.DEFAULT_PHM_GIVEN_PHI_NOISE = 0.3
+        self.DEFAULT_PHI_GIVEN_A_NOISE = 0.1
+        self.DEFAULT_PHM_GIVEN_PHI_NOISE = 0.1
 
         self.ASSISTANCE_TYPE = rospy.get_param("assistance_type", 2)
 
@@ -69,8 +69,8 @@ class GoalInferenceAndCorrection(object):
         elif self.ASSISTANCE_TYPE == 2:
             self.ASSISTANCE_TYPE = AssistanceType.No_Assistance
 
-        self.ENTROPY_THRESHOLD = rospy.get_param("entropy_threshold", 0.6)
-        self.LIKELIHOOD_THRESHOLD = rospy.get_param("likelihood_threshold", 0.3)
+        self.ENTROPY_THRESHOLD = rospy.get_param("entropy_threshold", 0.1)
+        self.LIKELIHOOD_THRESHOLD = rospy.get_param("likelihood_threshold", 0.1)
 
         # init all distributions from file
         if os.path.exists(os.path.join(self.distribution_directory_path, str(self.subject_id) + "_p_phi_given_a.pkl")):
@@ -103,7 +103,8 @@ class GoalInferenceAndCorrection(object):
         # since TASK_LEVEL_ACTIONS is OrderedDict this is list will always be in the same order
         if p_a_s_all_g_response.status:
             p_a_s_all_g = p_a_s_all_g_response.p_a_s_all_g
-
+            # current_s = p_a_s_all_g_response.current_s 
+            current_s = 0
             # update p_a_s_all_g dict
             for g in range(len(p_a_s_all_g)):  # number of goals
                 self.P_A_S_ALL_G_DICT[g] = collections.OrderedDict()
@@ -119,7 +120,7 @@ class GoalInferenceAndCorrection(object):
             # get inferred goal and optimal task level and interface level action corresponding to max.
             g_inferred, a_inferred, ph_inferred, p_g_given_um_vector = self._compute_g_a_ph_inferred()
 
-            # compute netropy
+            # compute etropy
             normalized_h_of_p_g_given_phm = self._compute_entropy_of_p_g_given_phm()
             # apply assistance by checking entropy (get phm_modified)
             # ph_modified, is_corrected_or_filtered, is_ph_inferred_equals_phm = self._modify_or_pass_phm(
@@ -127,7 +128,7 @@ class GoalInferenceAndCorrection(object):
             # )
 
             ph_modified, is_corrected_or_filtered, is_ph_inferred_equals_phm = self._modify_filter_or_pass_phm(
-                phm, ph_inferred, normalized_h_of_p_g_given_phm
+                phm, ph_inferred, normalized_h_of_p_g_given_phm, current_s
             )
 
             response.ph_modified = ph_modified
@@ -180,37 +181,37 @@ class GoalInferenceAndCorrection(object):
 
         return ph_modified, True, False  # only triggered when Filter or Corrective mode
 
-    def _modify_filter_or_pass_phm(self, phm, ph_inferred, normalized_h_of_p_g_given_phm):
+    def _modify_filter_or_pass_phm(self, phm, ph_inferred, normalized_h_of_p_g_given_phm, current_s):
         # PHASE 1. check if anything needs to be filtered.
         # Filtering happens when the action generated has low likelihood FOR all goals.
 
         # Filter phase is triggered only when phm is non None
-        if phm != "None":
-            # likelihood dict for phm for each goal
-            likelihood_g = collections.OrderedDict()
-            for g in self.P_G_GIVEN_PHM.keys():
-                likelihood = 0.0
-                for a in self.P_PHI_GIVEN_A.keys():
-                    for phi in self.P_PHM_GIVEN_PHI.keys():
-                        likelihood += (
-                            self.P_PHM_GIVEN_PHI[phi][phm]
-                            * self.P_PHI_GIVEN_A[a][phi]
-                            * ((self.P_A_S_ALL_G_DICT[g][a]) ** (1.0))
-                        )
-                likelihood_g[g] = likelihood
+        # if phm != "None":
+        #     # likelihood dict for phm for each goal
+        #     likelihood_g = collections.OrderedDict()
+        #     for g in self.P_G_GIVEN_PHM.keys():
+        #         likelihood = 0.0
+        #         for a in self.P_PHI_GIVEN_A.keys():
+        #             for phi in self.P_PHM_GIVEN_PHI.keys():
+        #                 likelihood += (
+        #                     self.P_PHM_GIVEN_PHI[phi][phm]
+        #                     * self.P_PHI_GIVEN_A[a][phi]
+        #                     * ((self.P_A_S_ALL_G_DICT[g][a]) ** (1.0))
+        #                 )
+        #         likelihood_g[g] = likelihood
 
-            # algo for determining if the action is of low likelihood for all goals, if yes block
-            filter_assist = True
-            for g in likelihood_g.keys():
-                if likelihood_g[g] > self.LIKELIHOOD_THRESHOLD:
-                    # if likelihood for ANY g is higher than likelihood dont filter.
-                    filter_assist = False
-                    break
+        #     # algo for determining if the action is of low likelihood for all goals, if yes block
+        #     filter_assist = True
+        #     for g in likelihood_g.keys():
+        #         if likelihood_g[g] > self.LIKELIHOOD_THRESHOLD:
+        #             # if likelihood for ANY g is higher than likelihood dont filter.
+        #             filter_assist = False
+        #             break
 
-            if filter_assist:
-                print("In FILTER LIKELIHOOD DICT", likelihood_g)
-                ph_modified = "None"
-                return ph_modified, True, False
+        #     if filter_assist:
+        #         print("In FILTER LIKELIHOOD DICT", likelihood_g)
+        #         ph_modified = "None"
+        #         return ph_modified, True, False
 
         # intermediate
         if ph_inferred != phm:
@@ -221,8 +222,8 @@ class GoalInferenceAndCorrection(object):
                 return ph_modified, True, False
             else:
                 # majority vote stuff
+                # TO DO: threshold on eqaulity (instead of exact)
                 if phm != "None":
-
                     # for each goal, combine the weights of each optimal action
                     voting_info_dict = collections.defaultdict(list)
                     for g in self.P_G_GIVEN_PHM.keys():
@@ -249,7 +250,7 @@ class GoalInferenceAndCorrection(object):
 
                     return ph_modified, True, False
                 else:
-                    print("PH_INFERRED NOT EQUALS PHM and PHM == None")
+                    # print("PH_INFERRED NOT EQUALS PHM and PHM == None")
                     return phm, False, True
 
         else:
