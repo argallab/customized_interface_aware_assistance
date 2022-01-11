@@ -217,9 +217,9 @@ class CompareAssistanceParadigms(object):
 
 						data.append(value)	
 						if block_index < other_block_index: 	
-							block_label.append('first')
+							block_label.append('First')
 						elif block_index > other_block_index:
-							block_label.append('second')			
+							block_label.append('Second')			
 						if cond == 'no':
 							assistance_label.append('No Assistance')
 						elif cond == 'filter':
@@ -258,8 +258,8 @@ class CompareAssistanceParadigms(object):
 						assistance_label.append('Corrective')
 
 				else:
-					print('[warning]: '+metric+' value is nan. make sure this is what you expected.')
 
+					print('[warning]: '+metric+' value is nan. make sure this is what you expected.')
 
 		return data, assistance_label, block_label
 
@@ -289,8 +289,6 @@ class CompareAssistanceParadigms(object):
 
 	def plot_with_significance(self, df, metric, *args, **kwargs):
 
-		embed()
-
 		pairs = kwargs.get('pairs', None)
 		p_values = kwargs.get('p_values', None)
 
@@ -301,7 +299,7 @@ class CompareAssistanceParadigms(object):
 		# ax = sns.barplot(x=df["condition"], y=df[metric], data=df)
 
 		# ax = sns.boxplot(x=df["condition"], y=df[metric])
-		ax = sns.boxplot(x="condition", y=metric, hue="block", order=["No Assistance", "Filtered", "Corrective"], data=df)
+		ax = sns.boxplot(x="condition", y=metric, hue="block", order=["No Assistance", "Filtered", "Corrective"], hue_order=["First", "Second"], data=df)
 		# ax = sns.swarmplot(x=df["condition"], y=df[metric], color=".4")
 		font_size = 20
 		ax.tick_params(labelsize=font_size)
@@ -372,8 +370,8 @@ class CompareAssistanceParadigms(object):
 		# TO DO: Wilcoxon won't work for mode switches because not truly paired test (conditions have different lengths)
 		# pairwise_comparisons = sp.posthoc_wilcoxon(df, val_col=metric, group_col='condition', p_adjust='holm')
 
-		# groups = pairwise_comparisons.keys().to_list()
-		# combinations = list(itertools.combinations(groups, 2)) # possible combinations for pairwise comparison
+		groups = pairwise_comparisons.keys().to_list()
+		combinations = list(itertools.combinations(groups, 2)) # possible combinations for pairwise comparison
 		combinations = [('Corrective First', 'Corrective Second'),('Filtered First', 'Filtered Second'),('No Assistance First', 'No Assistance Second')]
 		pairs = []
 		p_values = []
